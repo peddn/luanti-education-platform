@@ -39,5 +39,10 @@ enable_damage = true
 CONF
 fi
 
+# Debug helpers of the LEP mods (test places, debug commands).
+if ! grep -q '^lep_debug' "$dev/minetest.conf"; then
+	echo "lep_debug = true" >> "$dev/minetest.conf"
+fi
+
 echo "Test world ready in $world"
 echo "Start it with: scripts/dev-run.sh"

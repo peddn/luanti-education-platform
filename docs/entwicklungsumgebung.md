@@ -133,6 +133,28 @@ scripts/test.sh
 
 Das führt Luacheck und Busted für alle Mods aus. Dieselben Prüfungen laufen bei jedem Pull Request automatisch auf GitHub.
 
+### Auf den neuesten Stand bringen
+
+Nach dem Zusammenführen eines Pull Requests:
+
+```sh
+git checkout main
+git pull
+scripts/dev-setup.sh
+```
+
+Das Skript schaltet neue Mods in der Testwelt ein. Um einen offenen Pull Request zu testen, statt `main` dessen Zweig auschecken und danach ebenfalls `scripts/dev-setup.sh` ausführen.
+
+### Debug-Hilfen
+
+Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden die Mods zusätzliche Befehle und Testorte, die es auf einem echten Server nicht gibt. Die Befehle brauchen das Privileg `lep_debug`. Im Einzelspieler hat man es automatisch.
+
+| Befehl | Wirkung |
+|---|---|
+| `/lep_place` | zeigt den aktuellen Ort |
+| `/lep_place lep_places:debug_room` | versetzt in den Testort hoch über der Welt |
+| `/lep_place lep_places:wilderness` | versetzt zurück in die Wildnis |
+
 ### Hinweise
 
 - Die Skripte setzen `LUANTI_USER_PATH` und zusätzlich das ältere `MINETEST_USER_PATH`. Neuere Luanti-Versionen geben für das ältere eine Warnung aus, die sich ignorieren lässt.

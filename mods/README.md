@@ -5,6 +5,7 @@ Modpack mit allen eigenen Mods der Luanti Education Platform. Die Liste der Mods
 Bisher vorhanden:
 
 - `lep_core`: Lader für die Dateien eines Mods und Ereignisverteiler.
+- `lep_places`: Ortsverwaltung. Versetzt Spieler zwischen Orten und hält Position, Inventar und Rechte stimmig.
 
 Tests und Testwelt: siehe [Entwicklungsumgebung](../docs/entwicklungsumgebung.md), Abschnitt 5.
 
