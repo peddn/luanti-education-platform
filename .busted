@@ -1,0 +1,7 @@
+return {
+	default = {
+		ROOT = { "mods" },
+		pattern = "_spec",
+		verbose = true,
+	},
+}

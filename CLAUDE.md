@@ -89,9 +89,15 @@ Zweignamen: `<bereich>/<kurze-beschreibung>`, zum Beispiel `setup/project-skelet
 
 ## Arbeitsumgebung von Claude
 
-- Erreichbar sind GitHub, Codeberg, LuaRocks, ContentDB und die Luanti-Paketquelle.
-- Lua, LuaJIT und LuaRocks lassen sich über die Systempakete installieren.
-- Ob ein Luanti-Server in der Arbeitsumgebung läuft, ist noch nicht geprüft. Bis dahin gilt: Was nur im laufenden Spiel prüfbar ist, testet der Nutzer.
+Die Arbeitsumgebung ist pro Sitzung neu. Was hier steht, muss zu Beginn einer Sitzung bei Bedarf wieder eingerichtet werden.
+
+- Erreichbar sind GitHub (nur per `git clone`), Codeberg, LuaRocks, ContentDB und die Luanti-Paketquelle.
+- Archiv-Downloads von GitHub (`.../archive/...tar.gz`) sind gesperrt. Einige LuaRocks-Pakete laden so ihre Quellen. Abhilfe: das Repository klonen, in der Rockspec die `url` auf `git+https://...` setzen und `luarocks make` ausführen. Betroffen waren `lua-term` und `mediator_lua`, beides Abhängigkeiten von Busted.
+- Lua 5.1, LuaJIT und LuaRocks kommen aus den Systempaketen (`lua5.1 liblua5.1-0-dev luajit luarocks`).
+- Luanti: Das Paket `minetest_5.18.0-ppa0~ubuntu24.04.1_amd64.deb` aus `ppa.launchpadcontent.net/minetestdevs/stable` direkt herunterladen und mit `apt-get install ./datei.deb` installieren. `add-apt-repository` funktioniert nicht.
+- Der Server braucht in dieser Umgebung `ipv6_server = false`, `enable_ipv6 = false` und `bind_address = 127.0.0.1` in der Konfiguration.
+- Screenshots aus dem Spiel sind möglich: `Xvfb` als virtueller Bildschirm, Client mit `LIBGL_ALWAYS_SOFTWARE=1` und `enable_sound = false`, Aufnahme mit `import -window root` (Pakete `xvfb xdotool libgl1-mesa-dri imagemagick`).
+- Prüfungen vor jedem Pull Request: `scripts/test.sh`, dazu ein Start der Testwelt mit `scripts/dev-setup.sh` und `scripts/dev-run.sh --server`, um das Laden der Mods im Log zu prüfen.
 
 ## Lizenzen
 

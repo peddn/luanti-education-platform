@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 4 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 6 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -29,7 +29,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Offenheit | Offenes Projekt mit Copyleft |
 | Lizenz | AGPL-3.0-or-later für Backend und Agent, LGPL-3.0-or-later für die Mods, CC BY-SA 4.0 für Texturen und Texte |
 | Basis | Minetest Game, darauf eigene und ausgewählte fremde Mods |
-| Luanti-Version | Aktuelle stabile Version zum Entwicklungsstart |
+| Luanti-Version | Immer die neueste stabile Version, zurzeit 5.18 |
 | Fenster im Spiel | Formspecs werden selbst geschrieben, keine Fenster-Bibliothek |
 
 ### Betrieb
@@ -657,7 +657,7 @@ Aus dem Luanti Modding Book:
 
 Weil Formspecs selbst geschrieben werden, bekommt das Projekt eine kleine gemeinsame Hilfsschicht: Zustand pro Spieler, erneute Rechteprüfung beim Absenden, Maskieren von Texten. Jedes Fenster nutzt sie.
 
-Tests: Busted für die Lua-Kerne. Später mtt für Tests im laufenden Server.
+Tests: Busted für die Lua-Kerne, Luacheck als statische Prüfung. Luacheck stellt auch sicher, dass die Kerne in `src/` keine Engine-Aufrufe enthalten. Später mtt für Tests im laufenden Server.
 
 Fremd-Mods werden nicht ins Repository kopiert. `third_party/mods.toml` nennt Quelle und feste Version jedes fremden Mods, ein Skript lädt sie. Aktualisierungen sind damit eine sichtbare Änderung in einer Datei.
 
@@ -676,7 +676,7 @@ Bewusst nicht verwendet: Classroom Manager (eigenes Pult), Account Manager (Kont
 
 ### 14.2 Eigene Mods
 
-Alle eigenen Mods liegen als Modpack unter `mods/`. Jeder Mod hat einen Kern in reinem Lua (`src/`) und eine Schicht zum Spiel (`game/`). Einen eigenen Kern-Mod pro Lernmodul gibt es deshalb nicht.
+Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB frei (geprüft am 15. November 2026). Jeder Mod hat einen Kern in reinem Lua (`src/`) und eine Schicht zum Spiel (`game/`). Einen eigenen Kern-Mod pro Lernmodul gibt es deshalb nicht.
 
 | Mod | Aufgabe |
 |---|---|
@@ -721,21 +721,17 @@ Bis Schritt 5 läuft alles in einer einzigen Welt ohne Web-Anwendung, mit lokal 
 
 ## 16. Offene Punkte
 
-Vor dem ersten Code:
-
-1. **Mod-Namen:** Auf ContentDB prüfen, ob alle Namen aus Abschnitt 14.2 frei sind, unter `content.luanti.org/modnames/<modname>/`. Für `lep_core` kennt die Prüfseite keinen Eintrag.
-
 Bei der Umsetzung des jeweiligen Teils:
 
-2. **Pensum:** Aufgabentypen pro Niveau für jedes Modul, und wie oft ein Typ richtig gelöst sein muss (Vorschlag: fünfmal).
-3. **Kontonamen:** Luantis genaue Längengrenze prüfen.
-4. **Mesecons:** Stand der letzten Version prüfen.
-5. **GIFT-Export:** Mit einem ByCS-Zugang ausprobieren, ob Lehrkräfte Fragen exportieren können.
-6. **TZ:** Die Stationen auf die drei Niveaus verteilen.
+1. **Pensum:** Aufgabentypen pro Niveau für jedes Modul, und wie oft ein Typ richtig gelöst sein muss (Vorschlag: fünfmal).
+2. **Kontonamen:** Luantis genaue Längengrenze prüfen.
+3. **Mesecons:** Stand der letzten Version prüfen.
+4. **GIFT-Export:** Mit einem ByCS-Zugang ausprobieren, ob Lehrkräfte Fragen exportieren können.
+5. **TZ:** Die Stationen auf die drei Niveaus verteilen.
 
 Vor einem Einsatz an einer Schule:
 
-7. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
+6. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
 
 ## 17. Quellen
 

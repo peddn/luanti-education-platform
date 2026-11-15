@@ -38,7 +38,7 @@ Version prüfen:
 luanti --version
 ```
 
-Das Projekt setzt die aktuelle stabile Version voraus. Arch lieferte zum Stand dieser Anleitung Luanti 5.16.
+Das Projekt setzt immer die neueste stabile Version von Luanti voraus, zurzeit 5.18. Arch lieferte zum Stand dieser Anleitung 5.16. Zum Testen geht das, solange ein Mod keine neuere Funktion nutzt. Funktioniert etwas nur mit der neueren Version, steht das im jeweiligen Pull Request.
 
 ## 2. Testwerkzeuge für Lua
 
@@ -89,16 +89,55 @@ gh auth login
 gh pr checkout <nummer>
 ```
 
-## 5. Mods in Luanti einbinden
+## 5. Testwelt und Tests
 
-**Kommt mit dem ersten Mod.** Sobald `lep_core` existiert, steht hier:
+Das Projekt nutzt ein eigenes Luanti-Benutzerverzeichnis im Repository: `.dev/`. Es wird nicht eingecheckt. Dein normales Luanti-Verzeichnis bleibt unberührt, und Schritt 3 ist für die Entwicklung nicht nötig, weil das Skript Minetest Game selbst lädt.
 
-- wie die eigenen Mods aus dem Repository in eine Testwelt eingebunden werden,
-- wie die fremden Mods aus `third_party/mods.toml` geladen werden,
-- wie eine Testwelt angelegt und gestartet wird,
-- wie die Tests laufen.
+### Testwelt anlegen
 
-Der genaue Weg ist noch nicht festgelegt, weil Luanti Verknüpfungen aus dem Benutzerverzeichnis heraus nicht in jedem Fall folgt. Das wird mit dem ersten Mod ausprobiert.
+```sh
+scripts/dev-setup.sh
+```
+
+Das Skript
+
+- lädt Minetest Game nach `.dev/games/`,
+- verknüpft das Modpack `mods/` nach `.dev/mods/lep`, sodass Änderungen an den Mods ohne Kopieren wirken,
+- legt die Testwelt `.dev/worlds/dev` an und schaltet darin alle LEP-Mods ein.
+
+Das Skript kann beliebig oft laufen. Nach dem Anlegen eines neuen Mods muss es einmal laufen, damit der Mod in der Testwelt eingeschaltet wird.
+
+### Testwelt starten
+
+```sh
+scripts/dev-run.sh
+```
+
+Luanti startet direkt in der Testwelt. Nach einer Änderung an einem Mod genügt es, die Welt zu verlassen und neu zu starten.
+
+Ein Server ohne Oberfläche, zum Beispiel für Tests mit mehreren Spielern:
+
+```sh
+scripts/dev-run.sh --server
+```
+
+Der Server lauscht auf Port 30000. Im Client verbindest du dich mit der Adresse `127.0.0.1`.
+
+Ob die Mods geladen wurden, zeigt die Ausgabe im Terminal. Für den Kern-Mod steht dort `[lep_core] loaded`.
+
+### Tests ausführen
+
+```sh
+scripts/test.sh
+```
+
+Das führt Luacheck und Busted für alle Mods aus. Dieselben Prüfungen laufen bei jedem Pull Request automatisch auf GitHub.
+
+### Hinweise
+
+- Die Skripte setzen `LUANTI_USER_PATH` und zusätzlich das ältere `MINETEST_USER_PATH`. Neuere Luanti-Versionen geben für das ältere eine Warnung aus, die sich ignorieren lässt.
+- Die Verknüpfung des Modpacks ist mit Luanti 5.18 geprüft. Falls Luanti 5.16 unter Arch die Mods nicht findet, bitte melden. Dann kopiert das Skript die Mods stattdessen.
+- Fremde Mods aus `third_party/mods.toml` kommen dazu, sobald der erste gebraucht wird.
 
 ## 6. Backend und Oberfläche
 

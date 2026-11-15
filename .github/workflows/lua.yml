@@ -1,0 +1,32 @@
+name: Lua
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    name: Luacheck and Busted
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua, LuaJIT and LuaRocks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 liblua5.1-0-dev luajit luarocks
+
+      - name: Install Busted and Luacheck
+        run: |
+          sudo luarocks --lua-version 5.1 install busted
+          sudo luarocks --lua-version 5.1 install luacheck
+
+      - name: Luacheck
+        run: luacheck mods
+
+      - name: Busted (Lua 5.1)
+        run: busted
+
+      - name: Busted (LuaJIT)
+        run: busted --lua=luajit
