@@ -1,6 +1,5 @@
 # Local development
 .dev/
-third_party/mods/
 
 # Rust
 target/
