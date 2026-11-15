@@ -1,0 +1,19 @@
+# Local development
+.dev/
+third_party/mods/
+
+# Rust
+target/
+
+# Node
+node_modules/
+dist/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Secrets
+.env
+*.key

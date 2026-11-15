@@ -1,0 +1,98 @@
+# CLAUDE.md
+
+Anweisungen für die Zusammenarbeit an der Luanti Education Platform (LEP).
+
+## Projekt
+
+Eine Lernplattform auf Basis von Luanti für Schulen. Das verbindliche Konzept steht in [`docs/konzept.md`](docs/konzept.md). Es ist vor jeder Arbeit die erste Quelle. Die Verzeichnisstruktur steht in der [`README.md`](README.md).
+
+## Arbeitsregeln
+
+1. **Gebaut wird erst nach Rückfrage.** Vor jeder Aufgabe beschreiben, was gebaut werden soll und wie, und auf Zustimmung warten. Das gilt auch für Änderungen an der Dokumentation.
+2. **Entscheidungen kritisieren**, wenn sie Doppelentwicklung oder große Verkomplizierung verursachen würden. Erst widersprechen und begründen, dann die Entscheidung des Nutzers umsetzen.
+3. **Vorhandenes vor Eigenbau.** Für Bedarf im Survival-Teil zuerst bestehende Mods prüfen: Pflegezustand, Lizenz, Passung.
+4. **Sprache:** Code, Bezeichner, Kommentare und Commit-Nachrichten auf Englisch. Texte im Spiel auf Deutsch über Luantis Übersetzungssystem. Dokumentation und Gespräch auf Deutsch.
+5. **Das Konzept führt.** Weicht eine Entscheidung vom Konzept ab, wird zuerst das Konzept angepasst, dann der Code.
+
+## Git-Vorgehensweise
+
+### Zweige und Pull Requests
+
+- Nie direkt auf `main` schreiben.
+- Jede Aufgabe bekommt einen eigenen Zweig und einen Pull Request.
+- Der Nutzer prüft und führt zusammen. Claude führt nie selbst zusammen.
+- Pull Requests bleiben klein: eine Aufgabe, ein Thema.
+- Kein Überschreiben der Historie auf geteilten Zweigen.
+- Es gibt keine GitHub-Issues. Die Reihenfolge im Konzept und das Gespräch bestimmen die Aufgaben.
+
+Zweignamen: `<bereich>/<kurze-beschreibung>`, zum Beispiel `setup/project-skeleton`, `mods/core-formspec-helpers`, `backend/accounts`.
+
+### Ablauf einer Aufgabe
+
+1. Vorhaben beschreiben und auf Zustimmung warten.
+2. Auf dem Zweig bauen, mit Tests.
+3. Pull Request öffnen mit: was, warum, wie getestet, was offen ist.
+4. Rückmeldung einarbeiten.
+
+### Commits
+
+- Englisch, kurz, im Imperativ: `Add reward chest inventory`.
+- Ein Commit pro abgeschlossenem Gedanken.
+
+### Qualität
+
+- Kein Pull Request ohne Tests für Lua-Kerne und Backend.
+- Automatische Prüfungen auf GitHub: Busted und Luacheck für Lua, Tests und Clippy für Rust, Typprüfung und Lint für die Oberfläche. Sie werden mit dem ersten Code eingerichtet.
+- Ein Pull Request mit fehlgeschlagenen Prüfungen gilt als nicht fertig.
+- Nicht getestete Teile im Pull Request ausdrücklich benennen, zum Beispiel alles, was nur im laufenden Spiel prüfbar ist.
+
+### Was nie ins Repository gehört
+
+- Zugangsdaten, Schlüssel, Passwörter.
+- Schülerdaten, auch nicht als Testdaten. Testdaten sind erfunden.
+- Kopien fremder Mods. Sie werden über `third_party/mods.toml` in fester Version geladen.
+
+## Technische Leitlinien
+
+### Lua-Mods
+
+- Jeder Mod heißt `lep_<name>` und liegt unter `mods/`.
+- Zwei Schichten pro Mod:
+  - `src/`: Kern in reinem Lua, ohne `core.`-Aufrufe. Daten und Logik.
+  - `game/`: Schicht zum Spiel. Fenster, Blöcke, Befehle, Rückruffunktionen.
+- Tests mit Busted in `spec/`, für jeden Kern.
+- Mods sprechen über Anmeldefunktionen miteinander (`register_on_...`), nicht über direkte Aufrufe in fremde Interna.
+- Formspecs werden selbst geschrieben, ohne Fenster-Bibliothek. Jedes Fenster nutzt die Hilfsschicht aus `lep_core`.
+- Eingaben aus Fenstern nie trauen. Rechte beim Absenden erneut prüfen, Zustand pro Spieler auf dem Server halten.
+- Sensible Block-Metadaten als privat markieren.
+- HUD statt Fenster, wenn keine Eingabe nötig ist.
+- Keine Spielerobjekte speichern, nur Namen.
+- Privilegien beschreiben Handlungen, keine Rollen.
+- Jeder Ortswechsel eines Spielers läuft über `lep_places`. Kein Mod teleportiert selbst.
+- Schutz nur über Luantis Standardfunktion abfragen, nie direkt beim Schutz-Mod.
+- Speicher-Backend vom restlichen Code trennen.
+
+### Backend, Agent und Oberfläche
+
+- Backend und Agent in Rust, Oberfläche in Vue mit Pinia und Router.
+- Die Typen der Schnittstelle liegen einmal in `crates/protocol`. Daraus entsteht die OpenAPI-Beschreibung und daraus die TypeScript-Typen.
+- Die Welt ruft das Backend an, nie umgekehrt: HTTPS, Long Polling, ein Schlüssel pro Welt.
+- Jedes Ereignis hat eine eindeutige ID. Das Backend verwirft Doppelte.
+- Das Spiel muss ohne Backend weiterlaufen.
+- Der Agent kennt nur eine feste Liste von Aufträgen und führt keine beliebigen Befehle aus.
+
+### Datenschutz
+
+- Dauerhaft wird nur der Stand gespeichert, nicht der Verlauf.
+- Protokolle speichern den Kontonamen, nicht den Wunschnamen.
+- Details stehen im Konzept, Abschnitt 12.
+
+## Arbeitsumgebung von Claude
+
+- Erreichbar sind GitHub, Codeberg, LuaRocks, ContentDB und die Luanti-Paketquelle.
+- Lua, LuaJIT und LuaRocks lassen sich über die Systempakete installieren.
+- Ob ein Luanti-Server in der Arbeitsumgebung läuft, ist noch nicht geprüft. Bis dahin gilt: Was nur im laufenden Spiel prüfbar ist, testet der Nutzer.
+
+## Lizenzen
+
+Siehe [`LICENSE.md`](LICENSE.md). Neue Dateien gehören zu dem Teil, in dessen Verzeichnis sie liegen.
