@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 5 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 6 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -29,7 +29,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Offenheit | Offenes Projekt mit Copyleft |
 | Lizenz | AGPL-3.0-or-later für Backend und Agent, LGPL-3.0-or-later für die Mods, CC BY-SA 4.0 für Texturen und Texte |
 | Basis | Minetest Game, darauf eigene und ausgewählte fremde Mods |
-| Luanti-Version | Aktuelle stabile Version zum Entwicklungsstart |
+| Luanti-Version | Immer die neueste stabile Version, zurzeit 5.18 |
 | Fenster im Spiel | Formspecs werden selbst geschrieben, keine Fenster-Bibliothek |
 
 ### Betrieb
@@ -728,11 +728,10 @@ Bei der Umsetzung des jeweiligen Teils:
 3. **Mesecons:** Stand der letzten Version prüfen.
 4. **GIFT-Export:** Mit einem ByCS-Zugang ausprobieren, ob Lehrkräfte Fragen exportieren können.
 5. **TZ:** Die Stationen auf die drei Niveaus verteilen.
-6. **Luanti-Version:** Mindestversion festlegen. Arch Linux liefert 5.16, die Paketquelle der Luanti-Entwickler 5.18.
 
 Vor einem Einsatz an einer Schule:
 
-7. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
+6. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
 
 ## 17. Quellen
 

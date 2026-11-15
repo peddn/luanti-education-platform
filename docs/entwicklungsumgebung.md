@@ -38,7 +38,7 @@ Version prüfen:
 luanti --version
 ```
 
-Das Projekt setzt die aktuelle stabile Version voraus. Arch lieferte zum Stand dieser Anleitung Luanti 5.16.
+Das Projekt setzt immer die neueste stabile Version von Luanti voraus, zurzeit 5.18. Arch lieferte zum Stand dieser Anleitung 5.16. Zum Testen geht das, solange ein Mod keine neuere Funktion nutzt. Funktioniert etwas nur mit der neueren Version, steht das im jeweiligen Pull Request.
 
 ## 2. Testwerkzeuge für Lua
 
