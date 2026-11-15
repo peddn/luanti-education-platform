@@ -1,0 +1,14 @@
+# Third-party mods of the Luanti Education Platform.
+#
+# They are not copied into this repository. scripts/dev-setup.sh fetches
+# each one at exactly the commit given here and enables it in the test
+# world. The section name is the mod name.
+#
+# To update a mod: check its changes and licence, set the new commit, run
+# scripts/dev-setup.sh and test in the game.
+
+[signs_lib]
+repo = "https://github.com/mt-mods/signs_lib"
+commit = "897b30bce208ac54fcea73f92978785ad38830df"
+license = "LGPL-3.0-only (code), CC-BY-SA-4.0 (media)"
+purpose = "Readable text on signs"
