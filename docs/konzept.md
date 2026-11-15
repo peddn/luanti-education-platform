@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 16 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 17 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -235,14 +235,30 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 
 ### 7.4 Portale
 
-- **Festes Paar:** ein Portal im gemeinsamen Bereich der Lobby, eines in der Wildnis.
-- **Persönliches Paar:** das Portal im eigenen Lobby-Raum und ein selbst hergestelltes Portal auf dem eigenen Grundstück.
-- Rezept: 8 Obsidian um 1 Mese-Kristall.
-- Das Portal lässt sich nur in einem Bereich setzen, den der Schüler selbst geschützt hat.
-- Jeder Schüler hat höchstens ein gebautes Portal. Ein neues ersetzt das alte.
-- Ohne gebautes Portal ist das persönliche Portal inaktiv und zeigt einen Hinweis.
-- Betritt ein fremder Schüler ein gebautes Portal, landet er in der Lobby. Zurück kommt er nur über sein eigenes oder das feste Portal.
-- Portale werden selbst gebaut. Vorhandene Portal-Mods bilden frei verknüpfbare Reisenetze und passen nicht zu dieser engen Regel.
+**Aussehen und Benutzung**
+
+- Ein Portal steht senkrecht. Der Rahmen ist außen 3 breit und 4 hoch, innen ist eine Fläche von 1 × 2 frei. Die vier Ecken des Rahmens dürfen fehlen.
+- Die Fläche ist violett und leuchtet. Wer etwa eine Sekunde darin steht, wird versetzt und kommt einen Schritt vor dem Zielportal an.
+- Jeder Ortswechsel durch ein Portal läuft über die Ortsverwaltung.
+
+**Festes Paar**
+
+- Ein Portal steht in der Mitte der Halle, eines in der Wildnis am Startpunkt der Welt auf einer kleinen Plattform.
+- Beide sind unzerstörbar, die Plattform ist geschützt.
+
+**Persönliches Paar**
+
+- Im eigenen Lobby-Raum steht ein fertiger Rahmen an der Rückwand. Das Gegenstück baut der Schüler selbst auf seinem Grundstück.
+- **Bauen:** Rahmen aus Obsidian mauern (6 Blöcke, mit Ecken 10) und mit einem Mese-Kristall in der Hand auf den Rahmen rechtsklicken. Der Kristall wird verbraucht.
+- **Bedingungen:** Die Form stimmt, das Innere ist frei, der Schüler ist in der Wildnis, und der Rahmen steht in einem geschützten Bereich, in dem er bauen darf. Sonst sagt eine Meldung, was fehlt, und der Kristall bleibt erhalten.
+- Geprüft wird der Schutz nur beim Zünden und nur über Luantis Standardfunktion. Wer auf einem fremden Grundstück als Mitglied eingetragen ist, kann sein Portal deshalb auch dort zünden.
+- Jeder Schüler hat höchstens ein gebautes Portal. Ein neues lässt das alte erlöschen, dessen Rahmen bleibt stehen.
+- Wird ein Block des Rahmens abgebaut, erlischt das Portal. Der Kristall ist verloren.
+- Ohne gebautes Portal ist die Fläche im Raum grau. Wer hineingeht, bekommt einen Hinweis, wie man ein Portal baut.
+- Das Portal im Raum funktioniert nur für den Besitzer. Besucher bekommen einen Hinweis.
+- Betritt ein fremder Schüler ein gebautes Portal, landet er in der Halle. Zurück kommt er nur über sein eigenes oder das feste Portal.
+
+Portale werden selbst gebaut. Vorhandene Portal-Mods bilden frei verknüpfbare Reisenetze oder verknüpfen Orte statt Spieler und passen nicht zu diesen Regeln. Geprüft wurde auch die Portal-Schnittstelle des Nether-Mods.
 
 ### 7.5 Lobby
 
