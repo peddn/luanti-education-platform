@@ -13,36 +13,65 @@ local function each_position(callback)
 	end
 end
 
+local function is_open(kind)
+	return kind == hall.AIR or kind == hall.FIREFLY or kind == hall.BUTTERFLY
+end
+
 describe("lep_lobby hall shape", function()
 	it("has air in the middle and a glass pane below it", function()
 		assert.are.equal(hall.AIR, hall.kind_at(0, 1, 0))
 		assert.are.equal(hall.GLASS, hall.kind_at(0, 0, 0))
 	end)
 
-	it("has a solid floor around the glass pane", function()
-		assert.are.equal(hall.GLASS, hall.kind_at(hall.GLASS_FLOOR_RADIUS, 0, 0))
-		assert.are.equal(hall.FLOOR, hall.kind_at(hall.GLASS_FLOOR_RADIUS + 1, 0, 0))
+	it("has a ring of light around the glass pane, then solid floor", function()
+		local g = hall.GLASS_FLOOR_RADIUS
+		assert.are.equal(hall.GLASS, hall.kind_at(g, 0, 0))
+		assert.are.equal(hall.LAMP, hall.kind_at(g + 1, 0, 0))
+		assert.are.equal(hall.FLOOR, hall.kind_at(g + 2, 0, 0))
 		assert.are.equal(hall.FLOOR, hall.kind_at(R, 0, 0))
-		assert.are.equal(hall.FLOOR, hall.kind_at(R + 1, 0, 0))
+	end)
+
+	it("has a ring of light without gaps below the glass wall", function()
+		local min, max = hall.bounds()
+		local count = 0
+		for x = min.x, max.x do
+			for z = min.z, max.z do
+				local above = hall.kind_at(x, 1, z)
+				local below = hall.kind_at(x, 0, z)
+				if above == hall.GLASS then
+					assert.are.equal(hall.LAMP, below, "gap at " .. x .. "," .. z)
+					count = count + 1
+				elseif is_open(above) then
+					assert.is_true(below == hall.FLOOR or below == hall.GLASS
+						or (below == hall.LAMP
+							and math.sqrt(x * x + z * z) < hall.GLASS_FLOOR_RADIUS + 1.5))
+				end
+			end
+		end
+		assert.is_true(count >= 80)
 	end)
 
 	it("has the usable space reach the inner radius", function()
-		assert.are.equal(hall.AIR, hall.kind_at(R, 1, 0))
-		assert.are.equal(hall.AIR, hall.kind_at(0, 1, -R))
-		assert.are.not_equal(hall.AIR, hall.kind_at(R + 1, 1, 0))
+		assert.is_true(is_open(hall.kind_at(R, 1, 0)))
+		assert.is_true(is_open(hall.kind_at(0, 1, -R)))
+		assert.is_false(is_open(hall.kind_at(R + 1, 1, 0)))
 	end)
 
-	it("has a wall of glass or lamps around the usable space", function()
+	it("has wall and dome made of glass only", function()
 		for y = 1, H do
-			local kind = hall.kind_at(R + 1, y, 0)
-			assert.is_true(kind == hall.GLASS or kind == hall.LAMP)
+			assert.are.equal(hall.GLASS, hall.kind_at(R + 1, y, 0))
 		end
-		assert.are.equal(hall.GLASS, hall.kind_at(R + 1, 2, 0))
+		each_position(function(x, y, z)
+			if y >= 1 then
+				assert.are.not_equal(hall.LAMP, hall.kind_at(x, y, z))
+				assert.are.not_equal(hall.FLOOR, hall.kind_at(x, y, z))
+			end
+		end)
 	end)
 
 	it("is as high as wall plus dome in the middle", function()
 		assert.are.equal(hall.AIR, hall.kind_at(0, H + R, 0))
-		assert.are.equal(hall.LAMP, hall.kind_at(0, H + R + 1, 0))
+		assert.are.equal(hall.GLASS, hall.kind_at(0, H + R + 1, 0))
 		assert.is_nil(hall.kind_at(0, H + R + 2, 0))
 	end)
 
@@ -57,16 +86,16 @@ describe("lep_lobby hall shape", function()
 		end)
 	end)
 
-	it("is symmetric in x and z", function()
+	it("has a symmetric shell in x and z", function()
+		-- Fireflies and butterflies are decoration and need not mirror.
+		local function shell(kind)
+			return is_open(kind) and hall.AIR or kind
+		end
 		each_position(function(x, y, z)
-			local kind = hall.kind_at(x, y, z)
-			-- Lamps are snapped to a grid of directions and need not mirror.
-			local function solid(k)
-				return k == hall.LAMP and hall.GLASS or k
-			end
-			assert.are.equal(solid(kind), solid(hall.kind_at(-x, y, z)))
-			assert.are.equal(solid(kind), solid(hall.kind_at(x, y, -z)))
-			assert.are.equal(solid(kind), solid(hall.kind_at(z, y, x)))
+			local kind = shell(hall.kind_at(x, y, z))
+			assert.are.equal(kind, shell(hall.kind_at(-x, y, z)))
+			assert.are.equal(kind, shell(hall.kind_at(x, y, -z)))
+			assert.are.equal(kind, shell(hall.kind_at(z, y, x)))
 		end)
 	end)
 
@@ -79,7 +108,7 @@ describe("lep_lobby hall shape", function()
 		local neighbours = {
 			{ 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 },
 		}
-		local air_count = 0
+		local open_count = 0
 		while queue[head] do
 			local x, y, z = queue[head][1], queue[head][2], queue[head][3]
 			head = head + 1
@@ -88,61 +117,66 @@ describe("lep_lobby hall shape", function()
 				seen[id] = true
 				local kind = hall.kind_at(x, y, z)
 				assert.is_not_nil(kind, "air leaks out at " .. id)
-				if kind == hall.AIR then
-					air_count = air_count + 1
+				if is_open(kind) then
+					open_count = open_count + 1
 					for _, n in ipairs(neighbours) do
 						queue[#queue + 1] = { x + n[1], y + n[2], z + n[3] }
 					end
 				end
 			end
 		end
-		assert.is_true(air_count > 1000)
+		assert.is_true(open_count > 5000)
 	end)
 
-	it("places lamps only in the shell", function()
+	it("has fireflies below the dome, above the wall", function()
 		local count = 0
 		each_position(function(x, y, z)
-			if hall.kind_at(x, y, z) == hall.LAMP then
+			if hall.kind_at(x, y, z) == hall.FIREFLY then
 				count = count + 1
-				assert.is_true(y >= 1)
+				assert.is_true(y > H)
 			end
 		end)
-		assert.are.equal(hall.lamp_count(), count)
+		assert.is_true(count >= 35)
 	end)
 
-	it("has a ring of lamps at the foot of the wall and lamps in the dome", function()
-		local foot, dome = 0, 0
+	it("has butterflies of every colour above head height", function()
+		local colours = {}
+		local count = 0
 		each_position(function(x, y, z)
-			if hall.kind_at(x, y, z) == hall.LAMP then
-				if y == 1 then
-					foot = foot + 1
-				elseif y > H then
-					dome = dome + 1
+			local kind, colour = hall.kind_at(x, y, z)
+			if kind == hall.BUTTERFLY then
+				count = count + 1
+				colours[colour] = true
+				assert.is_true(y >= 3 and y <= 7)
+			end
+		end)
+		assert.is_true(count >= 10)
+		for colour = 1, hall.BUTTERFLY_COLOURS do
+			assert.is_true(colours[colour])
+		end
+	end)
+
+	it("keeps every floor position near a ring of light or the portal", function()
+		-- Light drops by one per node. No walkable spot may be far from a
+		-- lamp in the floor or from the glowing portal in the middle.
+		local sources = { { 0, 1, 0 } }
+		local min, max = hall.bounds()
+		for x = min.x, max.x do
+			for z = min.z, max.z do
+				if hall.kind_at(x, 0, z) == hall.LAMP then
+					sources[#sources + 1] = { x, 0, z }
 				end
 			end
-		end)
-		assert.is_true(foot >= 12)
-		assert.is_true(dome >= 15)
-	end)
-
-	it("keeps every floor position near a lamp or the portal", function()
-		-- Light drops by one per node. With the portal glowing in the middle
-		-- and lamps at the wall, no walkable spot may be far from a source.
-		local sources = { { 0, 1, 0 } }
-		each_position(function(x, y, z)
-			if hall.kind_at(x, y, z) == hall.LAMP and y == 1 then
-				sources[#sources + 1] = { x, y, z }
-			end
-		end)
+		end
 		for x = -R, R do
 			for z = -R, R do
-				if hall.kind_at(x, 1, z) == hall.AIR then
+				if is_open(hall.kind_at(x, 1, z)) then
 					local nearest = math.huge
 					for _, s in ipairs(sources) do
-						local d = math.abs(x - s[1]) + math.abs(z - s[3])
+						local d = math.abs(x - s[1]) + math.abs(1 - s[2]) + math.abs(z - s[3])
 						nearest = math.min(nearest, d)
 					end
-					assert.is_true(nearest <= 8, "dark spot at " .. x .. "," .. z)
+					assert.is_true(nearest <= 7, "dark spot at " .. x .. "," .. z)
 				end
 			end
 		end
@@ -161,6 +195,7 @@ describe("lep_lobby hall anchors", function()
 		local x, y, z = relative(anchors.spawn)
 		assert.are.equal(hall.AIR, hall.kind_at(x, y, z))
 		assert.are.equal(hall.AIR, hall.kind_at(x, y + 1, z))
+		assert.are.equal(hall.AIR, hall.kind_at(x, y + 2, z))
 		assert.are.equal(hall.FLOOR, hall.kind_at(x, y - 1, z))
 	end)
 

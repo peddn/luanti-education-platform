@@ -1,26 +1,33 @@
 -- Shape of the generated lobby hall. Pure Lua, no engine calls.
 --
 -- The hall is a glass cylinder with a glass dome on top. The floor is solid
--- with a round glass pane in the middle. Lamps sit at the foot of the wall
--- and in the dome. All coordinates here are relative to the hall origin:
+-- with a round glass pane in the middle. Two rings of lamps are set into
+-- the floor: one around the glass pane and one without gaps below the
+-- glass wall. Fireflies hover below the dome, butterflies further down.
+-- All coordinates here are relative to the hall origin:
 -- the centre of the floor, with the floor itself at y = 0.
 
 local hall = {}
 
 -- Inner radius of the hall.
-hall.RADIUS = 10
+hall.RADIUS = 15
 -- Height of the vertical wall below the dome.
 hall.WALL_HEIGHT = 4
 -- Radius of the glass pane in the floor.
-hall.GLASS_FLOOR_RADIUS = 3
+hall.GLASS_FLOOR_RADIUS = 5
 -- Raise this when the shape changes, so existing halls are rebuilt.
-hall.VERSION = 1
+hall.VERSION = 2
 
 -- Node kinds returned by hall.kind_at.
 hall.FLOOR = "floor"
 hall.GLASS = "glass"
 hall.LAMP = "lamp"
 hall.AIR = "air"
+hall.FIREFLY = "firefly"
+hall.BUTTERFLY = "butterfly"
+
+-- Number of butterfly colours. kind_at returns the colour as second value.
+hall.BUTTERFLY_COLOURS = 3
 
 local R = hall.RADIUS
 local H = hall.WALL_HEIGHT
@@ -51,45 +58,59 @@ local function region(x, y, z)
 	return classify(math.sqrt(x * x + dy * dy + z * z))
 end
 
--- Lamp positions: a ring at the foot of the wall and three rings in the
--- dome, plus one at the top. Each wanted direction is snapped to the
--- nearest shell node.
-local function build_lamps()
-	local lamps = {}
+-- Fireflies: rings below the dome and one at the top, each one node
+-- inside the glass. Each wanted direction is snapped to the node grid.
+local function build_fireflies()
+	local fireflies = {}
 
-	local function add_ring(count, elevation_deg)
+	local function add(x, y, z)
+		if region(x, y, z) == "inside" then
+			fireflies[key(x, y, z)] = true
+		end
+	end
+
+	local function add_ring(count, elevation_deg, offset)
 		local elevation = math.rad(elevation_deg)
 		for i = 0, count - 1 do
-			local angle = 2 * math.pi * i / count
-			local horizontal = (R + 1) * math.cos(elevation)
-			local x = round(horizontal * math.cos(angle))
-			local z = round(horizontal * math.sin(angle))
-			local y = H + round((R + 1) * math.sin(elevation))
-			if region(x, y, z) == "shell" then
-				lamps[key(x, y, z)] = true
-			end
+			local angle = 2 * math.pi * (i + offset) / count
+			local horizontal = (R - 1) * math.cos(elevation)
+			add(round(horizontal * math.cos(angle)),
+				H + round((R - 1) * math.sin(elevation)),
+				round(horizontal * math.sin(angle)))
 		end
 	end
 
-	-- Foot of the wall.
-	for i = 0, 15 do
-		local angle = 2 * math.pi * i / 16
-		local x = round((R + 1) * math.cos(angle))
-		local z = round((R + 1) * math.sin(angle))
-		if region(x, 1, z) == "shell" then
-			lamps[key(x, 1, z)] = true
-		end
-	end
+	add_ring(16, 18, 0)
+	add_ring(12, 38, 0.5)
+	add_ring(8, 58, 0)
+	add_ring(4, 76, 0.5)
+	add(0, H + R - 1, 0)
 
-	add_ring(12, 25)
-	add_ring(8, 50)
-	add_ring(4, 72)
-	lamps[key(0, H + R + 1, 0)] = true
-
-	return lamps
+	return fireflies
 end
 
-local lamps = build_lamps()
+-- Butterflies: a fixed spiral above head height, so the hall looks the
+-- same after every rebuild.
+local function build_butterflies(fireflies)
+	local butterflies = {}
+	local golden_angle = math.pi * (3 - math.sqrt(5))
+	local count = 14
+	for i = 1, count do
+		local distance = 3 + (R - 5) * math.sqrt(i / count)
+		local angle = i * golden_angle
+		local x = round(distance * math.cos(angle))
+		local z = round(distance * math.sin(angle))
+		local y = 3 + (i * 2) % 5
+		local id = key(x, y, z)
+		if region(x, y, z) == "inside" and not fireflies[id] then
+			butterflies[id] = (i % hall.BUTTERFLY_COLOURS) + 1
+		end
+	end
+	return butterflies
+end
+
+local fireflies = build_fireflies()
+local butterflies = build_butterflies(fireflies)
 
 --- Returns the lowest and highest relative coordinates of the hall.
 function hall.bounds()
@@ -98,7 +119,9 @@ function hall.bounds()
 end
 
 --- Returns what belongs at a position relative to the origin:
--- hall.FLOOR, hall.GLASS, hall.LAMP, hall.AIR, or nil outside the hall.
+-- hall.FLOOR, hall.GLASS, hall.LAMP, hall.AIR, hall.FIREFLY,
+-- hall.BUTTERFLY (with the colour number as second value), or nil outside
+-- the hall.
 function hall.kind_at(x, y, z)
 	if y < 0 then
 		return nil
@@ -108,8 +131,14 @@ function hall.kind_at(x, y, z)
 		local distance = math.sqrt(x * x + z * z)
 		if distance >= R + 1.5 then
 			return nil
+		elseif distance >= R + 0.5 then
+			-- Ring of light below the glass wall.
+			return hall.LAMP
 		elseif distance < hall.GLASS_FLOOR_RADIUS + 0.5 then
 			return hall.GLASS
+		elseif distance < hall.GLASS_FLOOR_RADIUS + 1.5 then
+			-- Ring of light around the glass pane.
+			return hall.LAMP
 		end
 		return hall.FLOOR
 	end
@@ -117,21 +146,17 @@ function hall.kind_at(x, y, z)
 	local where = region(x, y, z)
 	if where == "outside" then
 		return nil
-	elseif where == "inside" then
-		return hall.AIR
-	elseif lamps[key(x, y, z)] then
-		return hall.LAMP
+	elseif where == "shell" then
+		return hall.GLASS
 	end
-	return hall.GLASS
-end
 
---- Returns the number of lamps.
-function hall.lamp_count()
-	local count = 0
-	for _ in pairs(lamps) do
-		count = count + 1
+	local id = key(x, y, z)
+	if fireflies[id] then
+		return hall.FIREFLY
+	elseif butterflies[id] then
+		return hall.BUTTERFLY, butterflies[id]
 	end
-	return count
+	return hall.AIR
 end
 
 --- Returns the important spots of the hall in world coordinates.

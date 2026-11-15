@@ -15,6 +15,8 @@ read_globals = {
 	"ItemStack",
 	-- Global of the beds mod from Minetest Game.
 	"beds",
+	-- Sound helpers of the default mod from Minetest Game.
+	"default",
 }
 
 -- Globals defined by LEP mods.

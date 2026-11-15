@@ -30,7 +30,12 @@ function provider.build(origin, callback)
 			[hall.GLASS] = core.get_content_id("lep_lobby:glass"),
 			[hall.LAMP] = core.get_content_id("lep_lobby:lamp"),
 			[hall.AIR] = core.CONTENT_AIR,
+			[hall.FIREFLY] = core.get_content_id("lep_lobby:firefly"),
 		}
+		local butterfly_ids = {}
+		for colour, name in ipairs(lep_lobby.BUTTERFLY_NODES) do
+			butterfly_ids[colour] = core.get_content_id(name)
+		end
 
 		local vm = core.get_voxel_manip()
 		local emin, emax = vm:read_from_map(min, max)
@@ -40,9 +45,10 @@ function provider.build(origin, callback)
 		for z = rel_min.z, rel_max.z do
 			for y = rel_min.y, rel_max.y do
 				for x = rel_min.x, rel_max.x do
-					local kind = hall.kind_at(x, y, z)
+					local kind, colour = hall.kind_at(x, y, z)
 					if kind then
-						data[area:index(origin.x + x, origin.y + y, origin.z + z)] = ids[kind]
+						data[area:index(origin.x + x, origin.y + y, origin.z + z)] =
+							ids[kind] or butterfly_ids[colour]
 					end
 				end
 			end
