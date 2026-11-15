@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 11 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 12 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -252,7 +252,7 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 - **Material:** Wand und Kuppel aus Glas. Der Boden ist fast schwarz (Obsidian), mit einer kreisrunden Glasscheibe von 11 Blöcken Durchmesser in der Mitte. Durch sie sieht man den Himmel, nicht die Landschaft.
 - **Licht:** zwei Leuchtringe im Boden, einer lückenlos unter der Glaswand und einer um die Glasscheibe, dazu das leuchtende Portal in der Mitte. Nachts ist es dadurch nirgends dunkel.
 - **Tiere:** Unter der Kuppel schweben Glühwürmchen, weiter unten Schmetterlinge. Sie sind Schmuck an festen Plätzen und lassen sich nicht fangen.
-- **Musik:** In der Halle läuft eine eigene Hintergrundmusik. Sie ist noch nicht gebaut.
+- **Musik:** In der Halle läuft leise eine eigene Hintergrundmusik in Schleife. Sie beginnt beim Betreten und blendet beim Verlassen aus. Einen Schalter dafür gibt es nicht, wer keine Musik möchte, stellt sie am eigenen Client ab.
 - **Inhalt:** das feste Portal zur Wildnis in der Mitte auf der Glasscheibe, dazu Portale zu freiwilligen Aufgaben und die Anzeigetafel.
 - **Gang:** Er verlässt die Halle an einer Seite und führt zu den persönlichen Räumen.
 - **Schutz:** Niemand kann in der Lobby bauen oder abbauen, niemand nimmt Schaden. Alle Blöcke sind unzerstörbar.
