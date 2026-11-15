@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 8 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 9 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -101,6 +101,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Steuern | Alle Eingeloggten der aktuellen Welt |
 | Verwalten | Nur eigene Gruppen und deren Belohnungen |
 | Unterrichtsmodi | Unterricht, Freiarbeit, Freizeit |
+| Tageszeit | Am Pult: Zeit setzen, dazu Zeit läuft, dauernd Tag oder dauernd Nacht |
 | Aufmerksamkeitsmodus | Blind, taub, bewegungsunfähig |
 | Web-Anwendung | Nur Verwaltung, kein Live-Eingriff |
 | Web-Anmeldung | E-Mail-Link ohne Passwort, Registrierung nur im Pult |
@@ -485,6 +486,7 @@ Erste Version:
 - In einen Lernraum schicken (Modul und Station), zurückholen.
 - Aufmerksamkeitsmodus an/aus, mit eigenem Text.
 - Unterrichtsmodus umschalten.
+- Tageszeit der Welt steuern (Abschnitt 10.3).
 - Unsichtbar zu einem Schüler springen.
 - Übersicht: wer ist wo, wer bearbeitet was.
 - Reiter „Web-Zugang“ (Abschnitt 11.4).
@@ -503,7 +505,17 @@ Grundsätze:
 - **Freiarbeit:** Lobby und freiwillige Aufgaben.
 - **Freizeit:** alles offen.
 
-### 10.3 Aufmerksamkeitsmodus
+### 10.3 Tageszeit
+
+Die Lehrkraft steuert die Tageszeit am Pult. Sie gilt für die ganze Welt, also für die ganze Gruppe.
+
+- **Zeit setzen:** Morgen, Mittag, Abend, Nacht.
+- **Schalter mit drei Stellungen:** Zeit läuft, dauernd Tag, dauernd Nacht. Bei „dauernd“ steht die Zeit still.
+- Die Einstellung bleibt über einen Neustart des Servers erhalten.
+- In den Lernräumen spielt die Tageszeit keine Rolle, dort ist es immer hell. Die Aktion betrifft Wildnis und Lobby.
+- Die Aktion hat ein eigenes Privileg im Bündel „Lehrkraft“. Luantis eingebautes `settime` wird nicht vergeben, weil es den Chatbefehl freischaltet und am Pult vorbeiführt.
+
+### 10.4 Aufmerksamkeitsmodus
 
 - **Bewegungsunfähig:** Laufen, Springen, Bauen und Abbauen gesperrt.
 - **Blind:** bildschirmfüllendes HUD-Bild mit Text der Lehrkraft. Offene Fenster werden geschlossen, das Inventar öffnet nicht.
@@ -514,13 +526,13 @@ Grundsätze:
 - Wer das Privileg zum Schalten hat, wird selbst nicht erfasst.
 - Physik-Änderungen laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben. Ortsgebundene Rechte wie das Flugrecht vergibt `lep_places` (Abschnitt 7.6).
 
-### 10.4 Rechte
+### 10.5 Rechte
 
 Privilegien beschreiben Handlungen, keine Rollen. Bündel sind nur Vorlagen im Pult.
 
 | Bündel | Darf | Wer |
 |---|---|---|
-| Lehrkraft | Schüler lenken, Aufmerksamkeit schalten, zuschauen, Web-Zugang einrichten | alle Lehrkräfte |
+| Lehrkraft | Schüler lenken, Aufmerksamkeit schalten, Tageszeit steuern, zuschauen, Web-Zugang einrichten | alle Lehrkräfte |
 | Schulverwaltung | zusätzlich: Lehrkräfte ernennen, Gruppen anlegen, Lehrkräfte Gruppen zuordnen, Jahresabschluss | ein bis zwei Personen |
 | Server-Admin | Technik: Mods, Einstellungen, Welten anlegen | Betreiber |
 
