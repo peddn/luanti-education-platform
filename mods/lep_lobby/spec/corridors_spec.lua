@@ -253,9 +253,9 @@ describe("lep_lobby corridors rooms", function()
 	end)
 
 	it("lets owner and staff open and close the door", function()
-		for _, is_open in ipairs({ true, false }) do
-			assert.is_true(corridors.may_use_door(true, false, false, is_open))
-			assert.is_true(corridors.may_use_door(false, true, false, is_open))
+		for _, door_open in ipairs({ true, false }) do
+			assert.is_true(corridors.may_use_door(true, false, false, door_open))
+			assert.is_true(corridors.may_use_door(false, true, false, door_open))
 		end
 	end)
 
