@@ -1,10 +1,11 @@
 -- Nodes that make up a room. None of them can be dug or blown up.
 
 -- The textures come from Minetest Game. They are referenced, not copied.
-local function shell_node(name, description, texture)
+local function shell_node(name, description, texture, sounds)
 	core.register_node(name, {
 		description = description,
 		tiles = { texture },
+		sounds = sounds,
 		groups = { not_in_creative_inventory = 1 },
 		diggable = false,
 		is_ground_content = false,
@@ -13,9 +14,12 @@ local function shell_node(name, description, texture)
 	})
 end
 
-shell_node("lep_rooms:floor", "LEP room floor", "default_junglewood.png")
-shell_node("lep_rooms:wall", "LEP room wall", "default_silver_sandstone_block.png")
-shell_node("lep_rooms:ceiling", "LEP room ceiling", "default_silver_sandstone_brick.png")
+shell_node("lep_rooms:floor", "LEP room floor", "default_junglewood.png",
+	default.node_sound_wood_defaults())
+shell_node("lep_rooms:wall", "LEP room wall", "default_silver_sandstone_block.png",
+	default.node_sound_stone_defaults())
+shell_node("lep_rooms:ceiling", "LEP room ceiling", "default_silver_sandstone_brick.png",
+	default.node_sound_stone_defaults())
 
 -- Invisible, glowing air. Rooms are filled with it, so every spot is evenly
 -- lit, including the underside of things built in the middle of the room.

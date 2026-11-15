@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 9 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 11 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -246,7 +246,18 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 
 ### 7.5 Lobby
 
-**Gemeinsamer Bereich:** festes Portal zur Wildnis, Portale zu freiwilligen Aufgaben, Anzeigetafel.
+**Halle.** Der gemeinsame Bereich ist eine Halle hoch über der Welt, unterhalb der Lernräume.
+
+- **Form:** ein Zylinder mit einer Kuppel darüber. Innenradius 15 Blöcke, 4 Blöcke senkrechte Wand, in der Mitte 19 Blöcke hoch.
+- **Material:** Wand und Kuppel aus Glas. Der Boden ist fast schwarz (Obsidian), mit einer kreisrunden Glasscheibe von 11 Blöcken Durchmesser in der Mitte. Durch sie sieht man den Himmel, nicht die Landschaft.
+- **Licht:** zwei Leuchtringe im Boden, einer lückenlos unter der Glaswand und einer um die Glasscheibe, dazu das leuchtende Portal in der Mitte. Nachts ist es dadurch nirgends dunkel.
+- **Tiere:** Unter der Kuppel schweben Glühwürmchen, weiter unten Schmetterlinge. Sie sind Schmuck an festen Plätzen und lassen sich nicht fangen.
+- **Musik:** In der Halle läuft eine eigene Hintergrundmusik. Sie ist noch nicht gebaut.
+- **Inhalt:** das feste Portal zur Wildnis in der Mitte auf der Glasscheibe, dazu Portale zu freiwilligen Aufgaben und die Anzeigetafel.
+- **Gang:** Er verlässt die Halle an einer Seite und führt zu den persönlichen Räumen.
+- **Schutz:** Niemand kann in der Lobby bauen oder abbauen, niemand nimmt Schaden. Alle Blöcke sind unzerstörbar.
+
+Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später ersetzen. Der Rest des Mods fragt die Halle nur nach vier Dingen: dem Startpunkt für ankommende Spieler, dem Platz für das Portal, Anfang und Richtung des Gangs und dem geschützten Bereich. Das Einbinden eines Bauplans wird erst gebaut, wenn es eine solche Halle gibt.
 
 **Persönliche Räume** an einem Gang, einer pro Schüler:
 
@@ -268,13 +279,16 @@ Jeder Ortswechsel läuft über eine einzige Funktion in einem eigenen Mod, egal 
 - Position merken,
 - Inventar tauschen,
 - Rechte setzen,
-- Aufmerksamkeitsmodus beibehalten.
+- Aufmerksamkeitsmodus beibehalten,
+- den vorigen Ort merken.
 
 Bei jeder Anmeldung werden Rechte und Zustand passend zum aktuellen Ort neu gesetzt. So bleibt nach einem Absturz kein Flugrecht in der Wildnis hängen.
 
 **Ortstypen.** Andere Mods melden Ortstypen bei `lep_places` an, mit dem dort geltenden Inventar und den dort geltenden Rechten. Die Wildnis ist von Anfang an angemeldet.
 
 **Inventar.** Gespeichert wird nur das Survival-Inventar: Hauptinventar und Handwerksfeld. Beim Betreten eines Lernraums wird es gesichert und geleert, der Lernraum gibt dem Spieler seine Gegenstände neu. Beim Verlassen werden die Lern-Gegenstände verworfen und das Survival-Inventar zurückgegeben. Lebenspunkte bleiben unverändert.
+
+**Zurück.** `lep_places` merkt sich pro Spieler, ob er zuletzt in der Lobby oder in der Wildnis war. Wer einen Lernraum verlässt, kommt dorthin zurück. Lernräume selbst zählen dabei nicht.
 
 **Rechte.** `lep_places` vergibt die Rechte eines Ortes selbst und merkt sich pro Spieler, welche es vergeben hat. Entzogen werden nur diese. Wer ein Recht ohnehin hat, etwa eine Lehrkraft das Flugrecht, behält es.
 

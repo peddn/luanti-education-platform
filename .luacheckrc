@@ -13,10 +13,14 @@ read_globals = {
 	"vector",
 	"VoxelArea",
 	"ItemStack",
+	-- Global of the beds mod from Minetest Game.
+	"beds",
+	-- Sound helpers of the default mod from Minetest Game.
+	"default",
 }
 
 -- Globals defined by LEP mods.
-globals = { "lep_core", "lep_places", "lep_rooms" }
+globals = { "lep_core", "lep_places", "lep_rooms", "lep_lobby" }
 
 exclude_files = { ".dev/", "third_party/", "**/spec/fixtures/" }
 

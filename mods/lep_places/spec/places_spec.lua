@@ -309,6 +309,71 @@ describe("lep_places plan_move", function()
 	end)
 end)
 
+describe("lep_places plan_back", function()
+	local registry
+
+	before_each(function()
+		registry = new_registry()
+	end)
+
+	local function move(state, target, pos)
+		local _, new_state = places.plan_move(registry, state, {
+			target = target, current_pos = pos or HERE, current_privs = {},
+		})
+		return new_state
+	end
+
+	local function back(state)
+		return places.plan_back(registry, state, {
+			fallback = WILD, current_pos = { x = 0, y = 200, z = 0 }, current_privs = {},
+		})
+	end
+
+	it("returns from a room to the wilderness position", function()
+		local in_room = move(places.initial_state(WILD), ROOM)
+		local steps, state = back(in_room)
+		assert.are.equal(WILD, state.place)
+		assert.are.same(HERE, find(steps, "teleport").pos)
+	end)
+
+	it("returns from a room to the lobby when the player came from there", function()
+		local in_lobby = move(places.initial_state(WILD), LOBBY)
+		local in_room = move(in_lobby, ROOM)
+		local steps, state = back(in_room)
+		assert.are.equal(LOBBY, state.place)
+		assert.are.same({ x = 0, y = 100, z = 0 }, find(steps, "teleport").pos)
+	end)
+
+	it("skips rooms when remembering where the player came from", function()
+		local in_lobby = move(places.initial_state(WILD), LOBBY)
+		local in_room2 = move(move(in_lobby, ROOM), ROOM2)
+		local _, state = back(in_room2)
+		assert.are.equal(LOBBY, state.place)
+	end)
+
+	it("falls back without a previous place", function()
+		local state = places.initial_state(ROOM)
+		state.survival_stored = true
+		state.positions[WILD] = { x = 1, y = 2, z = 3 }
+		local _, new_state = back(state)
+		assert.are.equal(WILD, new_state.place)
+	end)
+
+	it("falls back when the previous place no longer exists", function()
+		local state = places.initial_state(ROOM)
+		state.previous = "test:removed"
+		state.positions[WILD] = { x = 1, y = 2, z = 3 }
+		local _, new_state = back(state)
+		assert.are.equal(WILD, new_state.place)
+	end)
+
+	it("keeps the previous place through storage", function()
+		local in_room = move(move(places.initial_state(WILD), LOBBY), ROOM)
+		local restored = places.normalize_state(in_room, WILD)
+		assert.are.equal(LOBBY, restored.previous)
+	end)
+end)
+
 describe("lep_places plan_join", function()
 	local registry
 
