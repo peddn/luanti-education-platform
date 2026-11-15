@@ -268,10 +268,14 @@ function corridors.is_in_room(slot, x, y, z)
 end
 
 --- Decides whether a player may open or close the door of a room.
--- The owner and staff always may. Everyone else only from the inside, so
--- a closed door keeps visitors out but never locks anyone in.
-function corridors.may_use_door(is_owner, is_staff, is_inside)
-	return is_owner == true or is_staff == true or is_inside == true
+-- The owner and staff always may. Everyone else may only open a closed
+-- door from the inside: a closed door keeps visitors out but never locks
+-- anyone in, and a visitor can never close it.
+function corridors.may_use_door(is_owner, is_staff, is_inside, is_open)
+	if is_owner == true or is_staff == true then
+		return true
+	end
+	return is_inside == true and is_open ~= true
 end
 
 --- Creates the book that records which player owns which slot.

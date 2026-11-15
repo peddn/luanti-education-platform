@@ -252,11 +252,18 @@ describe("lep_lobby corridors rooms", function()
 		assert.is_false(corridors.is_in_room(3, room.door.x, room.door.y, room.door.z))
 	end)
 
-	it("lets owner and staff use the door, others only from inside", function()
-		assert.is_true(corridors.may_use_door(true, false, false))
-		assert.is_true(corridors.may_use_door(false, true, false))
-		assert.is_true(corridors.may_use_door(false, false, true))
-		assert.is_false(corridors.may_use_door(false, false, false))
+	it("lets owner and staff open and close the door", function()
+		for _, is_open in ipairs({ true, false }) do
+			assert.is_true(corridors.may_use_door(true, false, false, is_open))
+			assert.is_true(corridors.may_use_door(false, true, false, is_open))
+		end
+	end)
+
+	it("lets visitors only open a closed door from inside", function()
+		assert.is_true(corridors.may_use_door(false, false, true, false))
+		assert.is_false(corridors.may_use_door(false, false, true, true))
+		assert.is_false(corridors.may_use_door(false, false, false, false))
+		assert.is_false(corridors.may_use_door(false, false, false, true))
 	end)
 
 	it("has no sign for rooms that do not exist", function()

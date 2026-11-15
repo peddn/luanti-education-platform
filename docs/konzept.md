@@ -263,7 +263,7 @@ Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später er
 
 - Die Räume liegen auf beiden Seiten jedes Gangs. Neue Räume werden reihum auf die vier Gänge verteilt, damit kein Gang viel länger wird als die anderen. Bei 30 Schülern ist kein Raum weiter als 30 Blöcke von der Halle entfernt.
 - Ein Raum ist innen 5 × 4 × 5 Blöcke groß. Wände und Decke sind aus Silbersandstein, von außen sieht man nicht hinein. Licht geben je eine Lampe in Boden und Decke.
-- **Tür:** Jeder Raum hat eine Tür, die dem Besitzer gehorcht. Er öffnet und schließt sie mit einem Klick. Offen heißt Besuch willkommen, geschlossen heißt gesperrt. Andere können eine geschlossene Tür von außen nicht öffnen und eine offene nicht schließen. Wer im Raum steht, kann die Tür immer von innen öffnen, damit niemand eingesperrt wird. Lehrkräfte kommen immer hinein. Die Tür ist zu Beginn offen und lässt sich nicht abbauen.
+- **Tür:** Jeder Raum hat eine Tür, die dem Besitzer gehorcht. Er öffnet und schließt sie mit einem Klick. Offen heißt Besuch willkommen, geschlossen heißt gesperrt. Andere können eine geschlossene Tür von außen nicht öffnen und eine offene nicht schließen. Wer im Raum steht, kann eine geschlossene Tür immer von innen öffnen, damit niemand eingesperrt wird. Schließen kann sie nur der Besitzer. Lehrkräfte kommen immer hinein. Die Tür ist zu Beginn offen und lässt sich nicht abbauen.
 - Gänge und Räume gehören zum Ort Lobby. Schutz und Musik gelten dort wie in der Halle.
 
 - Persönliches Portal.

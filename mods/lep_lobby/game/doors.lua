@@ -35,11 +35,16 @@ local function on_rightclick(pos, node, clicker, itemstack)
 		and feet.y >= room.interior_min.y and feet.y <= room.interior_max.y
 		and feet.z >= room.interior_min.z and feet.z <= room.interior_max.z
 
-	if corridors.may_use_door(player_name == owner, is_staff(player_name), inside) then
+	-- Minetest Game stores an odd state number for an open door.
+	local is_open = core.get_meta(pos):get_int("state") % 2 == 1
+
+	local allowed = corridors.may_use_door(
+		player_name == owner, is_staff(player_name), inside, is_open)
+	if allowed then
 		-- Without a player the door skips its own owner check.
 		doors.door_toggle(pos, node, nil)
 	else
-		core.chat_send_player(player_name, S("This room is locked."))
+		core.chat_send_player(player_name, S("This door is not yours."))
 	end
 	return itemstack
 end
