@@ -51,7 +51,7 @@ end
 
 local HELP = table.concat({
 	"/lep_room enter [<type>]             enter your room (default: " .. TEST_TYPE .. ")",
-	"/lep_room leave                      back to the wilderness",
+	"/lep_room leave                      back to where you came from",
 	"/lep_room info                       show the room you are in",
 	"/lep_room clear                      empty the room you are in",
 	"/lep_room rebuild                    rebuild the room you are in",

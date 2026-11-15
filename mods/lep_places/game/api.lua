@@ -120,6 +120,35 @@ function lep_places.move(player_name, place_id, pos)
 	return true
 end
 
+--- Sends an online player back to the place they came from, for example
+-- out of a learning room back to the lobby. Without a known previous
+-- place the player goes to the wilderness.
+-- @return true  or  false, error message
+function lep_places.move_back(player_name)
+	local player = core.get_player_by_name(player_name)
+	if not player then
+		return false, "player '" .. tostring(player_name) .. "' is not online"
+	end
+
+	local state = read_state(player)
+	local steps, new_state = places.plan_back(registry, state, {
+		fallback = WILDERNESS,
+		current_pos = player:get_pos(),
+		current_privs = core.get_player_privs(player_name),
+	})
+	if not steps then
+		return false, new_state
+	end
+
+	execute(player, steps)
+	storage.write_state(player, new_state)
+
+	core.log("action", "[lep_places] " .. player_name .. " moved back from "
+		.. state.place .. " to " .. new_state.place)
+	dispatcher:emit("place_changed", player_name, state.place, new_state.place)
+	return true
+end
+
 --- Registers a function(player_name, old_place, new_place) that is called
 -- after a player has been moved.
 lep_places.register_on_place_changed = dispatcher:registrar("place_changed")

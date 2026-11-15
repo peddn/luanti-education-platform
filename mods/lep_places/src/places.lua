@@ -114,6 +114,7 @@ function places.initial_state(start_place)
 		"initial_state: start_place must be a non-empty string")
 	return {
 		place = start_place,
+		previous = nil,
 		positions = {},
 		granted = {},
 		survival_stored = false,
@@ -137,6 +138,9 @@ function places.normalize_state(state, start_place)
 		result.granted = copy_set(state.granted)
 	end
 	result.survival_stored = state.survival_stored == true
+	if type(state.previous) == "string" and state.previous ~= "" then
+		result.previous = state.previous
+	end
 	return result
 end
 
@@ -212,6 +216,15 @@ function places.plan_move(registry, state, request)
 		positions[source.id] = copy_pos(request.current_pos)
 	end
 
+	-- Remember where the player came from, so they can be sent back.
+	-- Learning rooms do not count: leaving a chain of rooms leads back to
+	-- the lobby or the wilderness, not to the room before.
+	local previous = state.previous
+	if source and source.id ~= target.id
+			and source.inventory == places.INVENTORY_SURVIVAL then
+		previous = source.id
+	end
+
 	-- 2. Find the target position.
 	local target_pos = request.pos
 		or (target.id ~= state.place and positions[target.id])
@@ -246,10 +259,34 @@ function places.plan_move(registry, state, request)
 
 	return steps, {
 		place = target.id,
+		previous = previous,
 		positions = positions,
 		granted = granted,
 		survival_stored = survival_stored,
 	}
+end
+
+--- Plans sending a player back to the place they came from.
+-- Falls back to request.fallback if no previous place is known or it can
+-- no longer be entered.
+-- @param request Table with fallback, current_pos, current_privs.
+-- @return steps, new_state  or  nil, error message
+function places.plan_back(registry, state, request)
+	assert(type(state) == "table", "plan_back: state must be a table")
+	assert(type(request) == "table", "plan_back: request must be a table")
+
+	local target_id = request.fallback
+	local previous = registry:get(state.previous)
+	if previous and previous.id ~= state.place
+			and ((state.positions or {})[previous.id] or previous.default_pos) then
+		target_id = previous.id
+	end
+
+	return places.plan_move(registry, state, {
+		target = target_id,
+		current_pos = request.current_pos,
+		current_privs = request.current_privs,
+	})
 end
 
 --- Plans the repair of a player's state when they join.
@@ -279,6 +316,7 @@ function places.plan_join(registry, state, fallback_place, current_privs)
 
 	return steps, {
 		place = place.id,
+		previous = state.previous,
 		positions = copy_positions(state.positions),
 		granted = granted,
 		survival_stored = survival_stored,

@@ -156,10 +156,10 @@ function lep_rooms.enter(player_name, type_id, callback)
 	end)
 end
 
---- Brings an online player out of a room, back to the wilderness.
+--- Brings an online player out of a room, back to where they came from.
 -- @return true  or  false, error message
 function lep_rooms.leave(player_name)
-	return lep_places.move(player_name, lep_places.WILDERNESS)
+	return lep_places.move_back(player_name)
 end
 
 --- Empties the interior of a room and keeps the shell. callback(ok, err)
