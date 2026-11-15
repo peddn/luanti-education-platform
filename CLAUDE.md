@@ -35,6 +35,13 @@ Zweignamen: `<bereich>/<kurze-beschreibung>`, zum Beispiel `setup/project-skelet
 4. Dem Nutzer eine kurze Anleitung geben: wie er seine Testumgebung auf den Stand bringt und wie er die Änderung im Spiel prüft, Schritt für Schritt mit dem erwarteten Ergebnis.
 5. Rückmeldung einarbeiten.
 
+Für die Anleitung in Schritt 4 gilt:
+
+- Zweige mit `git switch` wechseln, nicht mit `git checkout`.
+- Immer den Start als Server angeben (`scripts/dev-run.sh --server`). Der Nutzer verbindet sich mit einem Luanti-Client auf `127.0.0.1`, Port `30000`.
+- Der Nutzer testet unter Arch Linux mit dem dortigen Luanti-Paket. Es kann eine Version hinter der Zielversion liegen.
+- Auf dem Server gelten Privilegien wie im echten Betrieb. Dazusagen, welche Schritte der Admin ausführt und welche ein Spieler ohne Admin-Rechte.
+
 ### Commits
 
 - Englisch, kurz, im Imperativ: `Add reward chest inventory`.
