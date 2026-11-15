@@ -8,6 +8,7 @@ lep_lobby = {}
 load("game/nodes")
 load("game/api")
 load("game/rules")
+load("game/music")
 
 if core.settings:get_bool("lep_debug", false) then
 	load("game/debug")
