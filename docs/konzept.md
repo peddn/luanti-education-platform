@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 7 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 9 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -101,6 +101,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Steuern | Alle Eingeloggten der aktuellen Welt |
 | Verwalten | Nur eigene Gruppen und deren Belohnungen |
 | Unterrichtsmodi | Unterricht, Freiarbeit, Freizeit |
+| Tageszeit | Am Pult: Zeit setzen, dazu Zeit läuft, dauernd Tag oder dauernd Nacht |
 | Aufmerksamkeitsmodus | Blind, taub, bewegungsunfähig |
 | Web-Anwendung | Nur Verwaltung, kein Live-Eingriff |
 | Web-Anmeldung | E-Mail-Link ohne Passwort, Registrierung nur im Pult |
@@ -211,13 +212,28 @@ Das Backend bewahrt dauerhaft nur den Stand auf, nicht den Verlauf dahin.
 
 Die Lernräume und die Lobby liegen weit oben im Himmel der jeweiligen Welt, wo der Kartengenerator nur Luft erzeugt.
 
-### 7.2 Erscheinen
+### 7.2 Lernräume
+
+Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, die kommen von den Lernmodulen.
+
+- **Raumtypen.** Ein Lernmodul meldet seinen Raumtyp an: Innenmaße, geltende Rechte und eine Funktion, die den Raum nach dem Bau einrichtet.
+- **Ein fester Raum pro Schüler und Raumtyp.** Die Zuteilung wird gespeichert. Angefangene Arbeit bleibt stehen, wenn jemand den Raum verlässt.
+- **Lage.** Jeder Raumtyp hat eine eigene Ebene ab Höhe 10 000. Die Räume stehen in der Mitte von Feldern mit 512 Blöcken Kantenlänge, die Ebenen liegen 512 Blöcke übereinander. So liegen Schüler in Nachbarräumen außerhalb der Reichweite, in der der Server Spieler, Namen, Geräusche und Kartenteile überträgt. Dieses Raster ist fest und darf nie geändert werden, weil es die Lage aller vorhandenen Räume bestimmt.
+- **Ebenen.** Jede Ebene gehört genau einem Raumtyp. Die Nummer wird einmal vergeben und nie geändert. Ebene 38 gehört dem Test-Raumtyp.
+- **Hülle.** Boden, Wände und Decke sind unzerstörbar. Die Blöcke sind eigene Blöcke von `lep_rooms`, nutzen aber Texturen aus Minetest Game: dunkles Holz für den Boden, Silbersandstein für Wände und Decke. Die Fugen ergeben ein Raster von einem Block.
+- **Licht.** Der Innenraum ist mit unsichtbarer, leuchtender Luft gefüllt (`lep_rooms:air`). Damit ist jede Stelle gleich hell, auch die Unterseite eines Körpers in der Raummitte. Lernmodule müssen diesen Block wie Luft behandeln.
+- **Schutz.** Im Innenraum darf nur der Besitzer bauen und abbauen. Hüllen und der Raum zwischen den Räumen sind für alle gesperrt.
+- **Bau.** Ein Raum entsteht spätestens beim ersten Betreten. Für eine ganze Klasse lassen sich Räume vorab bauen. Die Brücke nutzt das später beim Anlegen von Konten.
+- **Neubau.** Ein Raum lässt sich von Grund auf neu bauen: neue Hülle, leerer Innenraum, neu eingerichtet. Was darin gebaut war, geht verloren. Das Lernmodul erfährt es über ein Ereignis. Jeder Raumtyp hat eine Versionsnummer. Erhöht ein Modul sie, werden alte Räume beim nächsten Betreten von selbst neu gebaut.
+- **Verlassen.** Führt vorerst in die Wildnis. Mit der Lobby führt es dorthin zurück, woher der Schüler kam.
+
+### 7.3 Erscheinen
 
 - **Erste Anmeldung:** Lobby.
 - **Weitere Anmeldungen:** Ort des Ausloggens, auch im Lernraum. Wer eingefroren ausloggt, bleibt eingefroren.
 - **Tod:** Lobby, außer man hat ein Bett. Der Besitz bleibt wie in Minetest Game am Todesort.
 
-### 7.3 Portale
+### 7.4 Portale
 
 - **Festes Paar:** ein Portal im gemeinsamen Bereich der Lobby, eines in der Wildnis.
 - **Persönliches Paar:** das Portal im eigenen Lobby-Raum und ein selbst hergestelltes Portal auf dem eigenen Grundstück.
@@ -228,7 +244,7 @@ Die Lernräume und die Lobby liegen weit oben im Himmel der jeweiligen Welt, wo 
 - Betritt ein fremder Schüler ein gebautes Portal, landet er in der Lobby. Zurück kommt er nur über sein eigenes oder das feste Portal.
 - Portale werden selbst gebaut. Vorhandene Portal-Mods bilden frei verknüpfbare Reisenetze und passen nicht zu dieser engen Regel.
 
-### 7.4 Lobby
+### 7.5 Lobby
 
 **Gemeinsamer Bereich:** festes Portal zur Wildnis, Portale zu freiwilligen Aufgaben, Anzeigetafel.
 
@@ -245,7 +261,7 @@ Die Lernräume und die Lobby liegen weit oben im Himmel der jeweiligen Welt, wo 
 
 Ein eigenes sicheres Lager gibt es in der Lobby nicht. Abschließbare Kisten bauen sich die Schüler selbst auf ihrem Grundstück.
 
-### 7.5 Ortsverwaltung
+### 7.6 Ortsverwaltung
 
 Jeder Ortswechsel läuft über eine einzige Funktion in einem eigenen Mod, egal ob Portal, Lehrkraft, Tod oder Anmeldung. Sie kümmert sich um:
 
@@ -470,6 +486,7 @@ Erste Version:
 - In einen Lernraum schicken (Modul und Station), zurückholen.
 - Aufmerksamkeitsmodus an/aus, mit eigenem Text.
 - Unterrichtsmodus umschalten.
+- Tageszeit der Welt steuern (Abschnitt 10.3).
 - Unsichtbar zu einem Schüler springen.
 - Übersicht: wer ist wo, wer bearbeitet was.
 - Reiter „Web-Zugang“ (Abschnitt 11.4).
@@ -488,7 +505,17 @@ Grundsätze:
 - **Freiarbeit:** Lobby und freiwillige Aufgaben.
 - **Freizeit:** alles offen.
 
-### 10.3 Aufmerksamkeitsmodus
+### 10.3 Tageszeit
+
+Die Lehrkraft steuert die Tageszeit am Pult. Sie gilt für die ganze Welt, also für die ganze Gruppe.
+
+- **Zeit setzen:** Morgen, Mittag, Abend, Nacht.
+- **Schalter mit drei Stellungen:** Zeit läuft, dauernd Tag, dauernd Nacht. Bei „dauernd“ steht die Zeit still.
+- Die Einstellung bleibt über einen Neustart des Servers erhalten.
+- In den Lernräumen spielt die Tageszeit keine Rolle, dort ist es immer hell. Die Aktion betrifft Wildnis und Lobby.
+- Die Aktion hat ein eigenes Privileg im Bündel „Lehrkraft“. Luantis eingebautes `settime` wird nicht vergeben, weil es den Chatbefehl freischaltet und am Pult vorbeiführt.
+
+### 10.4 Aufmerksamkeitsmodus
 
 - **Bewegungsunfähig:** Laufen, Springen, Bauen und Abbauen gesperrt.
 - **Blind:** bildschirmfüllendes HUD-Bild mit Text der Lehrkraft. Offene Fenster werden geschlossen, das Inventar öffnet nicht.
@@ -497,15 +524,15 @@ Grundsätze:
 - Der Zustand übersteht Neuanmelden.
 - Einzelne Schüler können ausgenommen werden.
 - Wer das Privileg zum Schalten hat, wird selbst nicht erfasst.
-- Physik-Änderungen laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben. Ortsgebundene Rechte wie das Flugrecht vergibt `lep_places` (Abschnitt 7.5).
+- Physik-Änderungen laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben. Ortsgebundene Rechte wie das Flugrecht vergibt `lep_places` (Abschnitt 7.6).
 
-### 10.4 Rechte
+### 10.5 Rechte
 
 Privilegien beschreiben Handlungen, keine Rollen. Bündel sind nur Vorlagen im Pult.
 
 | Bündel | Darf | Wer |
 |---|---|---|
-| Lehrkraft | Schüler lenken, Aufmerksamkeit schalten, zuschauen, Web-Zugang einrichten | alle Lehrkräfte |
+| Lehrkraft | Schüler lenken, Aufmerksamkeit schalten, Tageszeit steuern, zuschauen, Web-Zugang einrichten | alle Lehrkräfte |
 | Schulverwaltung | zusätzlich: Lehrkräfte ernennen, Gruppen anlegen, Lehrkräfte Gruppen zuordnen, Jahresabschluss | ein bis zwei Personen |
 | Server-Admin | Technik: Mods, Einstellungen, Welten anlegen | Betreiber |
 
@@ -690,7 +717,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_places` | Ortsverwaltung: Ortswechsel, Inventare, Rechte |
 | `lep_lobby` | Gemeinsamer Bereich, persönliche Räume, Schutzzone |
 | `lep_portals` | Festes und persönliches Portalpaar |
-| `lep_rooms` | Lernräume erzeugen und zuteilen |
+| `lep_rooms` | Lernräume bauen, zuteilen, schützen und neu bauen |
 | `lep_progress` | Ergebnisse annehmen, Niveau und Pensum führen, Ereignisse verteilen |
 | `lep_rewards` | Regeln, Tageslimit, Belohnungskiste, Protokoll |
 | `lep_trophies` | Meilensteine, Ausstellung im Raum |
@@ -735,9 +762,11 @@ Bei der Umsetzung des jeweiligen Teils:
 4. **GIFT-Export:** Mit einem ByCS-Zugang ausprobieren, ob Lehrkräfte Fragen exportieren können.
 5. **TZ:** Die Stationen auf die drei Niveaus verteilen.
 
+6. **Raumlicht:** Luanti 5.18 kann die Helligkeit pro Spieler einstellen (`set_lighting`, Feld `static.light_curve`). Das könnte die leuchtende Luft in den Lernräumen ersetzen. Zwei kurze Versuche blieben ohne klares Ergebnis. Erneut prüfen, sobald auch die Testumgebung des Nutzers 5.18 hat.
+
 Vor einem Einsatz an einer Schule:
 
-6. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
+7. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
 
 ## 17. Quellen
 
