@@ -7,6 +7,7 @@ Bisher vorhanden:
 - `lep_core`: Lader für die Dateien eines Mods und Ereignisverteiler.
 - `lep_places`: Ortsverwaltung. Versetzt Spieler zwischen Orten und hält Position, Inventar und Rechte stimmig.
 - `lep_rooms`: Lernräume. Baut persönliche Räume hoch über der Welt, teilt sie zu und schützt sie.
+- `lep_survival`: Regeln der Survival-Welt. Entfernt Rezepte aus Minetest Game, die ein fremder Mod ersetzt.
 - `lep_lobby`: Lobby. Baut die Glashalle, in der neue Spieler ankommen, und regelt Erscheinen, Tod und Schutz.
 
 ## Ebenen der Raumtypen
