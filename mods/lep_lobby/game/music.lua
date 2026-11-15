@@ -5,7 +5,7 @@ local music = load("src/music")
 
 local SOUND = "lep_lobby_music"
 -- Quiet enough to leave footsteps and other sounds audible.
-local GAIN = 0.35
+local GAIN = 0.3
 local FADE_SECONDS = 2
 
 -- Sound handles by player name.
