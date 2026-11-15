@@ -20,6 +20,10 @@ local ready = mod_storage:get_string(BUILT_KEY) == VERSION
 local book = corridors.new_book(core.deserialize(mod_storage:get_string(BOOK_KEY)))
 local waiting = {}
 
+local dispatcher = lep_core.events.new(function(event_name, err)
+	core.log("error", "[lep_lobby] callback for " .. event_name .. " failed: " .. tostring(err))
+end)
+
 lep_lobby.PLACE = PLACE
 
 lep_places.register_place(PLACE, { default_pos = anchors.spawn })
@@ -32,6 +36,17 @@ local function get_owner(slot)
 	return book:owner(slot)
 end
 
+-- Tells other mods about every room of one corridor, or of all corridors.
+-- Building a corridor rewrites all its rooms, so whatever other mods put
+-- into them has to be set again.
+local function announce_rooms(direction)
+	for slot = 0, book:count() - 1 do
+		if not direction or corridors.slot_position(slot) == direction then
+			dispatcher:emit("room_built", lep_lobby.get_room(book:owner(slot)))
+		end
+	end
+end
+
 local function build(callback)
 	provider.build(ORIGIN, function()
 		-- The hall closes its wall again, so the corridors come after it.
@@ -40,6 +55,8 @@ local function build(callback)
 			ready = true
 			core.log("action", "[lep_lobby] built the hall at "
 				.. core.pos_to_string(ORIGIN) .. " with " .. book:count() .. " rooms")
+			dispatcher:emit("hall_built", anchors)
+			announce_rooms(nil)
 			local callbacks = waiting
 			waiting = {}
 			for _, waiting_callback in ipairs(callbacks) do
@@ -52,14 +69,25 @@ local function build(callback)
 	end)
 end
 
--- Calls callback() as soon as the hall exists.
-local function when_ready(callback)
+--- Calls callback() as soon as hall, corridors and rooms exist.
+function lep_lobby.when_ready(callback)
 	if ready then
 		callback()
 	else
 		waiting[#waiting + 1] = callback
 	end
 end
+
+local when_ready = lep_lobby.when_ready
+
+--- Registers a function(anchors) that is called whenever the hall has
+-- been built or rebuilt. Anchors as in lep_lobby.get_anchors.
+lep_lobby.register_on_hall_built = dispatcher:registrar("hall_built")
+
+--- Registers a function(room) that is called whenever a personal room has
+-- been built or rebuilt. Room as in lep_lobby.get_room. Everything inside
+-- the room is gone at that moment and has to be set again.
+lep_lobby.register_on_room_built = dispatcher:registrar("room_built")
 
 core.register_on_mods_loaded(function()
 	if not ready then
@@ -119,6 +147,15 @@ function lep_lobby.get_room(player_name)
 	}
 end
 
+--- Returns the personal rooms of all players, as in lep_lobby.get_room.
+function lep_lobby.get_rooms()
+	local rooms = {}
+	for slot = 0, book:count() - 1 do
+		rooms[#rooms + 1] = lep_lobby.get_room(book:owner(slot))
+	end
+	return rooms
+end
+
 --- Makes sure a player has a personal room and that it is built.
 -- callback(room) is optional, room as in lep_lobby.get_room.
 function lep_lobby.ensure_room(player_name, callback)
@@ -136,7 +173,10 @@ function lep_lobby.ensure_room(player_name, callback)
 	end
 	if ready then
 		local direction = corridors.slot_position(slot)
-		builder.build(ORIGIN, direction, get_count, get_owner, finish)
+		builder.build(ORIGIN, direction, get_count, get_owner, function()
+			announce_rooms(direction)
+			finish()
+		end)
 	else
 		-- The pending build of the whole lobby includes the new room.
 		waiting[#waiting + 1] = finish
