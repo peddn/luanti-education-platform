@@ -183,7 +183,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 
 - Die Skripte setzen `LUANTI_USER_PATH` und zusätzlich das ältere `MINETEST_USER_PATH`. Neuere Luanti-Versionen geben für das ältere eine Warnung aus, die sich ignorieren lässt.
 - Die Verknüpfung des Modpacks ist mit Luanti 5.17 und 5.18 geprüft.
-- Fremde Mods aus `third_party/mods.toml` kommen dazu, sobald der erste gebraucht wird.
+- Fremde Mods stehen in `third_party/mods.toml`, jeder mit festem Commit. `scripts/dev-setup.sh` lädt sie nach `.dev/third_party/` und schaltet sie in der Testwelt ein. Dafür braucht das Skript Netzzugang. Ändert sich ein Commit in der Liste, holt der nächste Lauf die neue Version.
 
 ## 6. Backend und Oberfläche
 

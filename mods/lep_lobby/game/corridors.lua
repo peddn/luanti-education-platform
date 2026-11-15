@@ -67,7 +67,7 @@ function builder.build(origin, direction, get_count, get_owner, callback)
 					name = "lep_lobby:room_sign",
 					param2 = core.dir_to_wallmounted(room.sign_wall),
 				})
-				core.get_meta(pos):set_string("infotext", get_owner(slot) or "")
+				signs_lib.update_sign(pos, { text = corridors.sign_text(get_owner(slot)) })
 				room_doors.ensure(vector.add(origin, room.door), room.look_dir,
 					get_owner(slot) or "")
 			end
