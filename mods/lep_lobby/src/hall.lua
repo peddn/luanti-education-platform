@@ -165,16 +165,12 @@ end
 -- @return Table with:
 --   spawn           where arriving players stand
 --   portal          where the fixed portal goes, on the glass pane
---   corridor_start  first node of the corridor outside the wall
---   corridor_dir    direction of the corridor, a unit vector
 --   protect_min, protect_max  the area nobody may change
 function hall.anchors(origin)
 	local min, max = hall.bounds()
 	return {
 		spawn = { x = origin.x, y = origin.y + 1, z = origin.z - (R - 3) },
 		portal = { x = origin.x, y = origin.y + 1, z = origin.z },
-		corridor_start = { x = origin.x + R + 2, y = origin.y + 1, z = origin.z },
-		corridor_dir = { x = 1, y = 0, z = 0 },
 		protect_min = { x = origin.x + min.x, y = origin.y + min.y, z = origin.z + min.z },
 		protect_max = { x = origin.x + max.x, y = origin.y + max.y, z = origin.z + max.z },
 	}

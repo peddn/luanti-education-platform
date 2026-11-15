@@ -38,6 +38,24 @@ core.register_node("lep_lobby:lamp", unbreakable({
 	sounds = default.node_sound_glass_defaults(),
 }))
 
+-- Name sign above the door of a personal room. The name is its infotext.
+core.register_node("lep_lobby:room_sign", unbreakable({
+	description = "LEP lobby room sign",
+	drawtype = "nodebox",
+	tiles = { "default_wood.png" },
+	paramtype = "light",
+	paramtype2 = "wallmounted",
+	sunlight_propagates = true,
+	walkable = false,
+	node_box = {
+		type = "wallmounted",
+		wall_top = { -0.4375, 0.4375, -0.3125, 0.4375, 0.5, 0.3125 },
+		wall_bottom = { -0.4375, -0.5, -0.3125, 0.4375, -0.4375, 0.3125 },
+		wall_side = { -0.5, -0.3125, -0.4375, -0.4375, 0.3125, 0.4375 },
+	},
+	sounds = default.node_sound_wood_defaults(),
+}))
+
 -- Decoration in the air. Players walk and fly through it, cannot point at
 -- it and cannot catch it. Unlike the animals of Minetest Game these never
 -- hide.

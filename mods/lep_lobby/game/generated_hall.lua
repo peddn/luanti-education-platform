@@ -4,14 +4,25 @@
 
 local load = lep_core.loader("lep_lobby")
 local hall = load("src/hall")
+local corridors = load("src/corridors")
 
 local provider = {}
 
 provider.version = hall.VERSION
 
---- Returns the important spots, see src/hall.lua.
+--- Returns the important spots, see src/hall.lua, and in addition
+-- `corridors`: a list of { start, dir } telling where the corridors to the
+-- personal rooms begin and in which direction they run.
 function provider.anchors(origin)
-	return hall.anchors(origin)
+	local anchors = hall.anchors(origin)
+	anchors.corridors = {}
+	for index, entry in ipairs(corridors.starts()) do
+		anchors.corridors[index] = {
+			start = vector.add(origin, entry.start),
+			dir = entry.dir,
+		}
+	end
+	return anchors
 end
 
 --- Builds the hall around origin. Calls callback() when done.
