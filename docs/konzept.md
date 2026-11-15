@@ -219,7 +219,7 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 - **Ein fester Raum pro Schüler und Raumtyp.** Die Zuteilung wird gespeichert. Angefangene Arbeit bleibt stehen, wenn jemand den Raum verlässt.
 - **Lage.** Jeder Raumtyp hat eine eigene Ebene ab Höhe 10 000. Die Räume stehen in der Mitte von Feldern mit 512 Blöcken Kantenlänge, die Ebenen liegen 512 Blöcke übereinander. So liegen Schüler in Nachbarräumen außerhalb der Reichweite, in der der Server Spieler, Namen, Geräusche und Kartenteile überträgt. Dieses Raster ist fest und darf nie geändert werden, weil es die Lage aller vorhandenen Räume bestimmt.
 - **Ebenen.** Jede Ebene gehört genau einem Raumtyp. Die Nummer wird einmal vergeben und nie geändert. Ebene 38 gehört dem Test-Raumtyp.
-- **Hülle.** Boden, Wände und Decke sind unzerstörbar.
+- **Hülle.** Boden, Wände und Decke sind unzerstörbar. Die Blöcke sind eigene Blöcke von `lep_rooms`, nutzen aber Texturen aus Minetest Game: dunkles Holz für den Boden, Silbersandstein für Wände und Decke. Die Fugen ergeben ein Raster von einem Block.
 - **Licht.** Der Innenraum ist mit unsichtbarer, leuchtender Luft gefüllt (`lep_rooms:air`). Damit ist jede Stelle gleich hell, auch die Unterseite eines Körpers in der Raummitte. Lernmodule müssen diesen Block wie Luft behandeln.
 - **Schutz.** Im Innenraum darf nur der Besitzer bauen und abbauen. Hüllen und der Raum zwischen den Räumen sind für alle gesperrt.
 - **Bau.** Ein Raum entsteht spätestens beim ersten Betreten. Für eine ganze Klasse lassen sich Räume vorab bauen. Die Brücke nutzt das später beim Anlegen von Konten.
@@ -750,9 +750,11 @@ Bei der Umsetzung des jeweiligen Teils:
 4. **GIFT-Export:** Mit einem ByCS-Zugang ausprobieren, ob Lehrkräfte Fragen exportieren können.
 5. **TZ:** Die Stationen auf die drei Niveaus verteilen.
 
+6. **Raumlicht:** Luanti 5.18 kann die Helligkeit pro Spieler einstellen (`set_lighting`, Feld `static.light_curve`). Das könnte die leuchtende Luft in den Lernräumen ersetzen. Zwei kurze Versuche blieben ohne klares Ergebnis. Erneut prüfen, sobald auch die Testumgebung des Nutzers 5.18 hat.
+
 Vor einem Einsatz an einer Schule:
 
-6. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
+7. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
 
 ## 17. Quellen
 
