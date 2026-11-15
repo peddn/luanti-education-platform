@@ -22,6 +22,12 @@ core.register_on_player_hpchange(function(player, hp_change)
 	return hp_change
 end, true)
 
+-- Every player gets a personal room. Until the backend creates accounts,
+-- the first join counts as creating the account.
+core.register_on_joinplayer(function(player)
+	lep_lobby.ensure_room(player:get_player_name())
+end)
+
 -- First join: arrive in the lobby. Later joins keep the logout position.
 core.register_on_joinplayer(function(player)
 	local meta = player:get_meta()

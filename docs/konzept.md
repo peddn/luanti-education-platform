@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 12 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 14 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -254,21 +254,26 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 - **Tiere:** Unter der Kuppel schweben Glühwürmchen, weiter unten Schmetterlinge. Sie sind Schmuck an festen Plätzen und lassen sich nicht fangen.
 - **Musik:** In der Halle läuft leise eine eigene Hintergrundmusik in Schleife. Sie beginnt beim Betreten und blendet beim Verlassen aus. Einen Schalter dafür gibt es nicht, wer keine Musik möchte, stellt sie am eigenen Client ab.
 - **Inhalt:** das feste Portal zur Wildnis in der Mitte auf der Glasscheibe, dazu Portale zu freiwilligen Aufgaben und die Anzeigetafel.
-- **Gang:** Er verlässt die Halle an einer Seite und führt zu den persönlichen Räumen.
+- **Gänge:** Vier Gänge verlassen die Halle, einer in jede Himmelsrichtung. Sie führen zu den persönlichen Räumen.
 - **Schutz:** Niemand kann in der Lobby bauen oder abbauen, niemand nimmt Schaden. Alle Blöcke sind unzerstörbar.
 
-Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später ersetzen. Der Rest des Mods fragt die Halle nur nach vier Dingen: dem Startpunkt für ankommende Spieler, dem Platz für das Portal, Anfang und Richtung des Gangs und dem geschützten Bereich. Das Einbinden eines Bauplans wird erst gebaut, wenn es eine solche Halle gibt.
+Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später ersetzen. Der Rest des Mods fragt die Halle nur nach vier Dingen: dem Startpunkt für ankommende Spieler, dem Platz für das Portal, Anfang und Richtung der vier Gänge und dem geschützten Bereich. Das Einbinden eines Bauplans wird erst gebaut, wenn es eine solche Halle gibt.
 
-**Persönliche Räume** an einem Gang, einer pro Schüler:
+**Persönliche Räume** an den vier Gängen, einer pro Schüler:
+
+- Die Räume liegen auf beiden Seiten jedes Gangs. Neue Räume werden reihum auf die vier Gänge verteilt, damit kein Gang viel länger wird als die anderen. Bei 30 Schülern ist kein Raum weiter als 30 Blöcke von der Halle entfernt.
+- Ein Raum ist innen 5 × 4 × 5 Blöcke groß. Wände und Decke sind aus Silbersandstein, von außen sieht man nicht hinein. Licht geben je eine Lampe in Boden und Decke.
+- **Tür:** Jeder Raum hat eine Tür, die dem Besitzer gehorcht. Er öffnet und schließt sie mit einem Klick. Offen heißt Besuch willkommen, geschlossen heißt gesperrt. Andere können eine geschlossene Tür von außen nicht öffnen und eine offene nicht schließen. Wer im Raum steht, kann eine geschlossene Tür immer von innen öffnen, damit niemand eingesperrt wird. Schließen kann sie nur der Besitzer. Lehrkräfte kommen immer hinein. Die Tür ist zu Beginn offen und lässt sich nicht abbauen.
+- Gänge und Räume gehören zum Ort Lobby. Schutz und Musik gelten dort wie in der Halle.
 
 - Persönliches Portal.
 - Belohnungskiste: Nur der Besitzer öffnet sie, und er kann nur entnehmen.
 - Feste Plätze für Trophäen (Sockel, Wandhalter).
-- Türschild mit dem Anzeigenamen, dort wird auch der Wunschname beantragt.
-- Andere dürfen den Raum betreten und schauen. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
+- Türschild über dem Eingang mit dem Anzeigenamen, dort wird auch der Wunschname beantragt. Der Name erscheint, wenn man auf das Schild zeigt. Luanti kann keinen Text auf Blöcke schreiben.
+- Andere dürfen den Raum betreten und schauen, solange die Tür offen ist. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
 - Wände, Portal, Kiste und Sockel sind unveränderlich.
 - Im Raum stehen nur Trophäen, keine normalen Gegenstände.
-- Der Gang wächst um einen Raum, sobald die Welt ein neues Konto anlegt.
+- Ein Gang wächst um einen Raum, sobald die Welt ein neues Konto anlegt. Solange es das Backend nicht gibt, zählt dafür die erste Anmeldung. Die Zuteilung bleibt dauerhaft.
 
 Ein eigenes sicheres Lager gibt es in der Lobby nicht. Abschließbare Kisten bauen sich die Schüler selbst auf ihrem Grundstück.
 

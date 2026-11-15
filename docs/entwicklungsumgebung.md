@@ -175,8 +175,9 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_room rebuild <spieler> <raumtyp>` | baut einen bestimmten Raum neu |
 | `/lep_room rebuild all [<raumtyp>]` | baut alle Räume neu |
 | `/lep_lobby` | bringt dich in die Halle der Lobby |
+| `/lep_lobby room [<spieler>]` | bringt dich vor deinen persönlichen Raum oder den eines anderen |
 | `/lep_lobby leave` | von der Lobby in die Wildnis |
-| `/lep_lobby rebuild` | baut die Halle neu |
+| `/lep_lobby rebuild` | baut Halle, Gänge und Räume neu |
 
 ### Hinweise
 

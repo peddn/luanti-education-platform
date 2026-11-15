@@ -205,13 +205,6 @@ describe("lep_lobby hall anchors", function()
 		assert.are.equal(hall.GLASS, hall.kind_at(x, y - 1, z))
 	end)
 
-	it("starts the corridor just outside the wall", function()
-		local x, y, z = relative(anchors.corridor_start)
-		assert.is_nil(hall.kind_at(x, y, z))
-		assert.is_not_nil(hall.kind_at(x - anchors.corridor_dir.x, y, z))
-		assert.are.same({ x = 1, y = 0, z = 0 }, anchors.corridor_dir)
-	end)
-
 	it("protects the whole hall", function()
 		local min, max = hall.bounds()
 		assert.are.same(
