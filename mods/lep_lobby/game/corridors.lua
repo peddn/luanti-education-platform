@@ -2,6 +2,7 @@
 
 local load = lep_core.loader("lep_lobby")
 local corridors = load("src/corridors")
+local room_doors = load("game/doors")
 
 local builder = {}
 
@@ -32,9 +33,12 @@ function builder.build(origin, direction, get_count, get_owner, callback)
 			[corridors.GLASS] = core.get_content_id("lep_lobby:glass"),
 			[corridors.LAMP] = core.get_content_id("lep_lobby:lamp"),
 			[corridors.AIR] = core.CONTENT_AIR,
+			[corridors.WALL] = core.get_content_id("lep_lobby:wall"),
 			-- Signs are set afterwards, because they carry metadata.
 			[corridors.SIGN] = core.CONTENT_AIR,
 		}
+		-- Doors are not touched here, so they stay open or closed. Missing
+		-- doors are set afterwards.
 
 		local vm = core.get_voxel_manip()
 		local emin, emax = vm:read_from_map(min, max)
@@ -45,7 +49,7 @@ function builder.build(origin, direction, get_count, get_owner, callback)
 			for y = rel_min.y, rel_max.y do
 				for x = rel_min.x, rel_max.x do
 					local kind = corridors.kind_at(x, y, z, count)
-					if kind then
+					if ids[kind] then
 						data[area:index(origin.x + x, origin.y + y, origin.z + z)] = ids[kind]
 					end
 				end
@@ -64,6 +68,8 @@ function builder.build(origin, direction, get_count, get_owner, callback)
 					param2 = core.dir_to_wallmounted(room.sign_wall),
 				})
 				core.get_meta(pos):set_string("infotext", get_owner(slot) or "")
+				room_doors.ensure(vector.add(origin, room.door), room.look_dir,
+					get_owner(slot) or "")
 			end
 		end
 

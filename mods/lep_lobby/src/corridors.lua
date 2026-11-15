@@ -13,7 +13,7 @@
 local corridors = {}
 
 -- Raise this when the shape changes, so existing corridors are rebuilt.
-corridors.VERSION = 1
+corridors.VERSION = 2
 
 -- Axial position of the opening in the hall wall: hall radius + 1.
 corridors.OPENING = 16
@@ -36,13 +36,18 @@ corridors.GLASS = "glass"
 corridors.LAMP = "lamp"
 corridors.AIR = "air"
 corridors.SIGN = "sign"
+-- Solid wall of a room.
+corridors.WALL = "wall"
+-- Lower and upper half of a room door.
+corridors.DOOR = "door"
+corridors.DOOR_TOP = "door_top"
 
 local OPENING = corridors.OPENING
 local FIRST_WALL = corridors.FIRST_WALL
 local PITCH = corridors.PITCH
 local DOOR_OFFSET = 3
-local WALL = 2
-local OUTER_WALL = WALL + corridors.ROOM_SIZE + 1
+local SIDE = 2
+local OUTER_WALL = SIDE + corridors.ROOM_SIZE + 1
 local ROOM_CEILING = corridors.ROOM_HEIGHT + 1
 local CEILING = corridors.HEIGHT + 1
 
@@ -116,25 +121,26 @@ end
 local function room_kind(direction, count, axial, lateral, y)
 	for side = 1, -1, -2 do
 		local across = lateral * side
-		if across >= WALL and across <= OUTER_WALL and axial >= FIRST_WALL then
+		if across >= SIDE and across <= OUTER_WALL and axial >= FIRST_WALL then
 			local row = math.floor((axial - FIRST_WALL) / PITCH)
 			local along = (axial - FIRST_WALL) - row * PITCH
 			-- A wall between two rooms belongs to both.
 			local exists = slot_at(direction, side, row) < count
 				or (along == 0 and row > 0 and slot_at(direction, side, row - 1) < count)
 			if exists then
+				local centre = along == DOOR_OFFSET and across == SIDE + DOOR_OFFSET
 				if y == 0 then
-					if along == DOOR_OFFSET and across == WALL + DOOR_OFFSET then
-						return corridors.LAMP
-					end
-					return corridors.FLOOR
-				elseif y == ROOM_CEILING or across == OUTER_WALL or along == 0 then
-					return corridors.GLASS
-				elseif across == WALL then
+					return centre and corridors.LAMP or corridors.FLOOR
+				elseif y == ROOM_CEILING then
+					return centre and corridors.LAMP or corridors.WALL
+				elseif across == OUTER_WALL or along == 0 then
+					return corridors.WALL
+				elseif across == SIDE then
 					if along == DOOR_OFFSET and y <= 2 then
-						return corridors.AIR
+						local slot = slot_at(direction, side, row)
+						return y == 1 and corridors.DOOR or corridors.DOOR_TOP, slot
 					end
-					return corridors.GLASS
+					return corridors.WALL
 				end
 				return corridors.AIR
 			end
@@ -161,19 +167,19 @@ local function kind_in_corridor(direction, count, axial, lateral, y)
 		return nil
 	end
 
-	local kind = room_kind(direction, count, axial, lateral, y)
+	local kind, slot = room_kind(direction, count, axial, lateral, y)
 	if kind then
-		return kind
+		return kind, slot
 	end
 
-	if math.abs(lateral) > WALL or y > CEILING then
+	if math.abs(lateral) > SIDE or y > CEILING then
 		return nil
 	elseif y == 0 then
 		if lateral == 0 and axial < last then
 			return corridors.LAMP
 		end
 		return corridors.FLOOR
-	elseif y == CEILING or math.abs(lateral) == WALL or axial == last then
+	elseif y == CEILING or math.abs(lateral) == SIDE or axial == last then
 		return corridors.GLASS
 	end
 
@@ -181,9 +187,9 @@ local function kind_in_corridor(direction, count, axial, lateral, y)
 	if y == corridors.HEIGHT and lateral ~= 0 and axial > FIRST_WALL then
 		local row = math.floor((axial - FIRST_WALL) / PITCH)
 		local along = (axial - FIRST_WALL) - row * PITCH
-		local slot = slot_at(direction, lateral, row)
-		if along == DOOR_OFFSET and slot < count then
-			return corridors.SIGN, slot
+		local sign_slot = slot_at(direction, lateral, row)
+		if along == DOOR_OFFSET and sign_slot < count then
+			return corridors.SIGN, sign_slot
 		end
 	end
 	return corridors.AIR
@@ -191,8 +197,8 @@ end
 
 --- Returns what belongs at a position relative to the hall origin when
 -- `count` slots are in use: one of the kinds above, or nil if the position
--- is not part of a corridor or room. For corridors.SIGN the slot number
--- is the second return value.
+-- is not part of a corridor or room. For corridors.SIGN, corridors.DOOR
+-- and corridors.DOOR_TOP the slot number is the second return value.
 function corridors.kind_at(x, y, z, count)
 	for direction = 1, corridors.DIRECTIONS do
 		local axial, lateral = to_corridor(direction, x, z)
@@ -207,6 +213,7 @@ end
 -- hall origin:
 --   entrance   where a player stands in the corridor in front of the door
 --   look_dir   direction from the entrance towards the door, as { x, z }
+--   door       position of the lower half of the door
 --   sign       position of the name sign
 --   sign_wall  direction from the sign to the wall it hangs on
 --   interior_min, interior_max  the inside of the room
@@ -218,7 +225,7 @@ function corridors.room(slot)
 	local first = FIRST_WALL + PITCH * row + 1
 	local last = first + corridors.ROOM_SIZE - 1
 
-	local a = to_relative(direction, first, side * (WALL + 1), 1)
+	local a = to_relative(direction, first, side * (SIDE + 1), 1)
 	local b = to_relative(direction, last, side * (OUTER_WALL - 1), corridors.ROOM_HEIGHT)
 	local wall = to_relative(direction, 0, side, 0)
 
@@ -226,6 +233,7 @@ function corridors.room(slot)
 		direction = direction,
 		entrance = to_relative(direction, door, 0, 1),
 		look_dir = { x = wall.x, z = wall.z },
+		door = to_relative(direction, door, side * SIDE, 1),
 		sign = to_relative(direction, door, side, corridors.HEIGHT),
 		sign_wall = wall,
 		interior_min = { x = math.min(a.x, b.x), y = 1, z = math.min(a.z, b.z) },
@@ -249,6 +257,21 @@ function corridors.starts()
 		}
 	end
 	return list
+end
+
+--- Returns true if the position is inside the room of a slot.
+function corridors.is_in_room(slot, x, y, z)
+	local room = corridors.room(slot)
+	local min, max = room.interior_min, room.interior_max
+	return x >= min.x and x <= max.x and y >= min.y and y <= max.y
+		and z >= min.z and z <= max.z
+end
+
+--- Decides whether a player may open or close the door of a room.
+-- The owner and staff always may. Everyone else only from the inside, so
+-- a closed door keeps visitors out but never locks anyone in.
+function corridors.may_use_door(is_owner, is_staff, is_inside)
+	return is_owner == true or is_staff == true or is_inside == true
 end
 
 --- Creates the book that records which player owns which slot.

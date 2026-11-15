@@ -17,6 +17,8 @@ read_globals = {
 	"beds",
 	-- Sound helpers of the default mod from Minetest Game.
 	"default",
+	-- Door mechanics of Minetest Game.
+	"doors",
 }
 
 -- Globals defined by LEP mods.

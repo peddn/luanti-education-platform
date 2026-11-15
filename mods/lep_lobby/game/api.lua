@@ -96,7 +96,7 @@ function lep_lobby.is_inside(pos)
 end
 
 --- Returns the personal room of a player, or nil if they have none:
--- a table with owner, slot, entrance, look_dir, sign, interior_min,
+-- a table with owner, slot, entrance, look_dir, door, sign, interior_min,
 -- interior_max, portal and chest in world coordinates. See
 -- src/corridors.lua.
 function lep_lobby.get_room(player_name)
@@ -110,6 +110,7 @@ function lep_lobby.get_room(player_name)
 		slot = slot,
 		entrance = vector.add(ORIGIN, room.entrance),
 		look_dir = room.look_dir,
+		door = vector.add(ORIGIN, room.door),
 		sign = vector.add(ORIGIN, room.sign),
 		interior_min = vector.add(ORIGIN, room.interior_min),
 		interior_max = vector.add(ORIGIN, room.interior_max),

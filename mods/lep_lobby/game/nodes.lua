@@ -38,6 +38,12 @@ core.register_node("lep_lobby:lamp", unbreakable({
 	sounds = default.node_sound_glass_defaults(),
 }))
 
+core.register_node("lep_lobby:wall", unbreakable({
+	description = "LEP lobby room wall",
+	tiles = { "default_silver_sandstone_block.png" },
+	sounds = default.node_sound_stone_defaults(),
+}))
+
 -- Name sign above the door of a personal room. The name is its infotext.
 core.register_node("lep_lobby:room_sign", unbreakable({
 	description = "LEP lobby room sign",

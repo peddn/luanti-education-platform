@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 13 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 14 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -262,14 +262,15 @@ Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später er
 **Persönliche Räume** an den vier Gängen, einer pro Schüler:
 
 - Die Räume liegen auf beiden Seiten jedes Gangs. Neue Räume werden reihum auf die vier Gänge verteilt, damit kein Gang viel länger wird als die anderen. Bei 30 Schülern ist kein Raum weiter als 30 Blöcke von der Halle entfernt.
-- Ein Raum ist innen 5 × 4 × 5 Blöcke groß. Wände und Decke sind aus Glas, der Eingang ist offen.
+- Ein Raum ist innen 5 × 4 × 5 Blöcke groß. Wände und Decke sind aus Silbersandstein, von außen sieht man nicht hinein. Licht geben je eine Lampe in Boden und Decke.
+- **Tür:** Jeder Raum hat eine Tür, die dem Besitzer gehorcht. Er öffnet und schließt sie mit einem Klick. Offen heißt Besuch willkommen, geschlossen heißt gesperrt. Andere können eine geschlossene Tür von außen nicht öffnen und eine offene nicht schließen. Wer im Raum steht, kann die Tür immer von innen öffnen, damit niemand eingesperrt wird. Lehrkräfte kommen immer hinein. Die Tür ist zu Beginn offen und lässt sich nicht abbauen.
 - Gänge und Räume gehören zum Ort Lobby. Schutz und Musik gelten dort wie in der Halle.
 
 - Persönliches Portal.
 - Belohnungskiste: Nur der Besitzer öffnet sie, und er kann nur entnehmen.
 - Feste Plätze für Trophäen (Sockel, Wandhalter).
 - Türschild über dem Eingang mit dem Anzeigenamen, dort wird auch der Wunschname beantragt. Der Name erscheint, wenn man auf das Schild zeigt. Luanti kann keinen Text auf Blöcke schreiben.
-- Andere dürfen den Raum betreten und schauen. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
+- Andere dürfen den Raum betreten und schauen, solange die Tür offen ist. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
 - Wände, Portal, Kiste und Sockel sind unveränderlich.
 - Im Raum stehen nur Trophäen, keine normalen Gegenstände.
 - Ein Gang wächst um einen Raum, sobald die Welt ein neues Konto anlegt. Solange es das Backend nicht gibt, zählt dafür die erste Anmeldung. Die Zuteilung bleibt dauerhaft.

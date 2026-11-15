@@ -3,7 +3,7 @@ local corridors = dofile("mods/lep_lobby/src/corridors.lua")
 
 local function is_open(kind)
 	return kind == hall.AIR or kind == hall.FIREFLY or kind == hall.BUTTERFLY
-		or kind == corridors.SIGN
+		or kind == corridors.SIGN or kind == corridors.DOOR or kind == corridors.DOOR_TOP
 end
 
 -- The lobby as it is built: corridors first, the hall everywhere else.
@@ -173,7 +173,8 @@ describe("lep_lobby corridors rooms", function()
 					end
 					local below = corridors.kind_at(x, 0, z, count)
 					assert.is_true(below == corridors.FLOOR or below == corridors.LAMP)
-					assert.are.equal(corridors.GLASS, corridors.kind_at(x, max.y + 1, z, count))
+					local above = corridors.kind_at(x, max.y + 1, z, count)
+					assert.is_true(above == corridors.WALL or above == corridors.LAMP)
 				end
 			end
 		end
@@ -201,18 +202,61 @@ describe("lep_lobby corridors rooms", function()
 			assert.are.equal(corridors.AIR, corridors.kind_at(e.x, e.y + 1, e.z, count))
 			-- Two steps from the entrance towards the room is the doorway.
 			local dx, dz = room.look_dir.x * 2, room.look_dir.z * 2
-			assert.are.equal(corridors.AIR, corridors.kind_at(e.x + dx, 1, e.z + dz, count))
-			assert.are.equal(corridors.AIR, corridors.kind_at(e.x + dx, 2, e.z + dz, count))
-			assert.are.equal(corridors.GLASS, corridors.kind_at(e.x + dx, 3, e.z + dz, count))
+			assert.are.same({ corridors.DOOR, slot },
+				{ corridors.kind_at(e.x + dx, 1, e.z + dz, count) })
+			assert.are.same({ corridors.DOOR_TOP, slot },
+				{ corridors.kind_at(e.x + dx, 2, e.z + dz, count) })
+			assert.are.equal(corridors.WALL, corridors.kind_at(e.x + dx, 3, e.z + dz, count))
+			assert.are.same({ x = e.x + dx, y = 1, z = e.z + dz }, room.door)
 
 			local s = room.sign
 			local kind, sign_slot = corridors.kind_at(s.x, s.y, s.z, count)
 			assert.are.equal(corridors.SIGN, kind)
 			assert.are.equal(slot, sign_slot)
 			local w = room.sign_wall
-			assert.are.equal(corridors.GLASS,
+			assert.are.equal(corridors.WALL,
 				corridors.kind_at(s.x + w.x, s.y, s.z + w.z, count))
 		end
+	end)
+
+	it("has solid walls all around, with the door as the only way in", function()
+		for slot = 0, count - 1 do
+			local room = corridors.room(slot)
+			local min, max = room.interior_min, room.interior_max
+			local doors = 0
+			for x = min.x - 1, max.x + 1 do
+				for z = min.z - 1, max.z + 1 do
+					local border = x < min.x or x > max.x or z < min.z or z > max.z
+					if border then
+						for y = 1, corridors.ROOM_HEIGHT do
+							local kind = corridors.kind_at(x, y, z, count)
+							if kind == corridors.DOOR or kind == corridors.DOOR_TOP then
+								doors = doors + 1
+							else
+								assert.are.equal(corridors.WALL, kind)
+							end
+						end
+					end
+				end
+			end
+			assert.are.equal(2, doors)
+		end
+	end)
+
+	it("knows who is inside a room", function()
+		local room = corridors.room(3)
+		local p = room.interior_min
+		assert.is_true(corridors.is_in_room(3, p.x, p.y, p.z))
+		assert.is_false(corridors.is_in_room(4, p.x, p.y, p.z))
+		assert.is_false(corridors.is_in_room(3, room.entrance.x, room.entrance.y, room.entrance.z))
+		assert.is_false(corridors.is_in_room(3, room.door.x, room.door.y, room.door.z))
+	end)
+
+	it("lets owner and staff use the door, others only from inside", function()
+		assert.is_true(corridors.may_use_door(true, false, false))
+		assert.is_true(corridors.may_use_door(false, true, false))
+		assert.is_true(corridors.may_use_door(false, false, true))
+		assert.is_false(corridors.may_use_door(false, false, false))
 	end)
 
 	it("has no sign for rooms that do not exist", function()
