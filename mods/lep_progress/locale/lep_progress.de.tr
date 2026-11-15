@@ -1,0 +1,22 @@
+# textdomain: lep_progress
+You completed level @1 of @2.=Du hast Niveau @1 von @2 abgeschlossen.
+You are now on level @1 of @2.=Du bist jetzt auf Niveau @1 von @2.
+You completed all levels of @1.=Du hast alle Niveaus von @1 abgeschlossen.
+@1: level @2 of @3, @4 %=@1: Niveau @2 von @3, @4 %
+(module completed)=(Modul abgeschlossen)
+(moving up is locked)=(Aufstieg gesperrt)
+@1: @2 of @3=@1: @2 von @3
+There are no learning modules yet.=Es gibt noch keine Lernmodule.
+Show your learning progress, or that of another player=Zeigt deinen Lernfortschritt oder den eines anderen Spielers
+You may only view your own progress.=Du darfst nur deinen eigenen Fortschritt ansehen.
+There is no player @1.=Es gibt keinen Spieler @1.
+Progress of @1:=Fortschritt von @1:
+There is no module @1. Modules: @2=Es gibt kein Modul @1. Module: @2
+Set the level of a player in a learning module=Setzt das Niveau eines Spielers in einem Lernmodul
+Usage: /lep_level <player> <module> <level>=Aufruf: /lep_level <spieler> <modul> <niveau>
+@1 has the levels 1 to @2.=@1 hat die Niveaus 1 bis @2.
+@1 is now on level @2 of @3.=@1 ist jetzt auf Niveau @2 von @3.
+Lock or unlock moving up after a completed level=Sperrt oder erlaubt den Aufstieg nach einem abgeschlossenen Niveau
+Usage: /lep_level_lock <player> <module> on | off=Aufruf: /lep_level_lock <spieler> <modul> on | off
+@1 no longer moves up automatically in @2.=@1 steigt in @2 nicht mehr automatisch auf.
+@1 moves up automatically in @2 again.=@1 steigt in @2 wieder automatisch auf.

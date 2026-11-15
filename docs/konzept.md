@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 17 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 18 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -83,7 +83,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 |---|---|
 | Art | Naturalien (Barren, Diamanten u. Ä.) |
 | Auszahlung | In die Belohnungskiste im eigenen Lobby-Raum |
-| Niveau | Drei Niveaus pro Modul, von der Lehrkraft pro Schüler gesetzt |
+| Niveau | Beliebig viele Niveaus pro Modul, von der Lehrkraft pro Schüler gesetzt |
 | Aufstieg | Automatisch beim Abschluss eines Niveaus, von der Lehrkraft sperrbar |
 | Belohnt wird | Nur für Aufgaben auf dem eigenen Niveau und darüber |
 | Größen | Klein (Aufgabe), mittel (Aufgabentruhe), groß (Niveau abgeschlossen) |
@@ -331,7 +331,7 @@ Module, die kurze Aufgaben im Dialogfenster stellen können (Rechnen, Textfragen
 
 **Niveau**
 
-- Jedes Modul hat drei Niveaus, also drei Schwierigkeitsgrade.
+- Jedes Modul hat beliebig viele Niveaus, also Schwierigkeitsgrade. Das Modul legt fest, wie viele es sind. Kopfrechnen braucht deutlich mehr als drei.
 - Die Lehrkraft setzt das Niveau pro Schüler und Modul. Ein Schüler kann in verschiedenen Modulen auf verschiedenen Niveaus stehen.
 - Für neue Schüler gilt ein Startniveau, das die Lehrkraft pro Gruppe und Modul festlegt.
 - Es gibt keinen Auf- oder Abstieg nach Leistung.
@@ -341,7 +341,10 @@ Module, die kurze Aufgaben im Dialogfenster stellen können (Rechnen, Textfragen
 Erzeugte Aufgaben gibt es unbegrenzt. Damit ein Prozentwert und ein Abschluss möglich sind, hat jedes Niveau ein festes Pensum:
 
 - Jedes Niveau eines Moduls besteht aus einer festen Liste von Aufgabentypen, z. B. „Addition bis 20“.
-- Ein Aufgabentyp gilt als geschafft, wenn der Schüler ihn eine bestimmte Anzahl von Malen richtig gelöst hat (Vorschlag: fünfmal).
+- Ein Aufgabentyp gilt als geschafft, wenn der Schüler ihn eine bestimmte Anzahl von Malen richtig gelöst hat. Voreingestellt ist fünfmal, ein Modul kann das pro Aufgabentyp ändern.
+- Falsche Antworten ziehen nichts ab, sie zählen nur nicht.
+- Gezählt werden nur Aufgaben auf dem aktuellen Niveau. Aufgaben eines höheren Niveaus, etwa aus einer Aufgabentruhe, werden gemeldet und können belohnt werden, zählen aber nicht für das Pensum.
+- Setzt die Lehrkraft das Niveau um, bleibt der Stand der anderen Niveaus erhalten.
 - Der Prozentwert ist der Anteil der geschafften Aufgabentypen.
 - Bei 100 % ist das Niveau abgeschlossen.
 - Bei Textfragen ordnet die Lehrkraft ein Fragenset einem Niveau zu. Der Prozentwert ist der Anteil richtig gelöster Fragen.
@@ -351,11 +354,11 @@ Erzeugte Aufgaben gibt es unbegrenzt. Damit ein Prozentwert und ein Abschluss m�
 - Nach dem Abschluss eines Niveaus steigt der Schüler automatisch ins nächste auf.
 - Der automatische Aufstieg ist voreingestellt an. Die Lehrkraft kann ihn pro Schüler sperren.
 - Die Lehrkraft kann das Niveau jederzeit von Hand ändern.
-- Nach Niveau 3 ist das Modul abgeschlossen. Aufgaben und Belohnungen gibt es weiter, im Rahmen des Tageslimits.
+- Nach dem letzten Niveau ist das Modul abgeschlossen. Aufgaben und Belohnungen gibt es weiter, im Rahmen des Tageslimits.
 
 **Begriffe**
 
-Ein Niveau (1 bis 3) ist ein Schwierigkeitsgrad. Die Abfolge von Aufgaben oder Räumen innerhalb eines Niveaus heißt Station, nicht Level.
+Ein Niveau ist ein Schwierigkeitsgrad, gezählt ab 1. Die Abfolge von Aufgaben oder Räumen innerhalb eines Niveaus heißt Station, nicht Level.
 
 **Wo das Niveau gesetzt wird**
 
@@ -367,7 +370,7 @@ In der Web-Anwendung. Bis sie existiert, genügt ein einfacher Chatbefehl für L
 - Drei Größen, die die zuständige Lehrkraft pro Gruppe in der Web-Anwendung mit Gegenständen füllt:
   - klein für eine normale Aufgabe, z. B. 1 Eisenbarren,
   - mittel für eine Aufgabentruhe, z. B. 1 Goldbarren,
-  - groß für ein abgeschlossenes Niveau, z. B. 1 Diamant.
+  - groß für ein abgeschlossenes Niveau, z. B. 1 Diamant. Bei Modulen mit vielen Niveaus muss die Menge dazu passen, das wird mit dem Belohnungs-Mod festgelegt.
 - Tageslimit als Anzahl: 10 belohnte Aufgaben und 5 Truhen pro Tag.
 - Faustregel: Eine Aufgabe bringt etwas mehr, als man in derselben Zeit abbauen könnte.
 - Keine Zufallsbelohnungen. Die Belohnung steht vorher fest und ist sichtbar.
@@ -379,7 +382,7 @@ In der Web-Anwendung. Bis sie existiert, genügt ein einfacher Chatbefehl für L
 
 - Ein eigener Mod meldet sich beim Fortschritts-Mod an und vergibt Trophäen für Meilensteine.
 - Schema der Meilensteine:
-  - Niveau abgeschlossen: eine Trophäe pro Niveau und Modul, also drei pro Modul,
+  - Niveau abgeschlossen: Trophäen pro Modul. Bei vielen Niveaus nicht für jedes, die Auswahl wird mit dem Trophäen-Mod festgelegt,
   - gelöste Aufgaben pro Modul: 10, 50, 100,
   - gelöste Aufgabentruhen: 10, 50,
   - Fragenset zu mindestens 80 % richtig abgeschlossen.
@@ -402,7 +405,7 @@ In der Web-Anwendung. Bis sie existiert, genügt ein einfacher Chatbefehl für L
 ### 8.6 Rechnen
 
 - Aufgaben werden erzeugt.
-- Jedes der drei Niveaus hat eine Liste von Aufgabentypen (Zahlenraum, Rechenarten, später Brüche).
+- Jedes Niveau hat eine Liste von Aufgabentypen (Zahlenraum, Rechenarten, später Brüche).
 - „3,5“ und „3.5“ gelten beide.
 - Zeitdruck nur optional.
 
@@ -476,7 +479,7 @@ Eine Prüffunktion gilt für jeden Generator: Muster gültig, Mindestabstand, Mi
 
 **Stationen**
 
-Die folgenden Schritte werden bei der Umsetzung auf die drei Niveaus verteilt.
+Die folgenden Schritte werden bei der Umsetzung auf die Niveaus verteilt.
 
 1. Grundkörper nach B × H × T bauen.
 2. Eine Stufe, Lage auf den Körper bezogen.
@@ -799,7 +802,7 @@ Bei der Umsetzung des jeweiligen Teils:
 2. **Kontonamen:** Luantis genaue Längengrenze prüfen.
 3. **Mesecons:** Stand der letzten Version prüfen.
 4. **GIFT-Export:** Mit einem ByCS-Zugang ausprobieren, ob Lehrkräfte Fragen exportieren können.
-5. **TZ:** Die Stationen auf die drei Niveaus verteilen.
+5. **TZ:** Die Stationen auf die Niveaus verteilen.
 
 6. **Raumlicht:** Luanti 5.18 kann die Helligkeit pro Spieler einstellen (`set_lighting`, Feld `static.light_curve`). Das könnte die leuchtende Luft in den Lernräumen ersetzen. Zwei kurze Versuche blieben ohne klares Ergebnis. Erneut prüfen, sobald auch die Testumgebung des Nutzers 5.18 hat.
 
