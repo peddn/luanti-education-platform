@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 6 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 7 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -256,6 +256,12 @@ Jeder Ortswechsel läuft über eine einzige Funktion in einem eigenen Mod, egal 
 
 Bei jeder Anmeldung werden Rechte und Zustand passend zum aktuellen Ort neu gesetzt. So bleibt nach einem Absturz kein Flugrecht in der Wildnis hängen.
 
+**Ortstypen.** Andere Mods melden Ortstypen bei `lep_places` an, mit dem dort geltenden Inventar und den dort geltenden Rechten. Die Wildnis ist von Anfang an angemeldet.
+
+**Inventar.** Gespeichert wird nur das Survival-Inventar: Hauptinventar und Handwerksfeld. Beim Betreten eines Lernraums wird es gesichert und geleert, der Lernraum gibt dem Spieler seine Gegenstände neu. Beim Verlassen werden die Lern-Gegenstände verworfen und das Survival-Inventar zurückgegeben. Lebenspunkte bleiben unverändert.
+
+**Rechte.** `lep_places` vergibt die Rechte eines Ortes selbst und merkt sich pro Spieler, welche es vergeben hat. Entzogen werden nur diese. Wer ein Recht ohnehin hat, etwa eine Lehrkraft das Flugrecht, behält es.
+
 Lern-Gegenstände lassen sich außerhalb der Lernräume nicht verwenden.
 
 ## 8. Lernen
@@ -491,7 +497,7 @@ Grundsätze:
 - Der Zustand übersteht Neuanmelden.
 - Einzelne Schüler können ausgenommen werden.
 - Wer das Privileg zum Schalten hat, wird selbst nicht erfasst.
-- Physik-Änderungen und das Flugrecht laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben.
+- Physik-Änderungen laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben. Ortsgebundene Rechte wie das Flugrecht vergibt `lep_places` (Abschnitt 7.5).
 
 ### 10.4 Rechte
 

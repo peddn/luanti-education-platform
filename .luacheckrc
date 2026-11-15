@@ -5,7 +5,7 @@ max_line_length = 100
 read_globals = { "core" }
 
 -- Globals defined by LEP mods.
-globals = { "lep_core" }
+globals = { "lep_core", "lep_places" }
 
 exclude_files = { ".dev/", "third_party/", "**/spec/fixtures/" }
 
