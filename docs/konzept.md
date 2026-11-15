@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 14 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 15 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -269,7 +269,7 @@ Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später er
 - Persönliches Portal.
 - Belohnungskiste: Nur der Besitzer öffnet sie, und er kann nur entnehmen.
 - Feste Plätze für Trophäen (Sockel, Wandhalter).
-- Türschild über dem Eingang mit dem Anzeigenamen, dort wird auch der Wunschname beantragt. Der Name erscheint, wenn man auf das Schild zeigt. Luanti kann keinen Text auf Blöcke schreiben.
+- Türschild über dem Eingang mit dem Anzeigenamen in lesbarer Schrift, dort wird auch der Wunschname beantragt. Kontonamen stehen in zwei Zeilen, getrennt am Unterstrich. Umlaute brauchen eine zweite Schrift von signs_lib, sie wird mit den Wunschnamen eingeschaltet.
 - Andere dürfen den Raum betreten und schauen, solange die Tür offen ist. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
 - Wände, Portal, Kiste und Sockel sind unveränderlich.
 - Im Raum stehen nur Trophäen, keine normalen Gegenstände.
@@ -490,6 +490,7 @@ Die folgenden Schritte werden bei der Umsetzung auf die drei Niveaus verteilt.
 - **PvP:** aus, pro Welt einstellbar.
 - **Monster:** zunächst keine, später pro Welt zuschaltbar über Mobs Redo.
 - **Chat:** frei und ohne Filter. Jede Nachricht wird protokolliert, auch Privatnachrichten. Lehrkräfte können stummschalten. Pro Welt abschaltbar.
+- **Schilder:** Schüler dürfen Schilder aufstellen und beschriften. Der Text ist für alle lesbar. Schildtexte werden wie Chatnachrichten protokolliert, mit Kontoname und Ort. Das Protokoll entsteht zusammen mit dem Chatprotokoll.
 - **Betten, Knochen, abschließbare Kisten, Türen:** aus Minetest Game.
 
 Eigene Mods fragen den Schutz nur über Luantis Standardfunktion ab, nie direkt bei Protector. So bleibt der Schutz-Mod austauschbar.
@@ -723,6 +724,7 @@ Fremd-Mods werden nicht ins Repository kopiert. `third_party/mods.toml` nennt Qu
 | Monster und Tiere (später) | Mobs Redo, Mobs Monster, Mobs Animal | MIT |
 | Logikschaltungen (später) | Mesecons, ohne `mesecons_luacontroller` | LGPL 3 für Code, Creative Commons für Medien |
 | Physik zusammenführen | player_monoids | Apache 2.0 |
+| Lesbare Schrift auf Schildern | signs_lib (mt-mods) | LGPL 3 für Code, CC BY-SA 4.0 für Medien |
 
 Bewusst nicht verwendet: Classroom Manager (eigenes Pult), Account Manager (Konten kommen aus dem Backend), Awards (Trophäen sind Backend-Daten), flow (Formspecs werden selbst geschrieben).
 

@@ -44,23 +44,30 @@ core.register_node("lep_lobby:wall", unbreakable({
 	sounds = default.node_sound_stone_defaults(),
 }))
 
--- Name sign above the door of a personal room. The name is its infotext.
-core.register_node("lep_lobby:room_sign", unbreakable({
+-- Name sign above the door of a personal room. The third-party mod
+-- signs_lib draws the text. Players cannot edit, dig or light up the sign.
+signs_lib.register_sign("lep_lobby:room_sign", {
 	description = "LEP lobby room sign",
-	drawtype = "nodebox",
-	tiles = { "default_wood.png" },
-	paramtype = "light",
-	paramtype2 = "wallmounted",
-	sunlight_propagates = true,
-	walkable = false,
-	node_box = {
-		type = "wallmounted",
-		wall_top = { -0.4375, 0.4375, -0.3125, 0.4375, 0.5, 0.3125 },
-		wall_bottom = { -0.4375, -0.5, -0.3125, 0.4375, -0.4375, 0.3125 },
-		wall_side = { -0.5, -0.3125, -0.4375, -0.4375, 0.3125, 0.4375 },
+	inventory_image = "signs_lib_sign_wall_wooden_inv.png",
+	tiles = {
+		"signs_lib_sign_wall_wooden.png",
+		"signs_lib_sign_wall_wooden_edges.png",
 	},
-	sounds = default.node_sound_wood_defaults(),
-}))
+	entity_info = "standard",
+	use_texture_alpha = "clip",
+	allow_glow = false,
+	-- Two lines of large letters: an account name has at most 19 characters
+	-- and is split at its underscore.
+	number_of_lines = 2,
+	chars_per_line = 14,
+	groups = { not_in_creative_inventory = 1 },
+	drop = "",
+	diggable = false,
+	can_dig = function() return false end,
+	on_blast = function() end,
+	on_rightclick = function() end,
+	on_rotate = function() return false end,
+})
 
 -- Decoration in the air. Players walk and fly through it, cannot point at
 -- it and cannot catch it. Unlike the animals of Minetest Game these never

@@ -13,7 +13,7 @@
 local corridors = {}
 
 -- Raise this when the shape changes, so existing corridors are rebuilt.
-corridors.VERSION = 2
+corridors.VERSION = 3
 
 -- Axial position of the opening in the hall wall: hall radius + 1.
 corridors.OPENING = 16
@@ -257,6 +257,16 @@ function corridors.starts()
 		}
 	end
 	return list
+end
+
+--- Returns the text for the name sign of a room. Account names look like
+-- "adjective_noun": the two parts go on two lines, so the letters can be
+-- large.
+function corridors.sign_text(name)
+	if type(name) ~= "string" then
+		return ""
+	end
+	return (name:gsub("_", "\n", 1))
 end
 
 --- Returns true if the position is inside the room of a slot.

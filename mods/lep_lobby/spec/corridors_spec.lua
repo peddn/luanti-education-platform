@@ -243,6 +243,13 @@ describe("lep_lobby corridors rooms", function()
 		end
 	end)
 
+	it("splits names on the sign at the first underscore", function()
+		assert.are.equal("lustiger\nloewe", corridors.sign_text("lustiger_loewe"))
+		assert.are.equal("anna", corridors.sign_text("anna"))
+		assert.are.equal("a\nb_c", corridors.sign_text("a_b_c"))
+		assert.are.equal("", corridors.sign_text(nil))
+	end)
+
 	it("knows who is inside a room", function()
 		local room = corridors.room(3)
 		local p = room.interior_min

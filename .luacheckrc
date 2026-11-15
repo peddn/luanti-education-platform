@@ -19,6 +19,8 @@ read_globals = {
 	"default",
 	-- Door mechanics of Minetest Game.
 	"doors",
+	-- Third-party mod for readable signs, see third_party/mods.toml.
+	"signs_lib",
 }
 
 -- Globals defined by LEP mods.
