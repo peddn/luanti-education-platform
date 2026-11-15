@@ -167,6 +167,13 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_place` | zeigt den aktuellen Ort |
 | `/lep_place lep_places:debug_room` | versetzt in den Testort hoch über der Welt |
 | `/lep_place lep_places:wilderness` | versetzt zurück in die Wildnis |
+| `/lep_room enter` | bringt dich in deinen Testraum und baut ihn, falls nötig |
+| `/lep_room leave` | zurück in die Wildnis |
+| `/lep_room info` | zeigt Raumtyp und Besitzer des Raums, in dem du stehst |
+| `/lep_room clear` | leert den Innenraum |
+| `/lep_room rebuild` | baut den Raum neu, in dem du stehst |
+| `/lep_room rebuild <spieler> <raumtyp>` | baut einen bestimmten Raum neu |
+| `/lep_room rebuild all [<raumtyp>]` | baut alle Räume neu |
 
 ### Hinweise
 

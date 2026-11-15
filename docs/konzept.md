@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 7 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 8 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -211,13 +211,28 @@ Das Backend bewahrt dauerhaft nur den Stand auf, nicht den Verlauf dahin.
 
 Die Lernräume und die Lobby liegen weit oben im Himmel der jeweiligen Welt, wo der Kartengenerator nur Luft erzeugt.
 
-### 7.2 Erscheinen
+### 7.2 Lernräume
+
+Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, die kommen von den Lernmodulen.
+
+- **Raumtypen.** Ein Lernmodul meldet seinen Raumtyp an: Innenmaße, geltende Rechte und eine Funktion, die den Raum nach dem Bau einrichtet.
+- **Ein fester Raum pro Schüler und Raumtyp.** Die Zuteilung wird gespeichert. Angefangene Arbeit bleibt stehen, wenn jemand den Raum verlässt.
+- **Lage.** Jeder Raumtyp hat eine eigene Ebene ab Höhe 10 000. Die Räume stehen in der Mitte von Feldern mit 512 Blöcken Kantenlänge, die Ebenen liegen 512 Blöcke übereinander. So liegen Schüler in Nachbarräumen außerhalb der Reichweite, in der der Server Spieler, Namen, Geräusche und Kartenteile überträgt. Dieses Raster ist fest und darf nie geändert werden, weil es die Lage aller vorhandenen Räume bestimmt.
+- **Ebenen.** Jede Ebene gehört genau einem Raumtyp. Die Nummer wird einmal vergeben und nie geändert. Ebene 38 gehört dem Test-Raumtyp.
+- **Hülle.** Boden, Wände und Decke sind unzerstörbar.
+- **Licht.** Der Innenraum ist mit unsichtbarer, leuchtender Luft gefüllt (`lep_rooms:air`). Damit ist jede Stelle gleich hell, auch die Unterseite eines Körpers in der Raummitte. Lernmodule müssen diesen Block wie Luft behandeln.
+- **Schutz.** Im Innenraum darf nur der Besitzer bauen und abbauen. Hüllen und der Raum zwischen den Räumen sind für alle gesperrt.
+- **Bau.** Ein Raum entsteht spätestens beim ersten Betreten. Für eine ganze Klasse lassen sich Räume vorab bauen. Die Brücke nutzt das später beim Anlegen von Konten.
+- **Neubau.** Ein Raum lässt sich von Grund auf neu bauen: neue Hülle, leerer Innenraum, neu eingerichtet. Was darin gebaut war, geht verloren. Das Lernmodul erfährt es über ein Ereignis. Jeder Raumtyp hat eine Versionsnummer. Erhöht ein Modul sie, werden alte Räume beim nächsten Betreten von selbst neu gebaut.
+- **Verlassen.** Führt vorerst in die Wildnis. Mit der Lobby führt es dorthin zurück, woher der Schüler kam.
+
+### 7.3 Erscheinen
 
 - **Erste Anmeldung:** Lobby.
 - **Weitere Anmeldungen:** Ort des Ausloggens, auch im Lernraum. Wer eingefroren ausloggt, bleibt eingefroren.
 - **Tod:** Lobby, außer man hat ein Bett. Der Besitz bleibt wie in Minetest Game am Todesort.
 
-### 7.3 Portale
+### 7.4 Portale
 
 - **Festes Paar:** ein Portal im gemeinsamen Bereich der Lobby, eines in der Wildnis.
 - **Persönliches Paar:** das Portal im eigenen Lobby-Raum und ein selbst hergestelltes Portal auf dem eigenen Grundstück.
@@ -228,7 +243,7 @@ Die Lernräume und die Lobby liegen weit oben im Himmel der jeweiligen Welt, wo 
 - Betritt ein fremder Schüler ein gebautes Portal, landet er in der Lobby. Zurück kommt er nur über sein eigenes oder das feste Portal.
 - Portale werden selbst gebaut. Vorhandene Portal-Mods bilden frei verknüpfbare Reisenetze und passen nicht zu dieser engen Regel.
 
-### 7.4 Lobby
+### 7.5 Lobby
 
 **Gemeinsamer Bereich:** festes Portal zur Wildnis, Portale zu freiwilligen Aufgaben, Anzeigetafel.
 
@@ -245,7 +260,7 @@ Die Lernräume und die Lobby liegen weit oben im Himmel der jeweiligen Welt, wo 
 
 Ein eigenes sicheres Lager gibt es in der Lobby nicht. Abschließbare Kisten bauen sich die Schüler selbst auf ihrem Grundstück.
 
-### 7.5 Ortsverwaltung
+### 7.6 Ortsverwaltung
 
 Jeder Ortswechsel läuft über eine einzige Funktion in einem eigenen Mod, egal ob Portal, Lehrkraft, Tod oder Anmeldung. Sie kümmert sich um:
 
@@ -497,7 +512,7 @@ Grundsätze:
 - Der Zustand übersteht Neuanmelden.
 - Einzelne Schüler können ausgenommen werden.
 - Wer das Privileg zum Schalten hat, wird selbst nicht erfasst.
-- Physik-Änderungen laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben. Ortsgebundene Rechte wie das Flugrecht vergibt `lep_places` (Abschnitt 7.5).
+- Physik-Änderungen laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben. Ortsgebundene Rechte wie das Flugrecht vergibt `lep_places` (Abschnitt 7.6).
 
 ### 10.4 Rechte
 
@@ -690,7 +705,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_places` | Ortsverwaltung: Ortswechsel, Inventare, Rechte |
 | `lep_lobby` | Gemeinsamer Bereich, persönliche Räume, Schutzzone |
 | `lep_portals` | Festes und persönliches Portalpaar |
-| `lep_rooms` | Lernräume erzeugen und zuteilen |
+| `lep_rooms` | Lernräume bauen, zuteilen, schützen und neu bauen |
 | `lep_progress` | Ergebnisse annehmen, Niveau und Pensum führen, Ereignisse verteilen |
 | `lep_rewards` | Regeln, Tageslimit, Belohnungskiste, Protokoll |
 | `lep_trophies` | Meilensteine, Ausstellung im Raum |
