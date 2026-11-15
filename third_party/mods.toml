@@ -2,7 +2,8 @@
 #
 # They are not copied into this repository. scripts/dev-setup.sh fetches
 # each one at exactly the commit given here and enables it in the test
-# world. The section name is the mod name.
+# world. The section name is the mod name. Lines starting with "settings."
+# are written into the configuration of the test world.
 #
 # To update a mod: check its changes and licence, set the new commit, run
 # scripts/dev-setup.sh and test in the game.
@@ -12,3 +13,10 @@ repo = "https://github.com/mt-mods/signs_lib"
 commit = "897b30bce208ac54fcea73f92978785ad38830df"
 license = "LGPL-3.0-only (code), CC-BY-SA-4.0 (media)"
 purpose = "Readable text on signs"
+
+[protector]
+repo = "https://codeberg.org/tenplus1/protector"
+commit = "d72ad456f024c3291e8590a9cdc90ac590d3cddc"
+license = "MIT (code), CC-BY-3.0 (media)"
+purpose = "Players protect their own plots"
+settings.protector_radius = 8

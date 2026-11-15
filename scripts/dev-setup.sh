@@ -24,8 +24,10 @@ ln -sfn "$repo/mods" "$dev/mods/lep"
 
 # Third-party mods are fetched at the commit pinned in third_party/mods.toml.
 # The file is read line by line: "[name]", then repo = "..." and
-# commit = "..." in any order.
+# commit = "..." in any order. "settings.<key> = <value>" lines are
+# collected and written into minetest.conf further down.
 third_party_mods=()
+third_party_settings=()
 fetch_third_party() {
 	local name="$1" url="$2" commit="$3"
 	local target="$dev/third_party/$name"
@@ -53,6 +55,10 @@ while IFS= read -r line || [ -n "$line" ]; do
 		tp_repo="${BASH_REMATCH[1]}"
 	elif [[ "$line" =~ ^commit[[:space:]]*=[[:space:]]*\"([0-9a-f]{40})\"$ ]]; then
 		tp_commit="${BASH_REMATCH[1]}"
+	elif [[ "$line" =~ ^settings\.([A-Za-z0-9_.]+)[[:space:]]*=[[:space:]]*(.+)$ ]]; then
+		tp_value="${BASH_REMATCH[2]}"
+		tp_value="${tp_value%\"}"
+		third_party_settings+=("${BASH_REMATCH[1]} = ${tp_value#\"}")
 	fi
 done < "$repo/third_party/mods.toml"
 [ -z "$tp_name" ] || fetch_third_party "$tp_name" "$tp_repo" "$tp_commit"
@@ -85,6 +91,14 @@ fi
 if ! grep -q '^lep_debug' "$dev/minetest.conf"; then
 	echo "lep_debug = true" >> "$dev/minetest.conf"
 fi
+
+# Settings of the third-party mods. An existing line is replaced.
+for setting in "${third_party_settings[@]}"; do
+	key="${setting%% = *}"
+	grep -v "^${key}[[:space:]]*=" "$dev/minetest.conf" > "$dev/minetest.conf.tmp" || true
+	mv "$dev/minetest.conf.tmp" "$dev/minetest.conf"
+	echo "$setting" >> "$dev/minetest.conf"
+done
 
 # The admin gets all privileges on the test server, including lep_debug.
 if ! grep -q '^name[[:space:]]*=' "$dev/minetest.conf"; then
