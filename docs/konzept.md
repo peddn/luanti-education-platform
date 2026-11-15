@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 15 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 16 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -491,7 +491,8 @@ Die folgenden Schritte werden bei der Umsetzung auf die drei Niveaus verteilt.
 - **Monster:** zunächst keine, später pro Welt zuschaltbar über Mobs Redo.
 - **Chat:** frei und ohne Filter. Jede Nachricht wird protokolliert, auch Privatnachrichten. Lehrkräfte können stummschalten. Pro Welt abschaltbar.
 - **Schilder:** Schüler dürfen Schilder aufstellen und beschriften. Der Text ist für alle lesbar. Schildtexte werden wie Chatnachrichten protokolliert, mit Kontoname und Ort. Das Protokoll entsteht zusammen mit dem Chatprotokoll.
-- **Betten, Knochen, abschließbare Kisten, Türen:** aus Minetest Game.
+- **Abschließbare Türen, Falltüren und Kisten:** von Protector. Sie folgen dem Schutzbereich: Wer dort als Mitglied eingetragen ist, kann sie benutzen. Die entsprechenden Rezepte aus Minetest Game (Stahltür, Stahlfalltür, abschließbare Kiste) sind entfernt, damit es nicht zwei Sorten gibt. Das erledigt `lep_survival`.
+- **Betten, Knochen, einfache Türen und Kisten:** aus Minetest Game.
 
 Eigene Mods fragen den Schutz nur über Luantis Standardfunktion ab, nie direkt bei Protector. So bleibt der Schutz-Mod austauschbar.
 
@@ -720,7 +721,7 @@ Fremd-Mods werden nicht ins Repository kopiert. `third_party/mods.toml` nennt Qu
 
 | Bedarf | Mod | Lizenz |
 |---|---|---|
-| Grundstücksschutz | Protector (TenPlus1) | MIT |
+| Grundstücksschutz, abschließbare Türen und Kisten | Protector (TenPlus1) | MIT für Code, CC BY 3.0 für Medien |
 | Monster und Tiere (später) | Mobs Redo, Mobs Monster, Mobs Animal | MIT |
 | Logikschaltungen (später) | Mesecons, ohne `mesecons_luacontroller` | LGPL 3 für Code, Creative Commons für Medien |
 | Physik zusammenführen | player_monoids | Apache 2.0 |
@@ -739,6 +740,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_lobby` | Gemeinsamer Bereich, persönliche Räume, Schutzzone |
 | `lep_portals` | Festes und persönliches Portalpaar |
 | `lep_rooms` | Lernräume bauen, zuteilen, schützen und neu bauen |
+| `lep_survival` | Regeln der Survival-Welt: Rezepte, die fremde Mods ersetzen |
 | `lep_progress` | Ergebnisse annehmen, Niveau und Pensum führen, Ereignisse verteilen |
 | `lep_rewards` | Regeln, Tageslimit, Belohnungskiste, Protokoll |
 | `lep_trophies` | Meilensteine, Ausstellung im Raum |
