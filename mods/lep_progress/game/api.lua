@@ -18,7 +18,8 @@ end
 local function emit(player_name, module, events)
 	for _, event in ipairs(events) do
 		if event.name == progress.LEVEL_COMPLETED then
-			dispatcher:emit("level_completed", player_name, module.id, event.level)
+			dispatcher:emit("level_completed", player_name, module.id, event.level,
+				event.stage)
 		elseif event.name == progress.LEVEL_CHANGED then
 			dispatcher:emit("level_changed", player_name, module.id,
 				event.old_level, event.new_level, event.reason)
@@ -35,6 +36,8 @@ local function check_player(player_name)
 	return true
 end
 
+lep_progress.KIND_TASK = progress.KIND_TASK
+lep_progress.KIND_CHEST = progress.KIND_CHEST
 lep_progress.REASON_COMPLETED = progress.REASON_COMPLETED
 lep_progress.REASON_TEACHER = progress.REASON_TEACHER
 
@@ -117,6 +120,8 @@ end
 --   task      id of the task type
 --   level     level the task belongs to
 --   solved    true or false
+--   kind      optional: lep_progress.KIND_TASK (default) for a normal task,
+--             lep_progress.KIND_CHEST for a task from a task chest
 --   attempts, hints, duration   optional numbers, passed on unchanged
 -- @return true  or  false, error message
 function lep_progress.report(result)
@@ -136,6 +141,11 @@ function lep_progress.report(result)
 		return false, err
 	end
 
+	local kind = result.kind or progress.KIND_TASK
+	if kind ~= progress.KIND_TASK and kind ~= progress.KIND_CHEST then
+		return false, "unknown kind '" .. tostring(kind) .. "'"
+	end
+
 	local state = get_state(result.player, module)
 	local new_state, events, counted = progress.record(module, state, {
 		level = result.level,
@@ -152,6 +162,7 @@ function lep_progress.report(result)
 		task = result.task,
 		level = result.level,
 		solved = result.solved == true,
+		kind = kind,
 		attempts = result.attempts,
 		hints = result.hints,
 		duration = result.duration,
@@ -207,8 +218,9 @@ end
 -- counted.
 lep_progress.register_on_result = dispatcher:registrar("result")
 
---- Registers a function(player_name, module_id, level) called when a
--- player completes a level.
+--- Registers a function(player_name, module_id, level, is_stage) called
+-- when a player completes a level. is_stage is true if the level ends a
+-- stage of the module.
 lep_progress.register_on_level_completed = dispatcher:registrar("level_completed")
 
 --- Registers a function(player_name, module_id, old_level, new_level,

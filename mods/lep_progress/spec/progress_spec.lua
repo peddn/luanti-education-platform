@@ -71,6 +71,19 @@ describe("lep_progress modules", function()
 		end)
 	end)
 
+	it("marks stages, and always the last level", function()
+		local module = new_module({
+			{ tasks = { { id = "a" } } },
+			{ stage = true, tasks = { { id = "b" } } },
+			{ tasks = { { id = "c" } } },
+			{ tasks = { { id = "d" } } },
+		})
+		assert.are.same({ false, true, false, true }, {
+			module.levels[1].stage, module.levels[2].stage,
+			module.levels[3].stage, module.levels[4].stage,
+		})
+	end)
+
 	it("lists modules in the order they were registered", function()
 		local _, modules = new_module()
 		modules:register("test:quiz", { levels = { { tasks = { { id = "q" } } } } })
@@ -129,6 +142,7 @@ describe("lep_progress record", function()
 		state, events = solve(module, state, 1, "sub")
 		assert.are.same({ progress.LEVEL_COMPLETED, progress.LEVEL_CHANGED }, names(events))
 		assert.are.equal(1, events[1].level)
+		assert.is_false(events[1].stage)
 		assert.are.equal(1, events[2].old_level)
 		assert.are.equal(2, events[2].new_level)
 		assert.are.equal(progress.REASON_COMPLETED, events[2].reason)
@@ -157,6 +171,7 @@ describe("lep_progress record", function()
 		local events
 		state, events = solve(module, state, 3, "div")
 		assert.are.same({ progress.LEVEL_COMPLETED, progress.MODULE_COMPLETED }, names(events))
+		assert.is_true(events[1].stage)
 		assert.are.equal(3, state.level)
 		assert.is_true(progress.is_module_completed(module, state))
 

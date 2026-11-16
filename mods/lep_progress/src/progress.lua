@@ -12,9 +12,13 @@ local progress = {}
 progress.DEFAULT_REQUIRED = 5
 
 -- Events returned by the functions below, as { name = ..., ... } tables.
-progress.LEVEL_COMPLETED = "level_completed"   -- level
+progress.LEVEL_COMPLETED = "level_completed"   -- level, stage
 progress.LEVEL_CHANGED = "level_changed"       -- old_level, new_level, reason
 progress.MODULE_COMPLETED = "module_completed"
+
+-- Where a task came from.
+progress.KIND_TASK = "task"
+progress.KIND_CHEST = "chest"
 
 -- Reasons for a level change.
 progress.REASON_COMPLETED = "completed"
@@ -39,6 +43,8 @@ function progress.new_modules()
 	--   title   name shown to players
 	--   levels  list of levels, each a table with
 	--     title  optional name of the level
+	--     stage  optional: true if completing this level ends a stage.
+	--            The last level always ends one.
 	--     tasks  list of task types, each a table with
 	--       id        id of the task type, unique within the module
 	--       title     name shown to players
@@ -77,6 +83,7 @@ function progress.new_modules()
 			end
 			levels[number] = {
 				title = level.title or tostring(number),
+				stage = level.stage == true or number == #def.levels,
 				tasks = tasks,
 				by_id = by_id,
 			}
@@ -242,7 +249,11 @@ function progress.record(module, state, result)
 	local done, total = progress.done_tasks(module, new_state, level)
 	if done == total and not new_state.completed[level] then
 		new_state.completed[level] = true
-		events[#events + 1] = { name = progress.LEVEL_COMPLETED, level = level }
+		events[#events + 1] = {
+			name = progress.LEVEL_COMPLETED,
+			level = level,
+			stage = module.levels[level].stage,
+		}
 		if level == #module.levels then
 			events[#events + 1] = { name = progress.MODULE_COMPLETED }
 		end
