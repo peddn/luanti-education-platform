@@ -101,7 +101,7 @@ Die Arbeitsumgebung ist pro Sitzung neu. Was hier steht, muss zu Beginn einer Si
 
 - Erreichbar sind GitHub (nur per `git clone`), Codeberg, LuaRocks, ContentDB und die Luanti-Paketquelle.
 - Archiv-Downloads von GitHub (`.../archive/...tar.gz`) sind gesperrt. Einige LuaRocks-Pakete laden so ihre Quellen. Abhilfe: das Repository klonen, in der Rockspec die `url` auf `git+https://...` setzen und `luarocks make` ausführen. Betroffen waren `lua-term` und `mediator_lua`, beides Abhängigkeiten von Busted.
-- Lua 5.1, LuaJIT und LuaRocks kommen aus den Systempaketen (`lua5.1 liblua5.1-0-dev luajit luarocks`).
+- Lua 5.1, LuaJIT und LuaRocks kommen aus den Systempaketen (`lua5.1 liblua5.1-0-dev luajit luarocks`). Die Tests brauchen außer Busted und Luacheck das Paket `dkjson`.
 - Luanti: Das Paket `minetest_5.18.0-ppa0~ubuntu24.04.1_amd64.deb` aus `ppa.launchpadcontent.net/minetestdevs/stable` direkt herunterladen und mit `apt-get install ./datei.deb` installieren. `add-apt-repository` funktioniert nicht.
 - Der Server braucht in dieser Umgebung `ipv6_server = false`, `enable_ipv6 = false` und `bind_address = 127.0.0.1` in der Konfiguration.
 - Screenshots aus dem Spiel sind möglich: `Xvfb` als virtueller Bildschirm, Client mit `LIBGL_ALWAYS_SOFTWARE=1` und `enable_sound = false`, Aufnahme mit `import -window root` (Pakete `xvfb xdotool libgl1-mesa-dri imagemagick`). Vorher die Tageszeit auf Mittag setzen, sonst ist das Bild nachts schwarz.
