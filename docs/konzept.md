@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 18 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 19 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -74,7 +74,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | PvP | Aus, pro Welt einstellbar |
 | Monster | Später, pro Welt zuschaltbar |
 | Grundstücke | Schüler schützen eigene Grundstücke |
-| Chat | Frei, ohne Filter, wird protokolliert. Das Protokoll bleibt ein halbes Jahr |
+| Chat | Frei, ohne Filter, wird protokolliert. Das Protokoll bleibt bis zum Jahresabschluss |
 | Besitz | Schüler dürfen mit ihrem Besitz tun, was sie wollen |
 
 ### Belohnung
@@ -677,7 +677,7 @@ Anmeldung im Browser: Adresse eingeben, Link per Mail, Klick. Eine Registrierung
 **Grundsätze**
 
 - Zufällige Kontonamen statt Klarnamen. Die Zuordnung zu Personen bleibt bei der Lehrkraft.
-- Dauerhaft wird nur der Stand gespeichert, nicht der Verlauf.
+- Dauerhaft wird nur der Stand gespeichert, nicht der Verlauf. Der Verlauf steht nur in den Protokollen, und die werden mit dem Jahresabschluss gelöscht.
 - Protokolle speichern nur den Kontonamen. Der Wunschname wird erst beim Anzeigen dazugeholt.
 - E-Mail-Adressen gibt es nur von Lehrkräften.
 - Schüler haben keinen Zugang zur Web-Anwendung.
@@ -686,13 +686,17 @@ Anmeldung im Browser: Adresse eingeben, Link per Mail, Klick. Eine Registrierung
 
 Fortschritt, Belohnungsprotokoll und Chatprotokoll gehen vom Spielserver der Schule zum Cloud-Server. Der Transport läuft über HTTPS mit eigenem Schlüssel pro Welt.
 
-**Chatprotokoll**
+**Protokolle**
 
-- Die Schüler werden darauf hingewiesen, dass mitgeschrieben wird.
-- Einsicht nur für Lehrkräfte der Gruppe.
-- Aufbewahrung ein halbes Jahr, danach automatische Löschung. Der Jahresabschluss löscht in jedem Fall.
-- Diese Frist ist lang und muss gegenüber Schule und Eltern begründet werden, etwa mit der Aufklärung von Mobbing-Vorfällen.
-- Das Belohnungsprotokoll und die einzelnen Aufgabenversuche haben keine eigene Frist. Sie werden mit dem Jahresabschluss gelöscht.
+Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen und Aktionen am Pult. Alle werden gleich verwaltet.
+
+- Jedes Protokoll ist eine Datei im Ordner der Welt, an die nur angehängt wird. Eine Zeile ist ein Eintrag mit Zeitpunkt und Kontoname.
+- Die gemeinsame Technik liegt in `lep_core`. Kein Mod baut ein eigenes Protokoll.
+- Alle Protokolle bleiben bis zum Jahresabschluss, also höchstens ein Jahr. Der Jahresabschluss löscht sie vollständig. Eine kürzere eigene Frist gibt es nicht.
+- Einsicht haben nur Lehrkräfte der Gruppe. Schüler sehen ihr eigenes Belohnungsprotokoll.
+- Die Schüler werden darauf hingewiesen, dass der Chat mitgeschrieben wird.
+- Ein Jahr ist lang und muss gegenüber Schule und Eltern begründet werden, etwa mit der Aufklärung von Mobbing-Vorfällen und von Streit um Belohnungen.
+- Das Belohnungsprotokoll zeigt, wann ein Schüler welche Aufgabe gelöst hat. Es ist damit eine Lernhistorie des laufenden Jahres. Auch das gehört in die Information an Schule und Eltern.
 
 **Wunschnamen**
 
