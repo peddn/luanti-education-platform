@@ -20,8 +20,9 @@ local function module_title(module_id)
 	return module and module.title or module_id
 end
 
--- Sound for a completed stage. It comes a moment later, so it does not
--- drown the sound a learning module plays for the last right answer.
+-- Sounds for a completed level and a completed stage. They come a moment
+-- later, so they do not drown the sound a learning module plays for the
+-- last right answer.
 local SOUND_DELAY = 0.6
 
 local function play_later(player_name, sound)
@@ -37,9 +38,7 @@ lep_progress.register_on_level_completed(function(player_name, module_id, level,
 	if core.get_player_by_name(player_name) then
 		core.chat_send_player(player_name,
 			S("You completed level @1 of @2.", level, module_title(module_id)))
-		if is_stage then
-			play_later(player_name, "lep_progress_stage")
-		end
+		play_later(player_name, is_stage and "lep_progress_stage" or "lep_progress_level")
 	end
 end)
 

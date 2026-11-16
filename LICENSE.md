@@ -18,6 +18,7 @@ Einzelne Medien stammen von anderen Urhebern und behalten ihre eigene Lizenz.
 
 | Datei | Werk und Urheber | Lizenz | Änderungen |
 |---|---|---|---|
+| `mods/lep_progress/sounds/lep_progress_level.ogg` | „New thing get!“ von congusbongus. Quelle: <https://opengameart.org/content/new-thing-get> | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | keine |
 | `mods/lep_lobby/sounds/lep_lobby_music.ogg` | „Soundscape - D125“, Music by Tri-Tachyon, <https://soundcloud.com/tri-tachyon/albums>. Quelle: <https://opengameart.org/content/soundscape-d125> | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Stille an Anfang und Ende gekürzt, ein- und ausgeblendet, in OGG Vorbis umgewandelt |
 
 ## Fremde Mods
