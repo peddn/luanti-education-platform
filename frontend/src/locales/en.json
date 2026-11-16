@@ -26,6 +26,16 @@
     "databaseOk": "answers",
     "databaseDown": "does not answer"
   },
+  "confirm": {
+    "title": "Confirm your e-mail address",
+    "intro": "You entered an address for your web access at the teacher's desk. With the button you confirm that it is yours.",
+    "button": "Confirm address",
+    "working": "Confirming …",
+    "done": "The address is confirmed.",
+    "doneAccount": "It now belongs to the account {account}. The teacher's desk shows the new status in a few seconds.",
+    "missing": "The part from the mail is missing in this address. Open the whole link from the mail again.",
+    "again": "At the teacher's desk you can ask for a new mail on the tab “Web access”."
+  },
   "notFound": {
     "title": "Page not found",
     "text": "This address does not exist here.",
@@ -37,6 +47,8 @@
     "not_found": "This does not exist.",
     "too_large": "The request is too large.",
     "invalid_request": "The request was faulty.",
+    "invalid_token": "This link no longer works. It is too old or was used already.",
+    "address_taken": "This address already belongs to another account.",
     "internal": "The backend ran into an error.",
     "network": "The backend cannot be reached.",
     "unexpected": "The backend gave an unexpected answer."

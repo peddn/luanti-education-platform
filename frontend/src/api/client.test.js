@@ -56,6 +56,28 @@ describe('api client', () => {
     expect(asked).toEqual(['http://lep.example/api/health'])
   })
 
+  it('confirms an address with a POST', async () => {
+    /** @type {[string, RequestInit | undefined][]} */
+    const asked = []
+    const client = createClient({
+      fetch: async (input, init) => {
+        asked.push([String(input), init])
+        return new Response(JSON.stringify({ account: 'lehrer1' }))
+      },
+    })
+    expect(await client.confirm('lepc_abc')).toEqual({ account: 'lehrer1' })
+    const [path, init] = asked[0]
+    expect(path).toBe('/api/web/v1/confirm')
+    expect(init?.method).toBe('POST')
+    expect(init?.body).toBe('{"token":"lepc_abc"}')
+    expect(init?.headers).toMatchObject({ 'Content-Type': 'application/json' })
+  })
+
+  it('passes on the new codes of the backend', async () => {
+    const client = createClient({ fetch: answer(400, { code: 'invalid_token', message: 'x' }) })
+    expect((await failure(client.confirm('t'))).code).toBe('invalid_token')
+  })
+
   it('passes on the code of the backend', async () => {
     const client = createClient({ fetch: answer(404, { code: 'not_found', message: 'no such path' }) })
     const err = await failure(client.health())
