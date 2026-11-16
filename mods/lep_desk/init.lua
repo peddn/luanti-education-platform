@@ -10,6 +10,7 @@ load("game/window")
 load("game/actions")
 load("game/modes")
 load("game/daytime")
+load("game/watch")
 load("game/commands")
 
 core.log("action", "[lep_desk] loaded")

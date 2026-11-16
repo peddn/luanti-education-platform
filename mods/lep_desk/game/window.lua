@@ -9,7 +9,7 @@ local S = core.get_translator("lep_desk")
 local formspec = lep_core.formspec
 
 local FORM = "lep_desk:desk"
-local WIDTH, HEIGHT = 20, 12.5
+local WIDTH, HEIGHT = 20, 13
 -- Longest text of the teacher that is passed on.
 local MAX_TEXT = 200
 local LIST_WIDTH = 12
@@ -256,9 +256,18 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 
 	for index, action in ipairs(state.actions or {}) do
 		if fields["action_" .. index] then
-			local targets = action.needs_targets
-				and desk.targets(state.selection, lep_desk.get_students()) or {}
-			if action.needs_targets and #targets == 0 then
+			local targets = {}
+			if action.single then
+				-- The student of the highlighted row, if still there.
+				if desk.index_of(state.highlight, students) then
+					targets = { state.highlight }
+				end
+			elseif action.needs_targets then
+				targets = desk.targets(state.selection, students)
+			end
+			if action.single and #targets == 0 then
+				state.status = S("First click the row of a student.")
+			elseif action.needs_targets and #targets == 0 then
 				state.status = S("Nobody is marked.")
 			else
 				local ok, text = lep_desk.run_action(teacher_name, action.id, targets,

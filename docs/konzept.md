@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 34 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 35 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -661,7 +661,7 @@ Ein eigener Mod mit selbst geschriebenem Fenster. Links die Zielauswahl (alle, e
 - **Privilegien:** `lep_view_players` öffnet das Pult und zeigt die Übersicht. Jede Aktion nennt ihr eigenes Privileg und ist nur für den sichtbar, der es hat. `lep_send_players` erlaubt Schicken und Zurückholen.
 - **Protokoll:** Jede Aktion wird festgehalten: Zeitpunkt, Kontoname der Lehrkraft, Aktion, Ziele.
 - **Textfeld:** Unter der Tabelle steht ein Feld für einen Text an die Schüler. Aktionen, die den Schülern etwas zeigen, bekommen ihn mit.
-- **Aktionen:** Eine Aktion wirkt auf die markierten Schüler oder, wenn sie es so anmeldet, auf die ganze Welt. Aktionen können eine Gruppe mit Überschrift bilden und als Schalter ihre geltende Stellung anzeigen.
+- **Aktionen:** Eine Aktion wirkt auf die markierten Schüler oder, wenn sie es so anmeldet, auf die ganze Welt oder auf genau den Schüler der hervorgehobenen Zeile. Aktionen können eine Gruppe mit Überschrift bilden und als Schalter ihre geltende Stellung anzeigen.
 
 Erste Version:
 
@@ -672,7 +672,7 @@ Erste Version:
 - Aufmerksamkeitsmodus an/aus, mit eigenem Text.
 - Unterrichtsmodus umschalten.
 - Tageszeit der Welt steuern (Abschnitt 10.3).
-- Unsichtbar zu einem Schüler springen.
+- Unsichtbar zu einem Schüler springen (Zuschauen). Ziel ist der Schüler der hervorgehobenen Zeile. Die Lehrkraft landet an seiner Stelle und ist unsichtbar: keine Figur, kein Namensschild, keine Schrittgeräusche, nicht anklickbar. Der Schüler erfährt davon nichts. Eine Zeile am Bildschirm erinnert die Lehrkraft an den Zustand. „Zurück“ bringt sie an die Stelle, von der sie kam, und macht sie sichtbar. Verlässt sie den Ort auf anderem Weg oder meldet sie sich ab, ist sie ebenfalls wieder sichtbar. Privileg: `lep_watch_players`.
 - Übersicht: wer ist wo, wer bearbeitet was.
 - Reiter „Web-Zugang“ (Abschnitt 11.4).
 - Für die Schulverwaltung: Lehrkräfte ernennen. Dabei entsteht das Konto der Lehrkraft mit frei gewähltem Namen, das Startpasswort wird einmal angezeigt. Das Backend verteilt das Konto in alle Welten. Die erste Person der Schulverwaltung legt der Server-Admin an.
