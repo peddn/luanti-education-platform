@@ -42,6 +42,28 @@ describe("lep_core formspec", function()
 			"textlist[0.5,1;7,3;list;Gold\\, big,Silver \\[2\\],Bronze;2]", 1, true))
 	end)
 
+	it("adds tables with columns", function()
+		local fs = formspec.new(8, 6)
+			:table(0.5, 1, 7, 3, "people", { "color", "text", "text,padding=1" }, {
+				{ "#FFFFFF", "[x]", "anna, the first" },
+				{ "#BBBBBB", "[ ]", "ben" },
+			}, 2)
+			:build()
+		assert.is_truthy(fs:find("tablecolumns[color;text;text,padding=1]", 1, true))
+		assert.is_truthy(fs:find(
+			"table[0.5,1;7,3;people;#FFFFFF,\\[x\\],anna\\, the first,#BBBBBB,\\[ \\],ben;2]",
+			1, true))
+	end)
+
+	it("rejects table rows that do not fit the columns", function()
+		assert.has_error(function()
+			formspec.new(8, 6):table(0, 0, 1, 1, "t", { "text", "text" }, { { "only one" } })
+		end)
+		assert.has_error(function()
+			formspec.new(8, 6):table(0, 0, 1, 1, "t", {}, {})
+		end)
+	end)
+
 	it("adds buttons", function()
 		local fs = formspec.new(8, 6)
 			:button(0.5, 5, 3, 0.8, "place", "Put it here")

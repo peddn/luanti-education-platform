@@ -1,8 +1,8 @@
 # textdomain: lep_desk
 @1 level @2=@1 Niveau @2
-All students (@1)=Alle Schüler (@1)
-Students: click to mark=Schüler: zum Markieren anklicken
-Marked: @1=Markiert: @1
+Students (@1): click a box to mark=Schüler (@1): zum Markieren das Kästchen anklicken
+Marked: all (@1)=Markiert: alle (@1)
+Marked: @1 of @2=Markiert: @1 von @2
 Actions=Aktionen
 You may not use any actions.=Du darfst keine Aktionen ausführen.
 Nobody is marked.=Niemand ist markiert.
@@ -17,3 +17,9 @@ Release: may leave the room=Freigeben: darf den Raum verlassen
 You may leave the learning room now.=Du darfst den Lernraum jetzt verlassen.
 Released: @1 of @2=Freigegeben: @1 von @2
 No teacher is online any more. You may leave the learning room now.=Es ist keine Lehrkraft mehr angemeldet. Du darfst den Lernraum jetzt verlassen.
+Mark all=Alle markieren
+Mark none=Keine markieren
+Invert=Umkehren
+Same place=Gleicher Ort
+Marked: everybody in @1=Markiert: alle am Ort @1
+First click the row of a student.=Klicke zuerst die Zeile eines Schülers an.

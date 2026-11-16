@@ -9,14 +9,15 @@ local S = core.get_translator("lep_desk")
 local formspec = lep_core.formspec
 
 local FORM = "lep_desk:desk"
-local WIDTH, HEIGHT = 16, 10
-local LIST_WIDTH = 10
+local WIDTH, HEIGHT = 18, 11
+local LIST_WIDTH = 12
 -- Colours of the lines in the list.
 local MARKED, UNMARKED = "#9CFF9C", "#BBBBBB"
 
 -- Per teacher: selection (see src/desk.lua), status (last line of text),
 -- open (true while the window is shown), students (the list the window
--- was drawn with, so a click hits the line the teacher saw).
+-- was drawn with, so a click hits the row the teacher saw), highlight
+-- (name of the student whose row the teacher clicked last, or nil).
 local desks = {}
 
 local function state_of(teacher_name)
@@ -26,13 +27,35 @@ local function state_of(teacher_name)
 	return desks[teacher_name]
 end
 
--- "Lobby   Mental arithmetic 3" for the overview.
-local function describe(student)
+-- The columns of the list. The first one only colours the row.
+local COLUMNS = { "color", "text", "text,padding=1", "text,padding=2", "text,padding=2" }
+-- The column with the box, as the engine counts it in a click.
+local BOX_COLUMN = 2
+
+local function box(marked)
+	return marked and "[x]" or "[  ]"
+end
+
+-- The buttons under the list.
+local HELPERS = {
+	{ id = "all", title = S("Mark all") },
+	{ id = "none", title = S("Mark none") },
+	{ id = "invert", title = S("Invert") },
+	{ id = "place", title = S("Same place") },
+}
+
+-- Where a student is, for the overview.
+local function describe_place(student)
 	local place = lep_places.get_place_title(lep_places.get_place(student) or "?")
 	if lep_rooms.is_held(student) then
 		place = S("@1 (sent)", place)
 	end
-	local parts = { place }
+	return place
+end
+
+-- "Mental arithmetic level 3" for every module.
+local function describe_levels(student)
+	local parts = {}
 	for _, module_id in ipairs(lep_progress.get_module_ids()) do
 		local info = lep_progress.get_progress(student, module_id)
 		parts[#parts + 1] = S("@1 level @2", info.title, info.level)
@@ -49,20 +72,30 @@ local function show(teacher_name)
 	local pad = formspec.PADDING
 	local targets = desk.targets(state.selection, students)
 
-	local lines = { (state.selection.all and MARKED or UNMARKED)
-		.. (state.selection.all and "[x] " or "[  ] ")
-		.. S("All students (@1)", #students) }
+	local rows = {}
 	for _, student in ipairs(students) do
 		local marked = desk.is_selected(state.selection, student)
-		lines[#lines + 1] = (marked and MARKED or UNMARKED) .. (marked and "[x] " or "[  ] ")
-			.. student .. "   " .. describe(student)
+		rows[#rows + 1] = { marked and MARKED or UNMARKED, box(marked), student,
+			describe_place(student), describe_levels(student) }
 	end
 
 	local fs = formspec.new(WIDTH, HEIGHT)
-		:label(pad, 0.55, S("Students: click to mark"))
-		:textlist(pad, 0.9, LIST_WIDTH, HEIGHT - 2.4, "students", lines)
-		:label(pad, HEIGHT - 1.05, S("Marked: @1", #targets))
-		:label(pad, HEIGHT - 0.5, state.status)
+		:label(pad, 0.55, S("Students (@1): click a box to mark", #students))
+		:table(pad, 0.9, LIST_WIDTH, HEIGHT - 3.4, "students", COLUMNS, rows,
+			desk.index_of(state.highlight, students))
+
+	-- Helpers that set many boxes at once.
+	local gap = 0.2
+	local helper_width = (LIST_WIDTH - (#HELPERS - 1) * gap) / #HELPERS
+	for index, helper in ipairs(HELPERS) do
+		fs:button(pad + (index - 1) * (helper_width + gap), HEIGHT - 2.3, helper_width, 0.7,
+			"mark_" .. helper.id, helper.title)
+	end
+
+	-- "All" also covers students who join later.
+	fs:label(pad, HEIGHT - 1.05, state.selection.all and S("Marked: all (@1)", #targets)
+		or S("Marked: @1 of @2", #targets, #students))
+	fs:label(pad, HEIGHT - 0.5, state.status)
 
 	local actions_x = pad + LIST_WIDTH + 0.4
 	fs:label(actions_x, 0.55, S("Actions"))
@@ -139,17 +172,54 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 	end
 
 	if fields.students then
-		local event = core.explode_textlist_event(fields.students)
-		if event.type == "CHG" or event.type == "DCL" then
-			local students = state.students or {}
-			if event.index == 1 then
-				state.selection = desk.toggle_all(state.selection)
-			elseif students[event.index - 1] then
-				state.selection = desk.toggle(state.selection, students[event.index - 1],
-					lep_desk.get_students())
-			end
-			show(teacher_name)
+		local event = core.explode_table_event(fields.students)
+		if event.type ~= "CHG" and event.type ~= "DCL" then
+			return true
 		end
+		local target = (state.students or {})[event.row]
+		if target == nil then
+			return true
+		end
+		-- Every click highlights its row. The client has done that already;
+		-- it is remembered for the next time the window is drawn.
+		state.highlight = target
+		if event.column ~= BOX_COLUMN then
+			-- Only a click on the box changes who is marked.
+			return true
+		end
+		state.selection = desk.toggle(state.selection, target, lep_desk.get_students())
+		show(teacher_name)
+		return true
+	end
+
+	local students = lep_desk.get_students()
+	if fields.mark_all then
+		state.selection = desk.new_selection()
+		state.status = ""
+	elseif fields.mark_none then
+		state.selection = desk.select_none()
+		state.status = ""
+	elseif fields.mark_invert then
+		state.selection = desk.invert(state.selection, students)
+		state.status = ""
+	elseif fields.mark_place then
+		-- Everybody who is where the highlighted student is.
+		local place = state.highlight and lep_places.get_place(state.highlight)
+		if place then
+			local names = {}
+			for _, student in ipairs(students) do
+				if lep_places.get_place(student) == place then
+					names[#names + 1] = student
+				end
+			end
+			state.selection = desk.select_names(names, students)
+			state.status = S("Marked: everybody in @1", lep_places.get_place_title(place))
+		else
+			state.status = S("First click the row of a student.")
+		end
+	end
+	if fields.mark_all or fields.mark_none or fields.mark_invert or fields.mark_place then
+		show(teacher_name)
 		return true
 	end
 

@@ -84,6 +84,30 @@ function Builder:textlist(x, y, width, height, name, lines, selected)
 		table.concat(escaped, ","), selected or "")
 end
 
+--- Adds a table: rows of cells in columns. A click arrives as a field
+-- named `name` that says which row and which column was hit, so a window
+-- can tell a click on one cell from a click on the rest of the row.
+-- @param columns List of column types as the engine knows them, for
+--   example { "color", "text", "text,padding=1" }. A "color" column takes
+--   no room: its cell holds the colour of the cells after it.
+-- @param rows List of rows, each a list with one cell per column. The
+--   cells are escaped here.
+-- @param selected Optional index of the highlighted row.
+function Builder:table(x, y, width, height, name, columns, rows, selected)
+	assert(#columns > 0, "table: there must be at least one column")
+	local cells = {}
+	for row_index, row in ipairs(rows) do
+		assert(#row == #columns, "table: row " .. row_index .. " must have "
+			.. #columns .. " cells")
+		for _, cell in ipairs(row) do
+			cells[#cells + 1] = formspec.escape(cell)
+		end
+	end
+	self:element("tablecolumns", unpack(columns))
+	return self:element("table", { x, y }, { width, height }, formspec.escape(name),
+		table.concat(cells, ","), selected or "")
+end
+
 --- Adds a button. The label is escaped here.
 function Builder:button(x, y, width, height, name, label)
 	return self:element("button", { x, y }, { width, height }, formspec.escape(name),

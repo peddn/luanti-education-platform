@@ -122,6 +122,40 @@ function desk.toggle(selection, name, students)
 	return { all = false, names = names }
 end
 
+--- Returns a selection of nobody.
+function desk.select_none()
+	return { all = false, names = {} }
+end
+
+--- Returns a selection of exactly these students.
+-- @param names List of names. Names that are no students are left out.
+-- @param students The current list of students.
+function desk.select_names(names, students)
+	local wanted = {}
+	for _, name in ipairs(names) do
+		wanted[name] = true
+	end
+	local selection = desk.select_none()
+	for _, student in ipairs(students) do
+		if wanted[student] then
+			selection = desk.toggle(selection, student, students)
+		end
+	end
+	return selection
+end
+
+--- Returns the opposite selection: whoever is marked is not, and the
+-- other way round.
+function desk.invert(selection, students)
+	local names = {}
+	for _, student in ipairs(students) do
+		if not desk.is_selected(selection, student) then
+			names[#names + 1] = student
+		end
+	end
+	return desk.select_names(names, students)
+end
+
 --- Returns the names an action applies to: the selected students who are
 -- still there, in the order of the list.
 function desk.targets(selection, students)
@@ -132,6 +166,17 @@ function desk.targets(selection, students)
 		end
 	end
 	return list
+end
+
+--- Returns the index of a student in the list, or nil if the student is
+-- not in it, for example because they left.
+function desk.index_of(name, students)
+	for index, student in ipairs(students) do
+		if student == name then
+			return index
+		end
+	end
+	return nil
 end
 
 return desk
