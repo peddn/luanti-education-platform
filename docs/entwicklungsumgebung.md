@@ -190,6 +190,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 
 - Die Skripte setzen `LUANTI_USER_PATH` und zusätzlich das ältere `MINETEST_USER_PATH`. Neuere Luanti-Versionen geben für das ältere eine Warnung aus, die sich ignorieren lässt.
 - Die Verknüpfung des Modpacks ist mit Luanti 5.17 und 5.18 geprüft.
+- Spieler sehen einander nur bis 160 Blöcke Entfernung. `lep_places` setzt dafür `player_transfer_distance = 10`, solange in `.dev/minetest.conf` kein eigener Wert steht. Ohne die Grenze stünden die Namensschilder aus Lobby und Lernräumen am Himmel über der Wildnis.
 - Fremde Mods stehen in `third_party/mods.toml`, jeder mit festem Commit. `scripts/dev-setup.sh` lädt sie nach `.dev/third_party/` und schaltet sie in der Testwelt ein. Dafür braucht das Skript Netzzugang. Ändert sich ein Commit in der Liste, holt der nächste Lauf die neue Version. Einstellungen eines fremden Mods stehen ebenfalls in der Liste (`settings.<name> = <wert>`). Das Skript schreibt sie in `.dev/minetest.conf` und ersetzt dort einen vorhandenen Wert.
 
 ## 6. Backend und Oberfläche
