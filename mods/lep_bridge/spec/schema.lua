@@ -1,7 +1,7 @@
 -- A small checker for the schemas in api/openapi.json, for the tests.
 -- It knows the parts of JSON Schema the description uses: objects with
--- required properties, arrays, strings, numbers, booleans, enums and
--- references.
+-- required properties, arrays, strings, numbers, booleans, enums,
+-- references and values that may be null.
 
 local json = require("dkjson")
 
@@ -41,6 +41,16 @@ function schema.load(path)
 			return false, where .. ": '" .. tostring(value) .. "' is not allowed"
 		end
 		local kind = node.type
+		if type(kind) == "table" then
+			-- Several types are allowed, for a value that may be missing:
+			-- the first one that is not "null" counts.
+			for _, candidate in ipairs(kind) do
+				if candidate ~= "null" then
+					kind = candidate
+					break
+				end
+			end
+		end
 		if kind == "object" then
 			if type(value) ~= "table" then
 				return false, where .. ": expected an object"

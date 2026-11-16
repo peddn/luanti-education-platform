@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirms the address a teacher entered at the desk, with the token
+         *     from the confirmation mail. A token works once.
+         */
+        post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/world/v1/events": {
         parameters: {
             query?: never;
@@ -91,6 +111,15 @@ export interface components {
              */
             message: string;
         };
+        /** @description Request to confirm an address with the token from a mail. */
+        ConfirmRequest: {
+            token: string;
+        };
+        /** @description Answer to a confirmed address. */
+        Confirmed: {
+            /** @description Account name of the teacher the address now belongs to. */
+            account: string;
+        };
         /** @description Answer to a request that needs nothing said. */
         Done: Record<string, never>;
         /**
@@ -98,7 +127,7 @@ export interface components {
          *     the language of the user.
          * @enum {string}
          */
-        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "internal";
+        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "invalid_token" | "address_taken" | "internal";
         /** @description One thing that happened in a world. */
         Event: {
             /**
@@ -251,6 +280,14 @@ export interface components {
             title: string;
         };
         /**
+         * @description Payload of the event "teachers": the accounts that hold the
+         *     privilege for web access in this world. It replaces what the
+         *     backend knew before.
+         */
+        Teachers: {
+            accounts?: string[];
+        };
+        /**
          * @description Payload of the event "trophies": all trophies of one student. It
          *     replaces what the backend knew before.
          */
@@ -265,6 +302,35 @@ export interface components {
             material: string;
             /** @description Name for people, in the language of the world. */
             title: string;
+        };
+        /**
+         * @description What a teacher can do with their web access at the desk.
+         * @enum {string}
+         */
+        WebAccessAction: "set" | "resend" | "remove";
+        /**
+         * @description Payload of the event "web_access": what a teacher did with their
+         *     web access.
+         */
+        WebAccessRequest: {
+            /** @description Account name of the teacher. */
+            account: string;
+            action: components["schemas"]["WebAccessAction"];
+            /** @description The address, for the action "set" only. */
+            email?: string | null;
+        };
+        /**
+         * @description Payload of the job "web_access_status": how the web access of a
+         *     teacher stands. Addresses are shortened, the world never gets a
+         *     whole one back.
+         */
+        WebAccessStatus: {
+            /** @description Account name of the teacher. */
+            account: string;
+            /** @description The confirmed address, shortened. Missing without one. */
+            address?: string | null;
+            /** @description The address that waits for its confirmation, shortened. */
+            pending?: string | null;
         };
         /** @description Payload of the event "world_started". */
         WorldStarted: {
@@ -298,6 +364,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description The address is confirmed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Confirmed"];
+                };
+            };
+            /** @description The token is unknown, used or too old (invalid_token), or the request cannot be read (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The address belongs to another account (address_taken) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };

@@ -29,6 +29,57 @@
         }
       }
     },
+    "/api/web/v1/confirm": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Confirms the address a teacher entered at the desk, with the token\nfrom the confirmation mail. A token works once.",
+        "operationId": "confirm",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The address is confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Confirmed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The token is unknown, used or too old (invalid_token), or the request cannot be read (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The address belongs to another account (address_taken)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/world/v1/events": {
       "post": {
         "tags": [
@@ -221,6 +272,31 @@
           }
         }
       },
+      "ConfirmRequest": {
+        "type": "object",
+        "description": "Request to confirm an address with the token from a mail.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "Confirmed": {
+        "type": "object",
+        "description": "Answer to a confirmed address.",
+        "required": [
+          "account"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the teacher the address now belongs to."
+          }
+        }
+      },
       "Done": {
         "type": "object",
         "description": "Answer to a request that needs nothing said."
@@ -233,6 +309,8 @@
           "not_found",
           "too_large",
           "invalid_request",
+          "invalid_token",
+          "address_taken",
           "internal"
         ]
       },
@@ -580,6 +658,18 @@
           }
         }
       },
+      "Teachers": {
+        "type": "object",
+        "description": "Payload of the event \"teachers\": the accounts that hold the\nprivilege for web access in this world. It replaces what the\nbackend knew before.",
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "Trophies": {
         "type": "object",
         "description": "Payload of the event \"trophies\": all trophies of one student. It\nreplaces what the backend knew before.",
@@ -617,6 +707,66 @@
           "title": {
             "type": "string",
             "description": "Name for people, in the language of the world."
+          }
+        }
+      },
+      "WebAccessAction": {
+        "type": "string",
+        "description": "What a teacher can do with their web access at the desk.",
+        "enum": [
+          "set",
+          "resend",
+          "remove"
+        ]
+      },
+      "WebAccessRequest": {
+        "type": "object",
+        "description": "Payload of the event \"web_access\": what a teacher did with their\nweb access.",
+        "required": [
+          "account",
+          "action"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the teacher."
+          },
+          "action": {
+            "$ref": "#/components/schemas/WebAccessAction"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The address, for the action \"set\" only."
+          }
+        }
+      },
+      "WebAccessStatus": {
+        "type": "object",
+        "description": "Payload of the job \"web_access_status\": how the web access of a\nteacher stands. Addresses are shortened, the world never gets a\nwhole one back.",
+        "required": [
+          "account"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the teacher."
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The confirmed address, shortened. Missing without one."
+          },
+          "pending": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The address that waits for its confirmation, shortened."
           }
         }
       },

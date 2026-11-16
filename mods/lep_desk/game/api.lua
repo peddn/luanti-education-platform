@@ -1,9 +1,12 @@
--- Public API of lep_desk: privileges and the registry of actions.
+-- Public API of lep_desk: privileges and the registries of actions and
+-- tabs.
 
 local load = lep_core.loader("lep_desk")
 local desk = load("src/desk")
+local tabs = load("src/tabs")
 
 local actions = desk.new_actions()
+local tab_registry = tabs.new()
 
 -- Every action a teacher takes at the desk is written down.
 local protocol = lep_core.protocols.open("desk", { "account", "action", "targets" })
@@ -119,6 +122,37 @@ end
 --              the current position of a switch.
 function lep_desk.register_action(id, def)
 	actions:register(id, def)
+end
+
+--- Registers a tab of the desk, next to the one with the students. A
+-- teacher sees the tabs they hold the privilege for.
+-- @param id Unique id, for example "lep_desk:web_access".
+-- @param def Table with:
+--   title      text on the tab, already translated
+--   privilege  privilege a teacher needs to see and use the tab
+--   build      function(fs, teacher_name, area) that adds the content to
+--              the window. `fs` is a builder of lep_core.formspec, `area`
+--              a table with x, y, width and height.
+--   on_fields  function(teacher_name, fields) called when the teacher
+--              pressed something on the tab. The desk has checked the
+--              privilege. The window is drawn again afterwards.
+function lep_desk.register_tab(id, def)
+	tab_registry:register(id, def)
+end
+
+--- Returns the tabs a teacher may use.
+function lep_desk.get_tabs(teacher_name)
+	return tab_registry:allowed(function(privilege)
+		return core.check_player_privs(teacher_name, { [privilege] = true })
+	end)
+end
+
+--- Writes into the protocol of the desk that a teacher did something
+-- that is not an action on students.
+-- @param action Short name of what was done, for example "web_access:set".
+function lep_desk.record(teacher_name, action)
+	protocol:append({ account = teacher_name, action = action, targets = "" })
+	core.log("action", "[lep_desk] " .. teacher_name .. " used " .. action)
 end
 
 --- Returns the actions a teacher may use, each with id and title.

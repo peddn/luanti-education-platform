@@ -1,8 +1,8 @@
 //! The web server: its routes and what they share.
 //!
 //! There are two separate interfaces. `/api/web` is for the browser of a
-//! teacher and will need a login; it is empty so far. `/api/world` is for
-//! the worlds, which call with their key.
+//! teacher; so far it only confirms addresses and needs no login.
+//! `/api/world` is for the worlds, which call with their key.
 
 use axum::extract::State;
 use axum::routing::get;
@@ -12,12 +12,14 @@ use sqlx::SqlitePool;
 use utoipa::OpenApi;
 
 use std::path::Path;
+use std::sync::Arc;
 
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::failure::Failure;
 use crate::jobs::Waiters;
-use crate::{db, world_api};
+use crate::mail::Mailer;
+use crate::{db, web_api, world_api};
 
 /// What every request handler can reach.
 #[derive(Clone)]
@@ -25,13 +27,26 @@ pub struct AppState {
     pub db: SqlitePool,
     /// Wakes the worlds that wait for a job.
     pub waiters: Waiters,
+    /// The way mails leave the backend.
+    pub mailer: Mailer,
+    /// Address of the web application as browsers reach it, for links in
+    /// mails.
+    pub public_url: Arc<str>,
 }
 
 impl AppState {
+    /// Builds the state with mails that go to the terminal and links
+    /// for the test environment.
     pub fn new(db: SqlitePool) -> Self {
+        Self::with(db, Mailer::Terminal, crate::config::DEFAULT_PUBLIC_URL)
+    }
+
+    pub fn with(db: SqlitePool, mailer: Mailer, public_url: &str) -> Self {
         Self {
             db,
             waiters: Waiters::default(),
+            mailer,
+            public_url: public_url.into(),
         }
     }
 }
@@ -47,7 +62,8 @@ impl AppState {
         health,
         world_api::send_events,
         world_api::fetch_jobs,
-        world_api::report_result
+        world_api::report_result,
+        web_api::confirm
     ),
     components(schemas(
         Health,
@@ -58,7 +74,13 @@ impl AppState {
         lep_protocol::world::Modules,
         lep_protocol::world::Progress,
         lep_protocol::world::Trophies,
-        lep_protocol::world::ProtocolEntry
+        lep_protocol::world::ProtocolEntry,
+        lep_protocol::world::Teachers,
+        lep_protocol::world::WebAccessRequest,
+        lep_protocol::world::WebAccessAction,
+        lep_protocol::world::WebAccessStatus,
+        lep_protocol::web::ConfirmRequest,
+        lep_protocol::web::Confirmed
     )),
     modifiers(&WorldKey)
 )]
@@ -110,7 +132,7 @@ pub fn has_frontend(folder: &Path) -> bool {
 }
 
 fn api(state: AppState) -> Router {
-    let web = Router::new();
+    let web = web_api::router();
     let world = world_api::router();
 
     Router::new()

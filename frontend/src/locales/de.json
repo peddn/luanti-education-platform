@@ -26,6 +26,16 @@
     "databaseOk": "antwortet",
     "databaseDown": "antwortet nicht"
   },
+  "confirm": {
+    "title": "E-Mail-Adresse bestätigen",
+    "intro": "Du hast am Lehrerpult eine Adresse für deinen Web-Zugang eingetragen. Mit dem Knopf bestätigst du, dass sie dir gehört.",
+    "button": "Adresse bestätigen",
+    "working": "Wird bestätigt …",
+    "done": "Die Adresse ist bestätigt.",
+    "doneAccount": "Sie gehört jetzt zum Konto {account}. Das Lehrerpult zeigt den neuen Status in wenigen Sekunden.",
+    "missing": "In dieser Adresse fehlt der Teil aus der Mail. Öffne den Link aus der Mail noch einmal vollständig.",
+    "again": "Am Lehrerpult kannst du im Reiter „Web-Zugang“ eine neue Mail anfordern."
+  },
   "notFound": {
     "title": "Seite nicht gefunden",
     "text": "Diese Adresse gibt es hier nicht.",
@@ -37,6 +47,8 @@
     "not_found": "Das gibt es nicht.",
     "too_large": "Die Anfrage ist zu groß.",
     "invalid_request": "Die Anfrage war fehlerhaft.",
+    "invalid_token": "Dieser Link gilt nicht mehr. Er ist abgelaufen oder wurde schon benutzt.",
+    "address_taken": "Diese Adresse gehört schon zu einem anderen Konto.",
     "internal": "Im Backend ist ein Fehler aufgetreten.",
     "network": "Das Backend ist nicht erreichbar.",
     "unexpected": "Das Backend hat unerwartet geantwortet."

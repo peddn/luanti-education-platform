@@ -78,7 +78,7 @@ pub async fn send_events(
     }
     let mut results = Vec::with_capacity(batch.events.len());
     for event in &batch.events {
-        let outcome = events::take_in(&state.db, &world.id, event).await?;
+        let outcome = events::take_in(&state, &world.id, event).await?;
         results.push(EventResult {
             id: event.id.clone(),
             outcome,

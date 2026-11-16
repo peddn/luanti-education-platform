@@ -237,6 +237,7 @@ Das Backend liest seine Einstellungen aus Umgebungsvariablen.
 | `LEP_BIND` | Adresse und Port | `127.0.0.1:8080` |
 | `LEP_DATABASE` | Pfad der SQLite-Datei | `.dev/backend/lep.sqlite` |
 | `LEP_FRONTEND` | Ordner mit der gebauten Oberfläche | `frontend/dist` |
+| `LEP_PUBLIC_URL` | Adresse der Web-Anwendung, wie Browser sie erreichen. Damit beginnen die Links in Mails. | `http://127.0.0.1:8080` |
 | `RUST_LOG` | Ausführlichkeit der Meldungen | `info` |
 
 Die Datenbank der Testumgebung liegt in `.dev/` und wird nicht eingecheckt. Wer sie löscht, bekommt beim nächsten Start eine leere. Tabellen entstehen und ändern sich über Migrationen in `backend/migrations/`, das Backend spielt sie beim Start von selbst ein.
@@ -283,9 +284,24 @@ Die Welt meldet den Fall einmal deutlich im Terminal (`THE BACKEND DOES NOT KNOW
 | `scripts/backend-run.sh world ping <name>` | stellt einen Ping-Auftrag ein, um den Weg zur Welt und zurück zu prüfen |
 | `scripts/backend-run.sh world state <name>` | zeigt, was das Backend von einer Welt weiß: Module, Fortschritt, Trophäen, Protokolle |
 | `scripts/backend-run.sh world sync <name>` | bittet die Welt, ihren ganzen Stand noch einmal zu senden |
+| `scripts/backend-run.sh teacher list` | listet die Lehrkräfte: Adresse, ob sie bestätigt ist, und in wie vielen Welten das Privileg gilt |
 | `scripts/update-openapi.sh` | schreibt `api/openapi.json` und die Typen der Oberfläche neu, nach Änderungen an der Schnittstelle |
 
 Die Befehle arbeiten direkt auf der Datenbank und brauchen keinen laufenden Server. Ein Ping, der so eingestellt wird, erreicht eine verbundene Welt innerhalb von 25 Sekunden.
+
+### Web-Zugang einer Lehrkraft
+
+Eine Lehrkraft richtet ihren Web-Zugang im Lehrerpult ein, Reiter „Web-Zugang“. Den Reiter sieht, wer das Privileg `lep_web_access` hat. Der Admin vergibt es im Spiel:
+
+```
+/grant <name> lep_web_access
+```
+
+Voraussetzung: Die Testwelt ist mit dem Backend verbunden (`scripts/dev-bridge.sh`), und die Oberfläche ist gebaut (`scripts/frontend-run.sh build`), denn der Link aus der Mail öffnet eine Seite der Oberfläche.
+
+**Mails stehen im Terminal.** Der Mailversand ist noch nicht eingerichtet. Das Backend schreibt jede Mail in sein Terminal, zwischen zwei Linien aus Strichen. Den Link darin im Browser öffnen und dort „Adresse bestätigen“ klicken. Ein Link gilt 15 Minuten und einmal.
+
+Die Welt meldet dem Backend, welche Konten das Privileg haben, beim Start und bei jeder Änderung. Nur für diese Konten nimmt das Backend Meldungen zum Web-Zugang an. `scripts/backend-run.sh teacher list` zeigt, was das Backend weiß.
 
 ### Oberfläche
 

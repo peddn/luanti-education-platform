@@ -3,6 +3,7 @@
 
 /** @typedef {import('./schema').components['schemas']} Schemas */
 /** @typedef {Schemas['Health']} Health */
+/** @typedef {Schemas['Confirmed']} Confirmed */
 /** @typedef {Schemas['ErrorCode']} BackendErrorCode */
 
 /**
@@ -13,7 +14,15 @@
  */
 
 /** @type {readonly string[]} */
-const BACKEND_CODES = ['unauthorized', 'not_found', 'too_large', 'invalid_request', 'internal']
+const BACKEND_CODES = [
+  'unauthorized',
+  'not_found',
+  'too_large',
+  'invalid_request',
+  'invalid_token',
+  'address_taken',
+  'internal',
+]
 
 /** What a proxy answers if it cannot reach the backend. */
 const GATEWAY_STATUS = [502, 503, 504]
@@ -87,13 +96,21 @@ export function createClient(options = {}) {
 
   /**
    * @param {string} path
+   * @param {unknown} [content] sent as JSON with POST; without it the request is a GET
    * @returns {Promise<unknown>}
    */
-  async function get(path) {
+  async function request(path, content) {
+    /** @type {RequestInit} */
+    const init = { headers: { Accept: 'application/json' } }
+    if (content !== undefined) {
+      init.method = 'POST'
+      init.headers = { Accept: 'application/json', 'Content-Type': 'application/json' }
+      init.body = JSON.stringify(content)
+    }
     /** @type {Response} */
     let response
     try {
-      response = await send(base + path, { headers: { Accept: 'application/json' } })
+      response = await send(base + path, init)
     } catch (err) {
       throw new ApiFailure('network', String(err))
     }
@@ -110,7 +127,19 @@ export function createClient(options = {}) {
   return {
     /** @returns {Promise<Health>} */
     async health() {
-      return /** @type {Health} */ (await get('/api/health'))
+      return /** @type {Health} */ (await request('/api/health'))
+    },
+
+    /**
+     * Confirms an address with the token from a confirmation mail.
+     *
+     * @param {string} token
+     * @returns {Promise<Confirmed>}
+     */
+    async confirm(token) {
+      /** @type {Schemas['ConfirmRequest']} */
+      const body = { token }
+      return /** @type {Confirmed} */ (await request('/api/web/v1/confirm', body))
     },
   }
 }
