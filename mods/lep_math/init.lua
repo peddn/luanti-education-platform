@@ -11,4 +11,8 @@ load("game/room")
 load("game/play")
 load("game/commands")
 
+if core.get_modpath("lep_desk") then
+	load("game/desk")
+end
+
 core.log("action", "[lep_math] loaded")

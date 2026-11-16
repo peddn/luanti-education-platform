@@ -2,6 +2,7 @@
 
 local load = lep_core.loader("lep_math")
 local layout = load("src/layout")
+local S = core.get_translator("lep_math")
 
 lep_math.ROOM_TYPE = "lep_math:room"
 
@@ -34,6 +35,7 @@ lep_rooms.register_type(lep_math.ROOM_TYPE, {
 	-- Raise this when the furniture changes, so existing rooms are rebuilt.
 	version = 2,
 	privileges = {},
+	title = S("Math room"),
 	on_build = furnish,
 })
 

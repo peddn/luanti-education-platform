@@ -1,0 +1,19 @@
+# textdomain: lep_desk
+@1 level @2=@1 Niveau @2
+All students (@1)=Alle Schüler (@1)
+Students: click to mark=Schüler: zum Markieren anklicken
+Marked: @1=Markiert: @1
+Actions=Aktionen
+You may not use any actions.=Du darfst keine Aktionen ausführen.
+Nobody is marked.=Niemand ist markiert.
+That did not work.=Das hat nicht geklappt.
+Bring back from learning rooms=Aus dem Lernraum zurückholen
+Your teacher has brought you back from the learning room.=Deine Lehrkraft hat dich aus dem Lernraum zurückgeholt.
+Brought back: @1 of @2=Zurückgeholt: @1 von @2
+Open the teacher's desk=Öffnet das Lehrerpult
+You have to be in the game.=Du musst im Spiel sein.
+@1 (sent)=@1 (geschickt)
+Release: may leave the room=Freigeben: darf den Raum verlassen
+You may leave the learning room now.=Du darfst den Lernraum jetzt verlassen.
+Released: @1 of @2=Freigegeben: @1 von @2
+No teacher is online any more. You may leave the learning room now.=Es ist keine Lehrkraft mehr angemeldet. Du darfst den Lernraum jetzt verlassen.

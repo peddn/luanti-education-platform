@@ -26,7 +26,7 @@ end)
 
 lep_lobby.PLACE = PLACE
 
-lep_places.register_place(PLACE, { default_pos = anchors.spawn })
+lep_places.register_place(PLACE, { default_pos = anchors.spawn, title = "Lobby" })
 
 local function get_count()
 	return book:count()

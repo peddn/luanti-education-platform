@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 26 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 27 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -305,7 +305,7 @@ Jeder Ortswechsel läuft über eine einzige Funktion in einem eigenen Mod, egal 
 
 Bei jeder Anmeldung werden Rechte und Zustand passend zum aktuellen Ort neu gesetzt. So bleibt nach einem Absturz kein Flugrecht in der Wildnis hängen.
 
-**Ortstypen.** Andere Mods melden Ortstypen bei `lep_places` an, mit dem dort geltenden Inventar und den dort geltenden Rechten. Die Wildnis ist von Anfang an angemeldet.
+**Ortstypen.** Andere Mods melden Ortstypen bei `lep_places` an, mit dem dort geltenden Inventar, den dort geltenden Rechten und einem Namen für die Übersicht im Pult. Die Wildnis ist von Anfang an angemeldet.
 
 **Inventar.** Gespeichert wird nur das Survival-Inventar: Hauptinventar und Handwerksfeld. Beim Betreten eines Lernraums wird es gesichert und geleert, der Lernraum gibt dem Spieler seine Gegenstände neu. Beim Verlassen werden die Lern-Gegenstände verworfen und das Survival-Inventar zurückgegeben. Lebenspunkte bleiben unverändert.
 
@@ -637,11 +637,21 @@ Eigene Mods fragen den Schutz nur über Luantis Standardfunktion ab, nie direkt 
 
 ### 10.1 Lehrerpult
 
-Ein eigener Mod mit selbst geschriebenem Fenster. Oben die Zielauswahl (alle, einzelne Schüler), darunter die Aktionen. Aktionen sind registrierbare Bausteine, damit Lernmodule eigene Knöpfe ergänzen können.
+Ein eigener Mod mit selbst geschriebenem Fenster. Links die Zielauswahl (alle, einzelne Schüler), rechts die Aktionen. Aktionen sind registrierbare Bausteine, damit Lernmodule eigene Knöpfe ergänzen können.
+
+- **Öffnen:** mit dem Chatbefehl `/pult`. Er funktioniert an jedem Ort, auch im Lernraum, wo das Inventar getauscht ist. Ein Pult-Block in der Halle kann später dasselbe Fenster öffnen.
+- **Schüler:** In der Liste stehen alle angemeldeten Spieler, die das Pult selbst nicht öffnen dürfen. Gruppen kommen mit dem Backend.
+- **Zielauswahl:** Ein Klick markiert einen Schüler oder nimmt ihn heraus. Die erste Zeile steht für alle. „Alle“ meint, wer im Moment der Aktion Schüler ist, also auch später Hinzugekommene.
+- **Übersicht:** Jede Zeile zeigt den Ort des Schülers und sein Niveau in jedem Modul. Die Liste aktualisiert sich bei jedem Ortswechsel.
+- **Privilegien:** `lep_view_players` öffnet das Pult und zeigt die Übersicht. Jede Aktion nennt ihr eigenes Privileg und ist nur für den sichtbar, der es hat. `lep_send_players` erlaubt Schicken und Zurückholen.
+- **Protokoll:** Jede Aktion wird festgehalten: Zeitpunkt, Kontoname der Lehrkraft, Aktion, Ziele.
 
 Erste Version:
 
-- In einen Lernraum schicken (Modul und Station), zurückholen.
+- In einen Lernraum schicken (Modul und Station), zurückholen. Wer geschickt wird, landet in seinem eigenen Raum. Wer zurückgeholt wird, kommt dorthin, wo er vorher war.
+- Festhalten: Wer geschickt wurde, kann den Raum nicht selbst verlassen, bis die Lehrkraft ihn zurückholt oder freigibt. Wer freiwillig hineingegangen ist, bleibt frei. Wird er dort von der Lehrkraft „geschickt“, ist er ab dann festgehalten. Die Übersicht zeigt, wer festgehalten ist.
+- Freigeben: hebt das Festhalten auf, ohne den Schüler herauszuholen.
+- Ist keine Lehrkraft mehr angemeldet, sind alle frei. So sperrt ein Verbindungsabbruch der Lehrkraft, etwa im Fernunterricht, niemanden ein. Auch ein Neustart des Servers gibt alle frei, das Neuanmelden eines Schülers nicht.
 - Aufmerksamkeitsmodus an/aus, mit eigenem Text.
 - Unterrichtsmodus umschalten.
 - Tageszeit der Welt steuern (Abschnitt 10.3).
