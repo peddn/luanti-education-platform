@@ -1,0 +1,420 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Luanti Education Platform",
+    "description": "Interface of the LEP backend for the web frontend and the worlds.",
+    "license": {
+      "name": "AGPL-3.0-or-later",
+      "identifier": "AGPL-3.0-or-later"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [],
+        "summary": "Says whether the backend can do its work.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "State of the backend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/world/v1/events": {
+      "post": {
+        "tags": [
+          "world_api"
+        ],
+        "summary": "Takes in events of a world. Every event is handled once, however often\nit is sent.",
+        "operationId": "send_events",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventBatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "One result per event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventBatchResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Too many events in one request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "world_key": []
+          }
+        ]
+      }
+    },
+    "/api/world/v1/jobs": {
+      "get": {
+        "tags": [
+          "world_api"
+        ],
+        "summary": "Returns the jobs that wait for a world. If there are none, the request\nstays open for up to `wait` seconds and returns as soon as one comes.",
+        "operationId": "fetch_jobs",
+        "parameters": [
+          {
+            "name": "wait",
+            "in": "query",
+            "description": "Seconds to wait, at most 25",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The waiting jobs, possibly none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "world_key": []
+          }
+        ]
+      }
+    },
+    "/api/world/v1/jobs/{id}/result": {
+      "post": {
+        "tags": [
+          "world_api"
+        ],
+        "summary": "Notes how a job went.",
+        "operationId": "report_result",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobResult"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Noted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The world has no such job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "world_key": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "description": "Answer to a request that failed.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "What went wrong, for people."
+          }
+        }
+      },
+      "Done": {
+        "type": "object",
+        "description": "Answer to a request that needs nothing said."
+      },
+      "Event": {
+        "type": "object",
+        "description": "One thing that happened in a world.",
+        "required": [
+          "id",
+          "kind",
+          "time",
+          "payload"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique id, made up by the world. The backend uses it to notice\nan event it has seen before."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What happened, for example \"world_started\". It decides what\nthe payload has to look like."
+          },
+          "payload": {
+            "type": "object",
+            "description": "The details, depending on the kind."
+          },
+          "time": {
+            "type": "integer",
+            "format": "int64",
+            "description": "When it happened, in seconds since 1970 (UTC)."
+          }
+        }
+      },
+      "EventBatch": {
+        "type": "object",
+        "description": "Several events in one request, oldest first.",
+        "required": [
+          "events"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          }
+        }
+      },
+      "EventBatchResult": {
+        "type": "object",
+        "description": "Answer to a batch: one result per event, in the same order.",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventResult"
+            }
+          }
+        }
+      },
+      "EventOutcome": {
+        "type": "string",
+        "description": "What the backend did with an event. In every case the world may\nforget the event: sending it again would change nothing.",
+        "enum": [
+          "accepted",
+          "duplicate",
+          "unknown",
+          "invalid"
+        ]
+      },
+      "EventResult": {
+        "type": "object",
+        "description": "The outcome for one event of a batch.",
+        "required": [
+          "id",
+          "outcome"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/EventOutcome"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "description": "Answer of the health check.",
+        "required": [
+          "status",
+          "version",
+          "database"
+        ],
+        "properties": {
+          "database": {
+            "type": "boolean",
+            "description": "True if the database answers."
+          },
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version of the backend, as in its package."
+          }
+        }
+      },
+      "HealthStatus": {
+        "type": "string",
+        "description": "Whether the backend can do its work.",
+        "enum": [
+          "ok",
+          "degraded"
+        ]
+      },
+      "Job": {
+        "type": "object",
+        "description": "Something the backend wants a world to do.",
+        "required": [
+          "id",
+          "kind",
+          "payload"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "What to do, for example \"ping\". It decides what the payload has\nto look like."
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
+      "JobList": {
+        "type": "object",
+        "description": "The jobs that wait for a world. Empty if none came in time.",
+        "required": [
+          "jobs"
+        ],
+        "properties": {
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            }
+          }
+        }
+      },
+      "JobResult": {
+        "type": "object",
+        "description": "How a job went.",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "A short note, for example why it failed."
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorldStarted": {
+        "type": "object",
+        "description": "Payload of the event \"world_started\".",
+        "required": [
+          "engine",
+          "mods"
+        ],
+        "properties": {
+          "engine": {
+            "type": "string",
+            "description": "Version of the game engine, as it names itself."
+          },
+          "mods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of the mods that are loaded."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "world_key": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

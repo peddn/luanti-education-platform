@@ -22,7 +22,7 @@ async fn get(router: axum::Router, path: &str) -> (StatusCode, Value) {
 #[tokio::test]
 async fn health_reports_ok() {
     let pool = db::open_in_memory().await.unwrap();
-    let (status, json) = get(app::router(AppState { db: pool }), "/api/health").await;
+    let (status, json) = get(app::router(AppState::new(pool)), "/api/health").await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(json["status"], "ok");
@@ -34,7 +34,7 @@ async fn health_reports_ok() {
 async fn health_reports_a_missing_database() {
     let pool = db::open_in_memory().await.unwrap();
     pool.close().await;
-    let (status, json) = get(app::router(AppState { db: pool }), "/api/health").await;
+    let (status, json) = get(app::router(AppState::new(pool)), "/api/health").await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(json["status"], "degraded");
@@ -44,7 +44,7 @@ async fn health_reports_a_missing_database() {
 #[tokio::test]
 async fn openapi_describes_the_health_check() {
     let pool = db::open_in_memory().await.unwrap();
-    let (status, json) = get(app::router(AppState { db: pool }), "/api/openapi.json").await;
+    let (status, json) = get(app::router(AppState::new(pool)), "/api/openapi.json").await;
 
     assert_eq!(status, StatusCode::OK);
     assert!(json["paths"]["/api/health"]["get"].is_object());
@@ -55,6 +55,6 @@ async fn openapi_describes_the_health_check() {
 #[tokio::test]
 async fn unknown_paths_are_not_found() {
     let pool = db::open_in_memory().await.unwrap();
-    let (status, _) = get(app::router(AppState { db: pool }), "/api/nothing").await;
+    let (status, _) = get(app::router(AppState::new(pool)), "/api/nothing").await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
