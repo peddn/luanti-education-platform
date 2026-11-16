@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 31 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 32 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
