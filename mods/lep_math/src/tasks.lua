@@ -207,6 +207,16 @@ function tasks.generate(id, random)
 	return result
 end
 
+-- How the operators are written in running text, as in German school
+-- books: a dot for multiplying, a colon for dividing.
+local READABLE = { ["+"] = " + ", ["-"] = " - ", ["*"] = " · ", ["/"] = " : " }
+
+--- Returns the text of a task as a question for a window, for example
+-- "7 · 5 = ?" for "7*5". The display in the room shows the plain text.
+function tasks.readable(text)
+	return (text:gsub("[%+%-%*/]", READABLE)) .. " = ?"
+end
+
 --- Chooses the task type for the next task: one the player has not done
 -- yet if there is one, otherwise any of the level.
 -- @param progress List of the task types of the level, each with id,

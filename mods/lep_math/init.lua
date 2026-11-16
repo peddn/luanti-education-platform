@@ -6,6 +6,7 @@ lep_math = {}
 
 load("game/nodes")
 load("game/module")
+load("game/short_tasks")
 load("game/room")
 load("game/play")
 load("game/commands")

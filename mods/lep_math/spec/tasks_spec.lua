@@ -181,4 +181,13 @@ describe("lep_math choosing the next task type", function()
 		end
 		assert.is_true(seen.a and seen.b)
 	end)
+
+	it("writes a task as a question in running text", function()
+		assert.are.equal("7 + 5 = ?", tasks.readable("7+5"))
+		assert.are.equal("12 - 4 = ?", tasks.readable("12-4"))
+		assert.are.equal("7 · 5 = ?", tasks.readable("7*5"))
+		assert.are.equal("42 : 6 = ?", tasks.readable("42/6"))
+		assert.are.equal("3 + 4 · 5 = ?", tasks.readable("3+4*5"))
+		assert.are.equal("3,5 + 12,4 = ?", tasks.readable("3,5+12,4"))
+	end)
 end)
