@@ -50,7 +50,7 @@ Für die Anleitung in Schritt 4 gilt:
 ### Qualität
 
 - Kein Pull Request ohne Tests für Lua-Kerne und Backend.
-- Automatische Prüfungen auf GitHub: Busted und Luacheck für Lua, Tests und Clippy für Rust, Typprüfung und Lint für die Oberfläche. Sie werden mit dem ersten Code eingerichtet.
+- Automatische Prüfungen auf GitHub: Busted und Luacheck für Lua, Tests und Clippy für Rust, Lint, Typprüfung und Tests für die Oberfläche.
 - Ein Pull Request mit fehlgeschlagenen Prüfungen gilt als nicht fertig.
 - Nicht getestete Teile im Pull Request ausdrücklich benennen, zum Beispiel alles, was nur im laufenden Spiel prüfbar ist.
 
@@ -82,7 +82,8 @@ Für die Anleitung in Schritt 4 gilt:
 
 ### Backend, Agent und Oberfläche
 
-- Backend und Agent in Rust, Oberfläche in Vue mit Pinia und Router, geschrieben in JavaScript ohne TypeScript-Syntax.
+- Backend und Agent in Rust, Oberfläche in Vue mit Pinia und Router, geschrieben in JavaScript ohne TypeScript-Syntax. Gestaltung mit Tailwind CSS.
+- Die Oberfläche ist mehrsprachig (`vue-i18n`, Deutsch und Englisch). Kein Text steht direkt in einer Seite, alles kommt aus den Sprachdateien. Das Backend meldet Fehler mit einem festen Code, den die Oberfläche übersetzt.
 - Die Typen der Schnittstelle liegen einmal in `crates/protocol`. Daraus entsteht die OpenAPI-Beschreibung und daraus die Typen der Oberfläche. Die Oberfläche bindet sie über JSDoc-Kommentare ein, eine automatische Prüfung gleicht sie mit dem Code ab.
 - Die Welt ruft das Backend an, nie umgekehrt: HTTPS, Long Polling, ein Schlüssel pro Welt.
 - Jedes Ereignis hat eine eindeutige ID. Das Backend verwirft Doppelte.
@@ -107,7 +108,7 @@ Die Arbeitsumgebung ist pro Sitzung neu. Was hier steht, muss zu Beginn einer Si
 - Screenshots aus dem Spiel sind möglich: `Xvfb` als virtueller Bildschirm, Client mit `LIBGL_ALWAYS_SOFTWARE=1` und `enable_sound = false`, Aufnahme mit `import -window root` (Pakete `xvfb xdotool libgl1-mesa-dri imagemagick`). Vorher die Tageszeit auf Mittag setzen, sonst ist das Bild nachts schwarz.
 - Abläufe im Spiel lassen sich mit einem kleinen Hilfsmod in `.dev/mods/` prüfen, der nach dem Beitritt Schritte ausführt und ins Log schreibt. Er wird nicht eingecheckt. Vor jedem Lauf alte Luanti-Prozesse beenden, sonst startet der Server nicht.
 - Rust (`cargo`) und Node (`node`, `npm`) sind vorhanden, crates.io und die npm-Registry sind erreichbar.
-- Prüfungen vor jedem Pull Request: `scripts/test.sh` (Lua und Rust; `scripts/test.sh lua` oder `rust` für einen Teil), dazu ein Start der Testwelt mit `scripts/dev-setup.sh` und `scripts/dev-run.sh --server`, um das Laden der Mods im Log zu prüfen.
+- Prüfungen vor jedem Pull Request: `scripts/test.sh` (Lua, Rust und Oberfläche; `scripts/test.sh lua`, `rust` oder `frontend` für einen Teil), dazu ein Start der Testwelt mit `scripts/dev-setup.sh` und `scripts/dev-run.sh --server`, um das Laden der Mods im Log zu prüfen.
 
 ## Lizenzen
 

@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 38 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 39 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -770,7 +770,11 @@ Regeln für das Ernennen:
 ### 11.1 Aufbau
 
 - Backend in Rust, das auch die gebaute Oberfläche ausliefert.
-- Oberfläche in Vue mit Pinia und Router, geschrieben in JavaScript ohne TypeScript-Syntax.
+- Oberfläche in Vue mit Pinia und Router, geschrieben in JavaScript ohne TypeScript-Syntax, gebaut mit Vite. Gestaltung mit Tailwind CSS, ohne Komponentenbibliothek.
+- **Mehrsprachig von Anfang an:** `vue-i18n` mit Deutsch und Englisch. Kein Text steht direkt in einer Seite, eine Lint-Regel prüft das. Die Sprache folgt dem Browser und lässt sich in der Kopfzeile umschalten. Datum und Zahlen stellt der Browser in der gewählten Sprache dar.
+- Das Backend meldet Fehler mit einem festen Code, den die Oberfläche übersetzt. Der englische Satz daneben ist für Protokolle und Entwickler.
+- Titel von Modulen, Aufgabentypen und Trophäen kommen aus der Welt und sind vorerst deutsch, auch in der englischen Oberfläche. Sollen sie mitwechseln, muss die Welt jeden Titel in allen ihren Sprachen melden.
+- Das Backend liefert die gebaute Oberfläche aus dem Ordner aus, den die Einstellung `LEP_FRONTEND` nennt. Beim Entwickeln läuft die Oberfläche über Vite und reicht `/api` an das Backend weiter.
 - SQLite als Datenbank.
 - Bibliotheken des Backends: `axum` als Webserver, `sqlx` für SQLite mit Migrationen im Repository, `utoipa` für die OpenAPI-Beschreibung.
 - Einstellungen des Backends kommen aus Umgebungsvariablen.
