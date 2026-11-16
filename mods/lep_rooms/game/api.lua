@@ -47,12 +47,14 @@ lep_rooms._rooms = rooms
 --   privileges  set of privileges granted inside the room
 --   on_build    optional function(owner, geometry) called after a room was
 --               built or rebuilt, to furnish it
+--   title       optional name of the room for people, see lep_places
 function lep_rooms.register_type(type_id, def)
 	types:register(type_id, def)
 	on_build_callbacks[type_id] = def.on_build
 	lep_places.register_place(place_id(type_id), {
 		inventory = lep_places.INVENTORY_LEARNING,
 		privileges = def.privileges,
+		title = def.title,
 	})
 end
 

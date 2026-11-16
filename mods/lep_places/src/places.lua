@@ -76,6 +76,8 @@ end
 --                      used when entering without an explicit position
 --   default_pos        position used when entering without an explicit
 --                      or remembered position
+--   title              optional name of the place for people, for example
+--                      in the overview of the teacher's desk
 function Registry:register(id, def)
 	assert(type(id) == "string" and id ~= "",
 		"register: id must be a non-empty string")
@@ -88,6 +90,8 @@ function Registry:register(id, def)
 		"register: inventory must be 'survival' or 'learning'")
 	assert(def.default_pos == nil or is_pos(def.default_pos),
 		"register: default_pos must be a position")
+	assert(def.title == nil or (type(def.title) == "string" and def.title ~= ""),
+		"register: title must be a non-empty string")
 
 	self._defs[id] = {
 		id = id,
@@ -95,6 +99,7 @@ function Registry:register(id, def)
 		privileges = copy_set(def.privileges),
 		remember_position = def.remember_position == true,
 		default_pos = def.default_pos and copy_pos(def.default_pos) or nil,
+		title = def.title,
 	}
 end
 

@@ -3,6 +3,7 @@
 local load = lep_core.loader("lep_places")
 local places = load("src/places")
 local storage = load("game/storage")
+local S = core.get_translator("lep_places")
 
 local WILDERNESS = "lep_places:wilderness"
 
@@ -14,7 +15,7 @@ end)
 
 -- The wilderness is the survival world itself. Leaving it remembers the
 -- position, so coming back returns to the same spot.
-registry:register(WILDERNESS, { remember_position = true })
+registry:register(WILDERNESS, { remember_position = true, title = S("Wilderness") })
 
 lep_places.WILDERNESS = WILDERNESS
 lep_places.INVENTORY_SURVIVAL = places.INVENTORY_SURVIVAL
@@ -75,6 +76,13 @@ end
 --- Returns true if a place type with this id exists.
 function lep_places.is_registered(id)
 	return registry:get(id) ~= nil
+end
+
+--- Returns the name of a place for people, as the place registered it.
+-- Places without a title and unknown places return their id.
+function lep_places.get_place_title(id)
+	local place = registry:get(id)
+	return place and place.title or id
 end
 
 --- Returns the id of the place a player is in, or nil if the player is
