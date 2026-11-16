@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 37 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 38 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -872,13 +872,29 @@ Anmeldung im Browser: Adresse eingeben, Link per Mail, Klick. Eine Registrierung
 
 ### 11.6 Zuständigkeiten
 
-| Backend führt | Welt führt |
+**Grundsatz: Die Welt schreibt, das Backend spiegelt.**
+
+- Lernfortschritt, Trophäen und Protokolle entstehen nur in der Welt. Sie meldet jeden neuen Stand als Ereignis, das Backend bewahrt ihn auf.
+- Das Backend ändert diese Daten nie selbst. Setzt eine Lehrkraft im Browser ein Niveau, geht ein Auftrag an die Welt. Die Welt setzt es und meldet den neuen Stand zurück.
+- So schreibt immer nur eine Stelle, und es gibt keine widersprüchlichen Stände. Fällt die Verbindung aus, rechnet die Welt weiter, und die Warteschlange liefert nach.
+
+| Backend bewahrt auf | Welt führt |
 |---|---|
 | Konten und ihre Zuordnung zu Welten | Ort, eingefroren, Inventar |
 | Gruppen, Zuordnung Lehrkraft zu Gruppe | Belohnungskiste, Truhenzustand |
 | Fragensets, Zuweisungen, Belohnungstabellen | laufende Aufgaben |
-| Lernniveau, Meilensteine, Trophäen | lokale Kopie der Einstellungen |
-| Protokolle des laufenden Jahres | Warteschlange für Ereignisse |
+| Spiegel von Lernniveau, Pensum und Trophäen, als Quelle für Oberfläche und Gruppenwechsel | Lernniveau, Pensum, Trophäen |
+| Spiegel der Protokolle des laufenden Jahres | Protokolldateien, lokale Kopie der Einstellungen, Warteschlange für Ereignisse |
+
+**Was die Welt meldet**
+
+- **Module:** die Lernmodule der Welt mit Titel, Niveaus und Aufgabentypen, bei jedem Start.
+- **Fortschritt:** pro Schüler und Modul Niveau, Sperre, Pensum in Prozent und Stand je Aufgabentyp. Gemeldet wird nach jeder Änderung der ganze Stand, nie eine Änderung. Ein älterer Stand, der verspätet ankommt, überschreibt keinen neueren.
+- **Trophäen:** pro Schüler die ganze Liste.
+- **Protokolle:** jeder Eintrag von Belohnungen, Chat, Schildtexten und Pult, mit Zeitpunkt und Kontoname.
+- **Erster Abgleich:** Beim ersten Kontakt sendet die Welt den Stand aller bekannten Schüler. Das Backend kann ihn per Auftrag erneut anfordern.
+- **Keine Nachlieferung alter Protokolle:** Gemeldet wird, was ab der Verbindung geschieht. Was vorher in den Protokolldateien stand, bleibt dort. Im Betrieb ist eine Welt von Anfang an verbunden, und alte Einträge nachträglich in die Cloud zu schieben, passt nicht zur begrenzten Aufbewahrung.
+- Texte für Menschen, etwa Titel, verlassen die Welt auf Deutsch.
 
 ## 12. Datenschutz
 
