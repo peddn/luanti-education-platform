@@ -178,7 +178,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_lobby room [<spieler>]` | bringt dich vor deinen persönlichen Raum oder den eines anderen |
 | `/lep_lobby leave` | von der Lobby in die Wildnis |
 | `/lep_lobby rebuild` | baut Halle, Gänge und Räume neu |
-| `/lep_report <aufgabe> [fail] [<niveau>]` | meldet eine Aufgabe des Testmoduls als gelöst oder falsch. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
+| `/lep_report <aufgabe> [fail \| chest] [<niveau>]` | meldet eine Aufgabe des Testmoduls als gelöst, als falsch oder als in einer Aufgabentruhe gelöst. Niveau 2 und 4 sind Etappen. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
 
 ### Hinweise
 

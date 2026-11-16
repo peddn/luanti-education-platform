@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 19 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 20 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -366,23 +366,50 @@ In der Web-Anwendung. Bis sie existiert, genügt ein einfacher Chatbefehl für L
 
 ### 8.3 Belohnungen
 
+**Größen und Anlässe**
+
 - Naturalien, ausgezahlt in die Belohnungskiste.
-- Drei Größen, die die zuständige Lehrkraft pro Gruppe in der Web-Anwendung mit Gegenständen füllt:
-  - klein für eine normale Aufgabe, z. B. 1 Eisenbarren,
-  - mittel für eine Aufgabentruhe, z. B. 1 Goldbarren,
-  - groß für ein abgeschlossenes Niveau, z. B. 1 Diamant. Bei Modulen mit vielen Niveaus muss die Menge dazu passen, das wird mit dem Belohnungs-Mod festgelegt.
-- Tageslimit als Anzahl: 10 belohnte Aufgaben und 5 Truhen pro Tag.
+- Drei Größen, die die zuständige Lehrkraft pro Gruppe in der Web-Anwendung mit Gegenständen füllt. Bis es sie gibt, kommen sie aus den Einstellungen des Servers.
+
+| Anlass | Größe | Voreinstellung |
+|---|---|---|
+| Aufgabe gelöst | klein | 1 Eisenbarren |
+| Aufgabentruhe gelöst | mittel | 1 Goldbarren |
+| Niveau abgeschlossen | mittel | 1 Goldbarren |
+| Etappe abgeschlossen | groß | 1 Diamant |
+
+**Etappen**
+
+- Ein Modul kennzeichnet einzelne Niveaus als Etappe. Das letzte Niveau ist immer eine.
+- Nur der Abschluss einer Etappe bringt die große Belohnung. So bleibt sie auch bei Modulen mit vielen Niveaus etwas Besonderes.
+- Dieselben Etappen gelten für die Trophäen.
+
+**Regeln**
+
+- Tageslimit als Anzahl: 10 belohnte Aufgaben und 5 Truhen pro Tag. Der Tag wechselt um Mitternacht nach der Uhr des Servers. Abgeschlossene Niveaus und Etappen zählen nicht mit.
+- Ist das Limit erreicht, kann der Schüler weiter Aufgaben lösen. Sie zählen fürs Pensum, bringen aber nichts mehr.
 - Faustregel: Eine Aufgabe bringt etwas mehr, als man in derselben Zeit abbauen könnte.
 - Keine Zufallsbelohnungen. Die Belohnung steht vorher fest und ist sichtbar.
 - Belohnung nur auf dem eigenen Niveau und darüber. Weil die Lehrkraft das Niveau passend setzt, ist das für alle fair.
 - Textfragen belohnen nur beim ersten Lösen, Multiple Choice voll nur im ersten Versuch.
-- Ein Belohnungsprotokoll hilft der Lehrkraft bei Streitfällen.
+
+**Belohnungskiste**
+
+- Sie steht im persönlichen Raum. Nur der Besitzer kann sie öffnen, und er kann nur herausnehmen.
+- Der Inhalt gehört zum Konto, nicht zum Block. Belohnungen kommen auch an, wenn der Schüler abgemeldet ist.
+- Ist die Kiste voll, wartet der Rest und rückt nach, sobald Platz ist.
+
+**Protokoll**
+
+- Jede Belohnung wird protokolliert: Zeitpunkt, Kontoname, Größe, Anlass, Modul, Niveau, Aufgabentyp, Inhalt.
+- Das Protokoll hilft bei Streitfällen. Schüler sehen ihr eigenes, Lehrkräfte das ihrer Schüler.
+- Verwaltung und Löschung wie bei allen Protokollen, siehe Abschnitt 12.
 
 ### 8.4 Trophäen
 
 - Ein eigener Mod meldet sich beim Fortschritts-Mod an und vergibt Trophäen für Meilensteine.
 - Schema der Meilensteine:
-  - Niveau abgeschlossen: Trophäen pro Modul. Bei vielen Niveaus nicht für jedes, die Auswahl wird mit dem Trophäen-Mod festgelegt,
+  - Etappe abgeschlossen: eine Trophäe pro Etappe und Modul (Etappen siehe Abschnitt 8.3),
   - gelöste Aufgaben pro Modul: 10, 50, 100,
   - gelöste Aufgabentruhen: 10, 50,
   - Fragenset zu mindestens 80 % richtig abgeschlossen.

@@ -1,0 +1,15 @@
+# Content of the small reward, for a solved task.
+# A list like: default:steel_ingot 1, default:coal_lump 3
+lep_rewards_small (Small reward) string default:steel_ingot 1
+
+# Content of the medium reward, for a task chest or a completed level.
+lep_rewards_medium (Medium reward) string default:gold_ingot 1
+
+# Content of the large reward, for a completed stage.
+lep_rewards_large (Large reward) string default:diamond 1
+
+# How many solved tasks are rewarded per player and day.
+lep_rewards_daily_tasks (Rewarded tasks per day) int 10 0 1000
+
+# How many task chests are rewarded per player and day.
+lep_rewards_daily_chests (Rewarded task chests per day) int 5 0 1000
