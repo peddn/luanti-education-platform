@@ -8,6 +8,7 @@ lep_desk = {}
 load("game/api")
 load("game/window")
 load("game/actions")
+load("game/modes")
 load("game/daytime")
 load("game/commands")
 

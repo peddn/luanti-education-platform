@@ -173,6 +173,17 @@ function lep_rooms.leave(player_name, force)
 			.. "You can leave the room when your teacher brings you back."))
 		return false, "player is held"
 	end
+	if not force then
+		-- Leaving is the player's own wish, so the rules for that apply.
+		local ok, message = lep_places.may_go(player_name,
+			lep_places.get_back_place(player_name))
+		if not ok then
+			if message then
+				core.chat_send_player(player_name, message)
+			end
+			return false, "not allowed"
+		end
+	end
 	return lep_places.move_back(player_name)
 end
 

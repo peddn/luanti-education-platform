@@ -361,6 +361,17 @@ describe("lep_places plan_back", function()
 		assert.are.equal(LOBBY, state.place)
 	end)
 
+	it("names the place that going back leads to", function()
+		local known = new_registry()
+		local state = places.normalize_state(nil, WILD)
+		assert.are.equal(WILD, places.back_target(known, state, WILD))
+		state.place = ROOM
+		state.previous = LOBBY
+		assert.are.equal(LOBBY, places.back_target(known, state, WILD))
+		state.previous = "test:gone"
+		assert.are.equal(WILD, places.back_target(known, state, WILD))
+	end)
+
 	it("falls back without a previous place", function()
 		local state = places.initial_state(ROOM)
 		state.survival_stored = true

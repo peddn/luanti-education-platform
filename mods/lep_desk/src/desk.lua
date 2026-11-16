@@ -31,7 +31,7 @@ end
 --              whole world, such as the time of day: it runs without
 --              marked students and gets an empty list.
 --   group      optional heading. Actions with the same group stand
---              together under it, as smaller buttons in two columns.
+--              together under it, as smaller buttons side by side.
 --   is_active  optional function() returning true while the action is
 --              the current position of a switch. Its button is shown
 --              as pressed.
@@ -86,10 +86,12 @@ desk.SMALL_HEIGHT = 0.7
 desk.SMALL_PITCH = 0.85
 desk.HEADING_HEIGHT = 0.75
 desk.COLUMN_GAP = 0.2
+-- How many buttons of a group stand side by side.
+desk.GROUP_COLUMNS = 3
 
 --- Arranges the buttons of a list of actions in a column.
 -- Actions without a group come first, one below the other. Every group
--- follows with its heading and its actions in two columns.
+-- follows with its heading and its actions in columns.
 -- @param actions List of actions, as Actions:allowed returns it.
 -- @param x, y Top left corner of the column.
 -- @param width Width of the column.
@@ -112,17 +114,18 @@ function desk.layout(actions, x, y, width)
 			table.insert(by_group[action.group], index)
 		end
 	end
-	local small_width = (width - desk.COLUMN_GAP) / 2
+	local columns = desk.GROUP_COLUMNS
+	local small_width = (width - (columns - 1) * desk.COLUMN_GAP) / columns
 	for _, group in ipairs(groups) do
 		items[#items + 1] = { kind = "heading", text = group, x = x,
 			y = y + desk.HEADING_HEIGHT / 2 }
 		y = y + desk.HEADING_HEIGHT
 		for position, index in ipairs(by_group[group]) do
-			local column = (position - 1) % 2
+			local column = (position - 1) % columns
 			items[#items + 1] = { kind = "button", index = index,
 				x = x + column * (small_width + desk.COLUMN_GAP), y = y,
 				width = small_width, height = desk.SMALL_HEIGHT }
-			if column == 1 or position == #by_group[group] then
+			if column == columns - 1 or position == #by_group[group] then
 				y = y + desk.SMALL_PITCH
 			end
 		end

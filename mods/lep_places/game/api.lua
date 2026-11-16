@@ -2,6 +2,7 @@
 
 local load = lep_core.loader("lep_places")
 local places = load("src/places")
+local access = load("src/access")
 local storage = load("game/storage")
 local S = core.get_translator("lep_places")
 
@@ -167,6 +168,83 @@ function lep_places.move_back(player_name)
 		.. state.place .. " to " .. new_state.place)
 	dispatcher:emit("place_changed", player_name, state.place, new_state.place)
 	return true
+end
+
+-- ---------------------------------------------------------------------------
+-- Moves players make on their own
+-- ---------------------------------------------------------------------------
+
+local rules = access.new(function(err)
+	core.log("error", "[lep_places] access rule failed: " .. tostring(err))
+end)
+
+--- Returns true if a place stores the survival inventory away, as
+-- learning rooms do.
+function lep_places.is_learning_place(id)
+	local place = registry:get(id)
+	return place ~= nil and place.inventory == places.INVENTORY_LEARNING
+end
+
+--- Registers a rule for the moves players make on their own: a
+-- function(player_name, from_place, to_place) that returns false and a
+-- message for the player to refuse the move. This is how a class mode
+-- closes the wilderness. Moves that somebody else decides, for example a
+-- teacher at the desk, are not asked.
+function lep_places.register_access_rule(rule)
+	rules:register(rule)
+end
+
+--- Asks whether an online player may go to a place on their own. Every
+-- portal, exit and command that moves a player at their own wish asks
+-- this first and shows the message if the answer is no.
+-- @return true  or  false, message for the player (may be nil)
+function lep_places.may_go(player_name, place_id)
+	local from = lep_places.get_place(player_name)
+	if not from then
+		return false
+	end
+	return rules:check(player_name, from, place_id)
+end
+
+--- Returns the id of the place that lep_places.move_back would lead an
+-- online player to, or nil.
+function lep_places.get_back_place(player_name)
+	local player = core.get_player_by_name(player_name)
+	if not player then
+		return nil
+	end
+	return places.back_target(registry, read_state(player), WILDERNESS)
+end
+
+--- Remembers a position in a place for an online player, to come back to
+-- later. Used when a player is taken out of a place against their will.
+function lep_places.set_return(player_name, place_id, pos)
+	local player = core.get_player_by_name(player_name)
+	if not player then
+		return false
+	end
+	local returns = storage.read_returns(player)
+	returns[place_id] = { x = pos.x, y = pos.y, z = pos.z }
+	storage.write_returns(player, returns)
+	return true
+end
+
+--- Returns the position remembered with lep_places.set_return and
+-- forgets it, or nil. A portal that leads into the place uses it instead
+-- of its usual arrival point.
+function lep_places.take_return(player_name, place_id)
+	local player = core.get_player_by_name(player_name)
+	if not player then
+		return nil
+	end
+	local returns = storage.read_returns(player)
+	local pos = returns[place_id]
+	if type(pos) ~= "table" or not (pos.x and pos.y and pos.z) then
+		return nil
+	end
+	returns[place_id] = nil
+	storage.write_returns(player, returns)
+	return { x = pos.x, y = pos.y, z = pos.z }
 end
 
 --- Registers a function(player_name, old_place, new_place) that is called

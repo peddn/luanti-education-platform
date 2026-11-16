@@ -5,6 +5,7 @@ local storage = {}
 
 local STATE_KEY = "lep_places:state"
 local SURVIVAL_KEY = "lep_places:survival"
+local RETURNS_KEY = "lep_places:returns"
 
 -- Inventory lists that make up the survival inventory.
 local SURVIVAL_LISTS = { "main", "craft" }
@@ -20,6 +21,18 @@ end
 
 function storage.write_state(player, state)
 	player:get_meta():set_string(STATE_KEY, core.write_json(state))
+end
+
+--- Returns the stored return positions: a table from place id to
+-- position, see lep_places.set_return.
+function storage.read_returns(player)
+	local data = core.parse_json(player:get_meta():get_string(RETURNS_KEY), nil, true)
+	return type(data) == "table" and data or {}
+end
+
+function storage.write_returns(player, returns)
+	player:get_meta():set_string(RETURNS_KEY,
+		next(returns) and core.write_json(returns) or "")
 end
 
 --- Saves the survival inventory lists into the player's metadata.

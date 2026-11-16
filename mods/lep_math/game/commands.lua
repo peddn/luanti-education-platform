@@ -17,6 +17,10 @@ core.register_chatcommand("lep_math", {
 			-- A student who was sent by the teacher stays and is told why.
 			return lep_rooms.leave(name) == true
 		end
+		local allowed, message = lep_places.may_go(name, lep_math.PLACE)
+		if not allowed then
+			return false, message
+		end
 		lep_rooms.enter(name, lep_math.ROOM_TYPE, function(ok, err)
 			if not ok then
 				core.chat_send_player(name, S("The math room is not available: @1", tostring(err)))
