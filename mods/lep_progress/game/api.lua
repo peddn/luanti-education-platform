@@ -37,7 +37,10 @@ local function check_player(player_name)
 end
 
 lep_progress.KIND_TASK = progress.KIND_TASK
-lep_progress.KIND_CHEST = progress.KIND_CHEST
+lep_progress.KIND_DAILY = progress.KIND_DAILY
+lep_progress.EFFORT_LOW = progress.EFFORT_LOW
+lep_progress.EFFORT_NORMAL = progress.EFFORT_NORMAL
+lep_progress.EFFORT_HIGH = progress.EFFORT_HIGH
 lep_progress.REASON_COMPLETED = progress.REASON_COMPLETED
 lep_progress.REASON_TEACHER = progress.REASON_TEACHER
 
@@ -120,8 +123,12 @@ end
 --   task      id of the task type
 --   level     level the task belongs to
 --   solved    true or false
---   kind      optional: lep_progress.KIND_TASK (default) for a normal task,
---             lep_progress.KIND_CHEST for a task from a task chest
+--   kind      optional: lep_progress.KIND_TASK (default) for a task of the
+--             level's workload, lep_progress.KIND_DAILY for a daily task,
+--             for example from a task chest. Daily tasks can be repeated
+--             every day and never count for the workload.
+--   effort    optional, for daily tasks: lep_progress.EFFORT_LOW,
+--             EFFORT_NORMAL (default) or EFFORT_HIGH
 --   attempts, hints, duration   optional numbers, passed on unchanged
 -- @return true  or  false, error message
 function lep_progress.report(result)
@@ -142,8 +149,13 @@ function lep_progress.report(result)
 	end
 
 	local kind = result.kind or progress.KIND_TASK
-	if kind ~= progress.KIND_TASK and kind ~= progress.KIND_CHEST then
+	if kind ~= progress.KIND_TASK and kind ~= progress.KIND_DAILY then
 		return false, "unknown kind '" .. tostring(kind) .. "'"
+	end
+	local effort = result.effort or progress.EFFORT_NORMAL
+	if effort ~= progress.EFFORT_LOW and effort ~= progress.EFFORT_NORMAL
+			and effort ~= progress.EFFORT_HIGH then
+		return false, "unknown effort '" .. tostring(effort) .. "'"
 	end
 
 	local state = get_state(result.player, module)
@@ -151,6 +163,7 @@ function lep_progress.report(result)
 		level = result.level,
 		task = result.task,
 		solved = result.solved == true,
+		kind = kind,
 	})
 	if counted then
 		storage.save(result.player, module.id, new_state)
@@ -163,6 +176,7 @@ function lep_progress.report(result)
 		level = result.level,
 		solved = result.solved == true,
 		kind = kind,
+		effort = effort,
 		attempts = result.attempts,
 		hints = result.hints,
 		duration = result.duration,

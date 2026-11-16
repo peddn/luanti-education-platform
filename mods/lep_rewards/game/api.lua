@@ -52,13 +52,12 @@ function lep_rewards.get_reward(size)
 	return copy
 end
 
---- Returns how many rewarded tasks and task chests a player has left
--- today, as { task = ..., chest = ... }, and the limits in the same form.
+--- Returns how many rewarded daily tasks a player has left today, and
+-- the limit per day.
 function lep_rewards.get_remaining(player_name)
 	local allowance = rewards.normalize_allowance(storage.load(player_name).allowance)
-	local limits = config.limits()
-	return rewards.remaining(allowance, today(), limits),
-		{ task = limits.task, chest = limits.chest }
+	local limit = config.daily_limit()
+	return rewards.remaining(allowance, today(), limit), limit
 end
 
 --- Gives a player the full daily allowance back, as at the start of a
@@ -104,21 +103,26 @@ function lep_rewards.give(player_name, size, details)
 	end
 end
 
--- Solved tasks, within the daily limit.
+-- Solved tasks. Level tasks are rewarded while they count for the
+-- workload, daily tasks within the daily limit.
 lep_progress.register_on_result(function(result)
 	local size, reason = rewards.for_result(result)
 	if not size then
 		return
 	end
 
-	local data = storage.load(result.player)
-	local allowance, allowed, left = rewards.use_allowance(
-		rewards.normalize_allowance(data.allowance), today(), result.kind, config.limits())
-	if not allowed then
-		return
+	local last_today = false
+	if result.kind == rewards.KIND_DAILY then
+		local data = storage.load(result.player)
+		local allowance, allowed, left = rewards.use_allowance(
+			rewards.normalize_allowance(data.allowance), today(), config.daily_limit())
+		if not allowed then
+			return
+		end
+		data.allowance = allowance
+		storage.save(result.player, data)
+		last_today = left == 0
 	end
-	data.allowance = allowance
-	storage.save(result.player, data)
 
 	lep_rewards.give(result.player, size, {
 		reason = reason,
@@ -127,18 +131,13 @@ lep_progress.register_on_result(function(result)
 		task = result.task,
 	})
 
-	if left == 0 and core.get_player_by_name(result.player) then
-		if result.kind == rewards.KIND_CHEST then
-			core.chat_send_player(result.player,
-				S("That was the last rewarded task chest for today."))
-		else
-			core.chat_send_player(result.player,
-				S("That was the last rewarded task for today."))
-		end
+	if last_today and core.get_player_by_name(result.player) then
+		core.chat_send_player(result.player,
+			S("That was the last rewarded daily task for today."))
 	end
 end)
 
--- Completed levels. They do not count towards the daily limit.
+-- Completed levels.
 lep_progress.register_on_level_completed(function(player_name, module_id, level, is_stage)
 	local size, reason = rewards.for_level(is_stage)
 	lep_rewards.give(player_name, size, {

@@ -8,17 +8,25 @@ rewards.MEDIUM = "medium"
 rewards.LARGE = "large"
 rewards.SIZES = { rewards.SMALL, rewards.MEDIUM, rewards.LARGE }
 
--- Where a task came from. Each kind has its own daily limit.
+-- Kinds of tasks, as in lep_progress.
 rewards.KIND_TASK = "task"
-rewards.KIND_CHEST = "chest"
+rewards.KIND_DAILY = "daily"
+
+-- Effort of a daily task and the reward size it earns.
+rewards.SIZE_FOR_EFFORT = {
+	low = rewards.SMALL,
+	normal = rewards.MEDIUM,
+	high = rewards.LARGE,
+}
 
 -- Why a reward was paid, for the protocol.
 rewards.REASON_TASK = "task"
-rewards.REASON_CHEST = "chest"
+rewards.REASON_DAILY = "daily"
 rewards.REASON_LEVEL = "level"
 rewards.REASON_STAGE = "stage"
 
-rewards.DEFAULT_LIMITS = { task = 10, chest = 5 }
+-- How many daily tasks are rewarded per day.
+rewards.DEFAULT_DAILY_LIMIT = 5
 
 rewards.DEFAULT_ITEMS = {
 	small = "default:steel_ingot 1",
@@ -27,15 +35,27 @@ rewards.DEFAULT_ITEMS = {
 }
 
 --- Returns size and reason of the reward for a reported task, or nil if
--- it earns none. Only solved tasks on the player's own level or above
--- are rewarded.
--- @param result Table with solved, level, player_level and kind.
+-- it earns none.
+--
+-- A level task is not repeatable: it earns the small reward only while it
+-- counts for the workload of the player's level. A daily task earns a
+-- reward every day, sized by its effort, if it is on the player's level or
+-- above. The caller applies the daily limit.
+-- @param result Table with solved, level, player_level, kind, counted and
+--   effort.
 function rewards.for_result(result)
-	if result.solved ~= true or result.level < result.player_level then
+	if result.solved ~= true then
 		return nil
 	end
-	if result.kind == rewards.KIND_CHEST then
-		return rewards.MEDIUM, rewards.REASON_CHEST
+	if result.kind == rewards.KIND_DAILY then
+		if result.level < result.player_level then
+			return nil
+		end
+		local size = rewards.SIZE_FOR_EFFORT[result.effort] or rewards.MEDIUM
+		return size, rewards.REASON_DAILY
+	end
+	if result.counted ~= true then
+		return nil
 	end
 	return rewards.SMALL, rewards.REASON_TASK
 end
@@ -76,9 +96,10 @@ function rewards.parse_items(text)
 	return items
 end
 
---- Returns the daily allowance of a player who has not earned anything.
+--- Returns the daily allowance of a player who has not earned anything:
+-- the day and the number of rewarded daily tasks on that day.
 function rewards.new_allowance()
-	return { day = "", task = 0, chest = 0 }
+	return { day = "", daily = 0 }
 end
 
 --- Repairs an allowance that comes from storage.
@@ -90,42 +111,34 @@ function rewards.normalize_allowance(state)
 	if type(state.day) == "string" then
 		result.day = state.day
 	end
-	for _, kind in ipairs({ rewards.KIND_TASK, rewards.KIND_CHEST }) do
-		if type(state[kind]) == "number" and state[kind] > 0 then
-			result[kind] = math.floor(state[kind])
-		end
+	if type(state.daily) == "number" and state.daily > 0 then
+		result.daily = math.floor(state.daily)
 	end
 	return result
 end
 
 local function for_today(state, today)
 	if state.day == today then
-		return { day = today, task = state.task, chest = state.chest }
+		return { day = today, daily = state.daily }
 	end
-	return { day = today, task = 0, chest = 0 }
+	return { day = today, daily = 0 }
 end
 
---- Returns how many rewards of each kind are left today.
+--- Returns how many rewarded daily tasks are left today.
 -- @param today Text naming the day, for example "2026-11-16".
-function rewards.remaining(state, today, limits)
-	local current = for_today(state, today)
-	return {
-		task = math.max(0, limits.task - current.task),
-		chest = math.max(0, limits.chest - current.chest),
-	}
+function rewards.remaining(state, today, limit)
+	return math.max(0, limit - for_today(state, today).daily)
 end
 
---- Uses one reward of the daily allowance.
+--- Uses one rewarded daily task of the allowance.
 -- @return new state, true if there was one left, number left afterwards
-function rewards.use_allowance(state, today, kind, limits)
-	assert(kind == rewards.KIND_TASK or kind == rewards.KIND_CHEST,
-		"use_allowance: unknown kind")
+function rewards.use_allowance(state, today, limit)
 	local current = for_today(state, today)
-	if current[kind] >= limits[kind] then
+	if current.daily >= limit then
 		return current, false, 0
 	end
-	current[kind] = current[kind] + 1
-	return current, true, limits[kind] - current[kind]
+	current.daily = current.daily + 1
+	return current, true, limit - current.daily
 end
 
 return rewards

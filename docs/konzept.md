@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 20 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 21 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -86,8 +86,8 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Niveau | Beliebig viele Niveaus pro Modul, von der Lehrkraft pro Schüler gesetzt |
 | Aufstieg | Automatisch beim Abschluss eines Niveaus, von der Lehrkraft sperrbar |
 | Belohnt wird | Nur für Aufgaben auf dem eigenen Niveau und darüber |
-| Größen | Klein (Aufgabe), mittel (Aufgabentruhe), groß (Niveau abgeschlossen) |
-| Begrenzung | Tageslimit als Anzahl: 10 belohnte Aufgaben und 5 Truhen |
+| Größen | Klein (Niveauaufgabe), mittel (Tagesaufgabe, Niveau abgeschlossen), groß (Etappe abgeschlossen) |
+| Begrenzung | Niveauaufgaben bringen nur Lohn, solange sie fürs Pensum zählen. Tagesaufgaben: 5 pro Tag |
 | Textfragen | Belohnung nur beim ersten Lösen |
 | Multiple Choice | Volle Belohnung nur im ersten Versuch |
 | Aufgabentruhen | Von der Welt erzeugt und von Lehrkräften aufgestellt |
@@ -354,7 +354,7 @@ Erzeugte Aufgaben gibt es unbegrenzt. Damit ein Prozentwert und ein Abschluss m�
 - Nach dem Abschluss eines Niveaus steigt der Schüler automatisch ins nächste auf.
 - Der automatische Aufstieg ist voreingestellt an. Die Lehrkraft kann ihn pro Schüler sperren.
 - Die Lehrkraft kann das Niveau jederzeit von Hand ändern.
-- Nach dem letzten Niveau ist das Modul abgeschlossen. Aufgaben und Belohnungen gibt es weiter, im Rahmen des Tageslimits.
+- Nach dem letzten Niveau ist das Modul abgeschlossen. Belohnungen gibt es danach weiter über die Tagesaufgaben.
 
 **Begriffe**
 
@@ -366,6 +366,13 @@ In der Web-Anwendung. Bis sie existiert, genügt ein einfacher Chatbefehl für L
 
 ### 8.3 Belohnungen
 
+**Zwei Arten von Aufgaben**
+
+- **Niveauaufgaben** gehören zum Pensum eines Niveaus und sind nicht wiederholbar: Eine Aufgabe bringt nur so lange Lohn, wie sie fürs Pensum zählt. Ist ein Aufgabentyp geschafft, gibt es dafür nichts mehr. Üben kann der Schüler weiter, nur ohne Belohnung.
+- **Tagesaufgaben** sind wiederholbar und bringen jeden Tag aufs Neue Lohn, bis zum Tageslimit. Dazu gehören die Aufgabentruhen in der Welt und die freiwilligen Aufgaben in der Lobby. Sie zählen nicht fürs Pensum.
+
+So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lohnt sich trotzdem auch nach einem abgeschlossenen Modul.
+
 **Größen und Anlässe**
 
 - Naturalien, ausgezahlt in die Belohnungskiste.
@@ -373,10 +380,12 @@ In der Web-Anwendung. Bis sie existiert, genügt ein einfacher Chatbefehl für L
 
 | Anlass | Größe | Voreinstellung |
 |---|---|---|
-| Aufgabe gelöst | klein | 1 Eisenbarren |
-| Aufgabentruhe gelöst | mittel | 1 Goldbarren |
+| Niveauaufgabe gelöst, die fürs Pensum zählt | klein | 1 Eisenbarren |
+| Tagesaufgabe gelöst | mittel | 1 Goldbarren |
 | Niveau abgeschlossen | mittel | 1 Goldbarren |
 | Etappe abgeschlossen | groß | 1 Diamant |
+
+- Tagesaufgaben können unterschiedlich belohnt werden. Wer die Aufgabe stellt, gibt ihren Aufwand an: gering, normal oder hoch. Daraus wird klein, mittel oder groß. Ohne Angabe gilt normal.
 
 **Etappen**
 
@@ -386,8 +395,9 @@ In der Web-Anwendung. Bis sie existiert, genügt ein einfacher Chatbefehl für L
 
 **Regeln**
 
-- Tageslimit als Anzahl: 10 belohnte Aufgaben und 5 Truhen pro Tag. Der Tag wechselt um Mitternacht nach der Uhr des Servers. Abgeschlossene Niveaus und Etappen zählen nicht mit.
-- Ist das Limit erreicht, kann der Schüler weiter Aufgaben lösen. Sie zählen fürs Pensum, bringen aber nichts mehr.
+- Niveauaufgaben haben kein Tageslimit. Das Pensum ist endlich und begrenzt den Lohn von selbst: Ein Niveau mit drei Aufgabentypen zu je fünf Lösungen bringt genau 15 kleine Belohnungen und eine mittlere.
+- Tagesaufgaben: 5 belohnte pro Tag. Der Tag wechselt um Mitternacht nach der Uhr des Servers, nicht nach der Spielzeit.
+- Ist das Limit erreicht, kann der Schüler weiter Tagesaufgaben lösen, sie bringen aber nichts mehr.
 - Faustregel: Eine Aufgabe bringt etwas mehr, als man in derselben Zeit abbauen könnte.
 - Keine Zufallsbelohnungen. Die Belohnung steht vorher fest und ist sichtbar.
 - Belohnung nur auf dem eigenen Niveau und darüber. Weil die Lehrkraft das Niveau passend setzt, ist das für alle fair.

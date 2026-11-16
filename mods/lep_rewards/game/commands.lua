@@ -9,26 +9,28 @@ core.register_privilege("lep_view_rewards", {
 })
 
 core.register_chatcommand("lep_rewards", {
-	description = S("Show what the rewards contain and how many you can still earn today"),
+	description = S("Show what the rewards contain and how many daily tasks are left today"),
 	func = function(name)
-		local remaining, limits = lep_rewards.get_remaining(name)
+		local remaining, limit = lep_rewards.get_remaining(name)
+		local function items(size)
+			return lep_rewards.describe_items(lep_rewards.get_reward(size))
+		end
 		local lines = {
-			S("Solved task: @1", lep_rewards.describe_items(
-				lep_rewards.get_reward(lep_rewards.SMALL))),
-			S("Task chest or completed level: @1", lep_rewards.describe_items(
-				lep_rewards.get_reward(lep_rewards.MEDIUM))),
-			S("Completed stage: @1", lep_rewards.describe_items(
-				lep_rewards.get_reward(lep_rewards.LARGE))),
-			S("Left today: @1 of @2 tasks, @3 of @4 task chests",
-				remaining.task, limits.task, remaining.chest, limits.chest),
+			S("Small reward: @1", items(lep_rewards.SMALL)),
+			"  " .. S("for a level task that counts for your level, or an easy daily task"),
+			S("Medium reward: @1", items(lep_rewards.MEDIUM)),
+			"  " .. S("for a daily task or a completed level"),
+			S("Large reward: @1", items(lep_rewards.LARGE)),
+			"  " .. S("for a hard daily task or a completed stage"),
+			S("Daily tasks left today: @1 of @2", remaining, limit),
 		}
 		return true, table.concat(lines, "\n")
 	end,
 })
 
 local REASONS = {
-	task = S("task"),
-	chest = S("task chest"),
+	task = S("level task"),
+	daily = S("daily task"),
 	level = S("level completed"),
 	stage = S("stage completed"),
 }

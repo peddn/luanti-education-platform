@@ -1,33 +1,56 @@
 local rewards = dofile("mods/lep_rewards/src/rewards.lua")
 
-local LIMITS = { task = 3, chest = 2 }
+local LIMIT = 3
 
 describe("lep_rewards rules", function()
 	local function result(overrides)
-		local r = { solved = true, level = 2, player_level = 2, kind = rewards.KIND_TASK }
+		local r = {
+			solved = true, level = 2, player_level = 2,
+			kind = rewards.KIND_TASK, counted = true, effort = "normal",
+		}
 		for key, value in pairs(overrides or {}) do
 			r[key] = value
 		end
 		return r
 	end
 
-	it("pays the small reward for a solved task on the own level", function()
+	local function daily(overrides)
+		local r = result({ kind = rewards.KIND_DAILY, counted = false })
+		for key, value in pairs(overrides or {}) do
+			r[key] = value
+		end
+		return r
+	end
+
+	it("pays the small reward for a level task that counts", function()
 		assert.are.same({ rewards.SMALL, rewards.REASON_TASK }, { rewards.for_result(result()) })
 	end)
 
-	it("pays the medium reward for a task chest", function()
-		assert.are.same({ rewards.MEDIUM, rewards.REASON_CHEST },
-			{ rewards.for_result(result({ kind = rewards.KIND_CHEST })) })
+	it("pays nothing for a level task that no longer counts", function()
+		-- The task type is done, or the task is not on the player's level.
+		assert.is_nil(rewards.for_result(result({ counted = false })))
+		assert.is_nil(rewards.for_result(result({ counted = false, level = 5 })))
 	end)
 
-	it("also pays for tasks above the own level", function()
-		assert.are.equal(rewards.SMALL, (rewards.for_result(result({ level = 5 }))))
-	end)
-
-	it("pays nothing for tasks below the own level or wrong answers", function()
-		assert.is_nil(rewards.for_result(result({ level = 1 })))
+	it("pays nothing for wrong answers", function()
 		assert.is_nil(rewards.for_result(result({ solved = false })))
-		assert.is_nil(rewards.for_result(result({ level = 1, kind = rewards.KIND_CHEST })))
+		assert.is_nil(rewards.for_result(daily({ solved = false })))
+	end)
+
+	it("pays the medium reward for a daily task", function()
+		assert.are.same({ rewards.MEDIUM, rewards.REASON_DAILY }, { rewards.for_result(daily()) })
+	end)
+
+	it("sizes the reward of a daily task by its effort", function()
+		assert.are.equal(rewards.SMALL, (rewards.for_result(daily({ effort = "low" }))))
+		assert.are.equal(rewards.MEDIUM, (rewards.for_result(daily({ effort = "normal" }))))
+		assert.are.equal(rewards.LARGE, (rewards.for_result(daily({ effort = "high" }))))
+		assert.are.equal(rewards.MEDIUM, (rewards.for_result(daily({ effort = "unknown" }))))
+	end)
+
+	it("pays daily tasks on the own level and above, not below", function()
+		assert.is_truthy(rewards.for_result(daily({ level = 5 })))
+		assert.is_nil(rewards.for_result(daily({ level = 1 })))
 	end)
 
 	it("pays the large reward only at the end of a stage", function()
@@ -61,55 +84,57 @@ describe("lep_rewards items", function()
 end)
 
 describe("lep_rewards daily allowance", function()
-	it("counts down per kind", function()
+	it("counts down", function()
 		local state = rewards.new_allowance()
-		assert.are.same({ task = 3, chest = 2 }, rewards.remaining(state, "d1", LIMITS))
+		assert.are.equal(3, rewards.remaining(state, "d1", LIMIT))
 		local allowed, left
-		state, allowed, left = rewards.use_allowance(state, "d1", rewards.KIND_TASK, LIMITS)
+		state, allowed, left = rewards.use_allowance(state, "d1", LIMIT)
 		assert.is_true(allowed)
 		assert.are.equal(2, left)
-		assert.are.same({ task = 2, chest = 2 }, rewards.remaining(state, "d1", LIMITS))
+		assert.are.equal(2, rewards.remaining(state, "d1", LIMIT))
 	end)
 
 	it("stops at the limit", function()
 		local state = rewards.new_allowance()
 		local allowed, left
 		for _ = 1, 3 do
-			state, allowed, left = rewards.use_allowance(state, "d1", rewards.KIND_TASK, LIMITS)
+			state, allowed, left = rewards.use_allowance(state, "d1", LIMIT)
 		end
 		assert.is_true(allowed)
 		assert.are.equal(0, left)
-		state, allowed = rewards.use_allowance(state, "d1", rewards.KIND_TASK, LIMITS)
+		state, allowed = rewards.use_allowance(state, "d1", LIMIT)
 		assert.is_false(allowed)
-		assert.are.equal(3, state.task)
-		-- Chests have their own limit.
-		local _, chest_allowed = rewards.use_allowance(state, "d1", rewards.KIND_CHEST, LIMITS)
-		assert.is_true(chest_allowed)
+		assert.are.equal(3, state.daily)
+	end)
+
+	it("allows nothing with a limit of zero", function()
+		local _, allowed = rewards.use_allowance(rewards.new_allowance(), "d1", 0)
+		assert.is_false(allowed)
 	end)
 
 	it("starts again on a new day", function()
 		local state = rewards.new_allowance()
 		for _ = 1, 3 do
-			state = rewards.use_allowance(state, "d1", rewards.KIND_TASK, LIMITS)
+			state = rewards.use_allowance(state, "d1", LIMIT)
 		end
-		assert.are.same({ task = 3, chest = 2 }, rewards.remaining(state, "d2", LIMITS))
+		assert.are.equal(3, rewards.remaining(state, "d2", LIMIT))
 		local allowed
-		state, allowed = rewards.use_allowance(state, "d2", rewards.KIND_TASK, LIMITS)
+		state, allowed = rewards.use_allowance(state, "d2", LIMIT)
 		assert.is_true(allowed)
-		assert.are.same({ day = "d2", task = 1, chest = 0 }, state)
+		assert.are.same({ day = "d2", daily = 1 }, state)
 	end)
 
 	it("does not change the state it was given", function()
 		local state = rewards.new_allowance()
-		rewards.use_allowance(state, "d1", rewards.KIND_TASK, LIMITS)
+		rewards.use_allowance(state, "d1", LIMIT)
 		assert.are.same(rewards.new_allowance(), state)
 	end)
 
 	it("repairs stored data", function()
 		assert.are.same(rewards.new_allowance(), rewards.normalize_allowance(nil))
-		assert.are.same({ day = "d1", task = 2, chest = 0 },
-			rewards.normalize_allowance({ day = "d1", task = 2.7, chest = -4, other = 1 }))
-		assert.are.same({ day = "", task = 0, chest = 0 },
-			rewards.normalize_allowance({ day = 5, task = "many" }))
+		assert.are.same({ day = "d1", daily = 2 },
+			rewards.normalize_allowance({ day = "d1", daily = 2.7, task = 9, chest = 4 }))
+		assert.are.same({ day = "", daily = 0 },
+			rewards.normalize_allowance({ day = 5, daily = "many" }))
 	end)
 end)

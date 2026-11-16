@@ -189,6 +189,14 @@ describe("lep_progress record", function()
 		assert.are.equal(0, progress.solved_count(state, 2, "mul"))
 	end)
 
+	it("never counts daily tasks for the workload", function()
+		local state, events, counted = progress.record(module, progress.new_state(),
+			{ level = 1, task = "add", solved = true, kind = progress.KIND_DAILY })
+		assert.is_false(counted)
+		assert.are.same({}, events)
+		assert.are.equal(0, progress.solved_count(state, 1, "add"))
+	end)
+
 	it("rejects results the module cannot have produced", function()
 		assert.is_nil(progress.check_result(module, 4, "add"))
 		assert.is_nil(progress.check_result(module, 0, "add"))

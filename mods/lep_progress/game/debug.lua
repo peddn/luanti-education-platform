@@ -35,19 +35,26 @@ lep_progress.register_on_result(function(result)
 		.. (result.counted and ", counted" or ", not counted"))
 end)
 
+local EFFORTS = {
+	daily = lep_progress.EFFORT_NORMAL,
+	daily_low = lep_progress.EFFORT_LOW,
+	daily_high = lep_progress.EFFORT_HIGH,
+}
+
 core.register_chatcommand("lep_report", {
-	params = "<task> [fail | chest] [<level>]",
-	description = "Report a task of the test module as solved, as failed, or as "
-		.. "solved in a task chest. Without a level, your current level is used.",
+	params = "<task> [fail | daily | daily_low | daily_high] [<level>]",
+	description = "Report a task of the test module: solved as a level task, failed, "
+		.. "or solved as a daily task. Without a level, your current level is used.",
 	privs = { lep_debug = true },
 	func = function(name, param)
 		local task, second, third = param:match("^%s*(%S+)%s*(%S*)%s*(%S*)")
 		if not task then
-			return false, "Usage: /lep_report <task> [fail | chest] [<level>]"
+			return false,
+				"Usage: /lep_report <task> [fail | daily | daily_low | daily_high] [<level>]"
 		end
 		local failed = second == "fail"
-		local from_chest = second == "chest"
-		local level = tonumber((failed or from_chest) and third or second)
+		local effort = EFFORTS[second]
+		local level = tonumber((failed or effort) and third or second)
 			or lep_progress.get_level(name, MODULE)
 		local ok, err = lep_progress.report({
 			player = name,
@@ -55,7 +62,8 @@ core.register_chatcommand("lep_report", {
 			task = task,
 			level = level,
 			solved = not failed,
-			kind = from_chest and lep_progress.KIND_CHEST or lep_progress.KIND_TASK,
+			kind = effort and lep_progress.KIND_DAILY or lep_progress.KIND_TASK,
+			effort = effort,
 			attempts = 1,
 		})
 		if not ok then

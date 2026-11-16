@@ -1,4 +1,5 @@
--- What the three reward sizes contain and how many rewards a day brings.
+-- What the three reward sizes contain and how many daily tasks are
+-- rewarded per day.
 -- Only this file knows where that comes from. For now it is the server
 -- configuration, later the backend with a table per group.
 
@@ -21,12 +22,12 @@ local function read_items(size)
 	return rewards.parse_items(rewards.DEFAULT_ITEMS[size])
 end
 
-local function read_limit(kind)
-	local value = tonumber(core.settings:get("lep_rewards_daily_" .. kind .. "s"))
+local function read_daily_limit()
+	local value = tonumber(core.settings:get("lep_rewards_daily_limit"))
 	if value and value >= 0 then
 		return math.floor(value)
 	end
-	return rewards.DEFAULT_LIMITS[kind]
+	return rewards.DEFAULT_DAILY_LIMIT
 end
 
 local items = {}
@@ -34,10 +35,7 @@ for _, size in ipairs(rewards.SIZES) do
 	items[size] = read_items(size)
 end
 
-local limits = {
-	task = read_limit(rewards.KIND_TASK),
-	chest = read_limit(rewards.KIND_CHEST),
-}
+local daily_limit = read_daily_limit()
 
 -- Items can only be checked once all mods are loaded.
 core.register_on_mods_loaded(function()
@@ -56,9 +54,9 @@ function config.items(size)
 	return items[size]
 end
 
---- Returns the daily limits as { task = ..., chest = ... }.
-function config.limits()
-	return limits
+--- Returns how many daily tasks are rewarded per player and day.
+function config.daily_limit()
+	return daily_limit
 end
 
 return config

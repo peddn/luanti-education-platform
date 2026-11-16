@@ -9,7 +9,7 @@ end
 
 core.register_chatcommand("lep_rewards_reset", {
 	params = "[<player>]",
-	description = "Reset today's reward limit, as if a new day had begun. "
+	description = "Reset today's limit of rewarded daily tasks, as if a new day had begun. "
 		.. "Without a player, your own.",
 	privs = { lep_debug = true },
 	func = function(name, param)
@@ -18,9 +18,8 @@ core.register_chatcommand("lep_rewards_reset", {
 			return false, "There is no player " .. target .. "."
 		end
 		lep_rewards.reset_allowance(target)
-		local remaining, limits = lep_rewards.get_remaining(target)
-		return true, "Reset. " .. target .. " has " .. remaining.task .. " of "
-			.. limits.task .. " tasks and " .. remaining.chest .. " of "
-			.. limits.chest .. " task chests left today."
+		local remaining, limit = lep_rewards.get_remaining(target)
+		return true, "Reset. " .. target .. " has " .. remaining .. " of " .. limit
+			.. " daily tasks left today."
 	end,
 })
