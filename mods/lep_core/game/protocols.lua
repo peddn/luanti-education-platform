@@ -9,6 +9,16 @@ local protocols = {}
 
 local DIR = core.get_worldpath() .. "/lep_protocols"
 local opened = {}
+local listeners = {}
+
+--- Registers a function(name, record) that is called after an entry was
+-- written to any protocol. `name` is the name of the protocol, `record`
+-- the table with a value per column. The bridge uses this to pass the
+-- entries on to the backend.
+function protocols.register_on_append(listener)
+	assert(type(listener) == "function", "register_on_append: listener must be a function")
+	listeners[#listeners + 1] = listener
+end
 
 local function path(name)
 	return DIR .. "/" .. name .. ".tsv"
@@ -45,6 +55,13 @@ function protocols.open(name, columns)
 		end
 		file:write(protocol.encode(now(), columns, record), "\n")
 		file:close()
+		for _, listener in ipairs(listeners) do
+			local ok, listener_err = pcall(listener, name, record)
+			if not ok then
+				core.log("error", "[lep_core] listener of protocol " .. name .. " failed: "
+					.. tostring(listener_err))
+			end
+		end
 		return true
 	end
 

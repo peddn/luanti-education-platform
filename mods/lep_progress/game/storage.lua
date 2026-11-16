@@ -28,4 +28,17 @@ function storage.save(player_name, module_id, state)
 	mod_storage:set_string(key(player_name), core.serialize(data))
 end
 
+--- Returns the names of all players with stored progress, sorted.
+function storage.players()
+	local names = {}
+	for _, stored_key in ipairs(mod_storage:get_keys()) do
+		local name = stored_key:match("^player:(.+)$")
+		if name then
+			names[#names + 1] = name
+		end
+	end
+	table.sort(names)
+	return names
+end
+
 return storage

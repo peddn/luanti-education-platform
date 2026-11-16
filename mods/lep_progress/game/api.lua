@@ -75,6 +75,31 @@ function lep_progress.get_module(module_id)
 	return { id = module.id, title = module.title, levels = #module.levels, stages = stages }
 end
 
+--- Returns the levels of a module with their kinds of tasks, or nil: a
+-- list of { stage, tasks }, where tasks is a list of { id, title,
+-- required }.
+function lep_progress.get_levels(module_id)
+	local module = modules:get(module_id)
+	if not module then
+		return nil
+	end
+	local levels = {}
+	for number, level in ipairs(module.levels) do
+		local tasks = {}
+		for index, task in ipairs(level.tasks) do
+			tasks[index] = { id = task.id, title = task.title, required = task.required }
+		end
+		levels[number] = { stage = level.stage == true, tasks = tasks }
+	end
+	return levels
+end
+
+--- Returns the names of all players who have stored progress, sorted.
+-- They do not have to be online.
+function lep_progress.get_players()
+	return storage.players()
+end
+
 --- Returns the level a player is on in a module, or nil for an unknown
 -- module. Players who never played start on level 1.
 function lep_progress.get_level(player_name, module_id)
@@ -175,6 +200,7 @@ function lep_progress.report(result)
 	})
 	if counted then
 		storage.save(result.player, module.id, new_state)
+		dispatcher:emit("state_changed", result.player, module.id)
 	end
 
 	dispatcher:emit("result", {
@@ -213,6 +239,7 @@ function lep_progress.set_level(player_name, module_id, level)
 		return false, events
 	end
 	storage.save(player_name, module.id, new_state)
+	dispatcher:emit("state_changed", player_name, module.id)
 	emit(player_name, module, events)
 	return true
 end
@@ -231,6 +258,7 @@ function lep_progress.set_locked(player_name, module_id, locked)
 	local new_state, events = progress.set_locked(
 		module, get_state(player_name, module), locked)
 	storage.save(player_name, module.id, new_state)
+	dispatcher:emit("state_changed", player_name, module.id)
 	emit(player_name, module, events)
 	return true
 end
@@ -308,6 +336,11 @@ end
 -- result has the fields of lep_progress.report, plus player_level and
 -- counted.
 lep_progress.register_on_result = dispatcher:registrar("result")
+
+--- Registers a function(player_name, module_id) called whenever the
+-- stored state of a player in a module has changed: a task that counted,
+-- a new level, a lock. lep_progress.get_progress returns the new state.
+lep_progress.register_on_state_changed = dispatcher:registrar("state_changed")
 
 --- Registers a function(player_name, module_id, level, is_stage) called
 -- when a player completes a level. is_stage is true if the level ends a

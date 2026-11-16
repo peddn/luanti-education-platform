@@ -272,6 +272,8 @@ Ohne laufendes Backend spielt die Welt normal weiter. Luanti schreibt dann für 
 | `scripts/backend-run.sh world rekey <name>` | gibt einer Welt einen neuen Schlüssel, der alte gilt nicht mehr |
 | `scripts/backend-run.sh world list` | listet die Welten mit letztem Kontakt |
 | `scripts/backend-run.sh world ping <name>` | stellt einen Ping-Auftrag ein, um den Weg zur Welt und zurück zu prüfen |
+| `scripts/backend-run.sh world state <name>` | zeigt, was das Backend von einer Welt weiß: Module, Fortschritt, Trophäen, Protokolle |
+| `scripts/backend-run.sh world sync <name>` | bittet die Welt, ihren ganzen Stand noch einmal zu senden |
 | `scripts/update-openapi.sh` | schreibt `api/openapi.json` neu, nach Änderungen an der Schnittstelle |
 
 Die Befehle arbeiten direkt auf der Datenbank und brauchen keinen laufenden Server. Ein Ping, der so eingestellt wird, erreicht eine verbundene Welt innerhalb von 25 Sekunden.
