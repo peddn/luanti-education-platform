@@ -137,6 +137,33 @@ lep_progress.register_on_result(function(result)
 	end
 end)
 
+-- Tell learning modules what a task will earn, so they can show it.
+lep_progress.register_task_info(function(player_name, module_id, level, task_id, kind)
+	local info = lep_progress.get_progress(player_name, module_id)
+	if not info then
+		return nil
+	end
+	local counted = false
+	if kind ~= rewards.KIND_DAILY and level == info.level then
+		for _, task in ipairs(info.tasks) do
+			if task.id == task_id then
+				counted = task.solved < task.required
+			end
+		end
+	end
+	local size = rewards.for_result({
+		solved = true, level = level, player_level = info.level, kind = kind,
+		counted = counted, effort = "normal",
+	})
+	if not size then
+		return S("No reward: you have finished this kind of task.")
+	end
+	if kind == rewards.KIND_DAILY and lep_rewards.get_remaining(player_name) == 0 then
+		return S("No reward: the daily limit is reached.")
+	end
+	return S("Reward: @1", lep_rewards.describe_items(config.items(size)))
+end)
+
 -- Completed levels.
 lep_progress.register_on_level_completed(function(player_name, module_id, level, is_stage)
 	local size, reason = rewards.for_level(is_stage)

@@ -234,6 +234,47 @@ function lep_progress.set_locked(player_name, module_id, locked)
 	return true
 end
 
+-- How loud the feedback sounds are played. The files are recorded at
+-- full volume.
+local FEEDBACK_GAIN = 0.5
+
+--- Plays the sound for a right or a wrong answer to one player. All
+-- learning modules use this, so an answer sounds the same everywhere. The
+-- module decides the moment, for example together with its own feedback
+-- on screen.
+function lep_progress.play_feedback(player_name, solved)
+	core.sound_play(solved and "lep_progress_right" or "lep_progress_wrong",
+		{ to_player = player_name, gain = FEEDBACK_GAIN }, true)
+end
+
+local task_info_providers = {}
+
+--- Registers a function(player_name, module_id, level, task_id, kind)
+-- that returns a line of text about a task a player is about to solve, or
+-- nil. Learning modules show these lines without knowing where they come
+-- from: this is how the reward becomes visible before the task, although
+-- a module knows nothing about rewards.
+function lep_progress.register_task_info(provider)
+	assert(type(provider) == "function", "register_task_info: provider must be a function")
+	task_info_providers[#task_info_providers + 1] = provider
+end
+
+--- Returns the lines of text that other mods have to say about a task,
+-- as a list. `kind` is lep_progress.KIND_TASK by default.
+function lep_progress.get_task_info(player_name, module_id, level, task_id, kind)
+	local lines = {}
+	for _, provider in ipairs(task_info_providers) do
+		local ok, line = pcall(provider, player_name, module_id, level, task_id,
+			kind or progress.KIND_TASK)
+		if not ok then
+			core.log("error", "[lep_progress] task info provider failed: " .. tostring(line))
+		elseif type(line) == "string" and line ~= "" then
+			lines[#lines + 1] = line
+		end
+	end
+	return lines
+end
+
 --- Registers a function(result) called for every reported task. The
 -- result has the fields of lep_progress.report, plus player_level and
 -- counted.

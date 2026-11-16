@@ -21,3 +21,6 @@ for a hard daily task or a completed stage=für eine schwere Tagesaufgabe oder e
 Daily tasks left today: @1 of @2=Tagesaufgaben heute noch frei: @1 von @2
 level task=Niveauaufgabe
 daily task=Tagesaufgabe
+No reward: you have finished this kind of task.=Keine Belohnung: Diese Aufgabenart hast du geschafft.
+No reward: the daily limit is reached.=Keine Belohnung: Das Tageslimit ist erreicht.
+Reward: @1=Belohnung: @1

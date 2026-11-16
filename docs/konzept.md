@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 24 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 25 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -459,10 +459,48 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 
 ### 8.6 Rechnen
 
-- Aufgaben werden erzeugt.
-- Jedes Niveau hat eine Liste von Aufgabentypen (Zahlenraum, Rechenarten, später Brüche).
+**Aufgaben**
+
+- Aufgaben werden erzeugt. Jeder Aufgabentyp ist eine Regel, etwa „Addition bis 20 mit Zehnerübergang“.
 - „3,5“ und „3.5“ gelten beide.
 - Zeitdruck nur optional.
+- Ein Aufgabentyp ist nach zehn richtigen Lösungen geschafft, die gemischten Aufgaben nach fünf.
+- Der Schüler wählt den Aufgabentyp nicht selbst. Gestellt werden bevorzugt die Typen, die ihm noch fehlen.
+
+**Zwölf Niveaus**
+
+| Niveau | Aufgabentypen | Etappe |
+|---|---|---|
+| 1 | Addition bis 10, Subtraktion bis 10 | |
+| 2 | Addition und Subtraktion bis 20, ohne Zehnerübergang | |
+| 3 | Addition und Subtraktion bis 20, mit Zehnerübergang | ja |
+| 4 | Addition und Subtraktion bis 100, ohne Übergang | |
+| 5 | Addition und Subtraktion bis 100, mit Übergang | |
+| 6 | Einmaleins mit 2, 5 und 10, dazu die Division | ja |
+| 7 | Einmaleins mit 3, 4 und 6, dazu die Division | |
+| 8 | Einmaleins mit 7, 8 und 9, dazu die Division | |
+| 9 | Gemischte Aufgaben mit Punkt vor Strich | ja |
+| 10 | Addition und Subtraktion bis 1000 | |
+| 11 | Zehnerzahl mal Einer, Division mit Zehnerzahlen | |
+| 12 | Dezimalzahlen mit einer Nachkommastelle, plus und minus | ja |
+
+**Der Rechenraum**
+
+Gerechnet wird in der Welt, nicht in einem Fenster.
+
+- **Bündig:** Anzeige, Tastenfeld und Ausgang sind in die Wände eingelassen und ragen nicht in den Raum.
+- **Anzeige:** In der Stirnwand sitzt eine Anzeige im Stil einer 7-Segment-Anzeige, neun Zeichen breit und zwei Reihen hoch. Oben steht die Aufgabe, darunter hinter einem Gleichheitszeichen die Eingabe.
+- **Tastenfeld:** In der rechten Wand sitzt senkrecht ein Tastenfeld aus Blöcken, angeordnet wie beim Telefon: 7 8 9 oben, darunter 4 5 6 und 1 2 3, unten Löschen, 0 und die Eingabetaste. Die unterste Reihe liegt auf Bodenhöhe. Das Komma erscheint als weitere Taste, sobald eine Aufgabe es braucht. Getippt wird durch Anklicken.
+- **Rückmeldung:** Bei einer richtigen Antwort leuchtet die Eingabe grün, dazu ein Ton, dann kommt die nächste Aufgabe. Bei einer falschen leuchtet sie rot, und der Schüler darf es noch einmal versuchen. Nach dem zweiten Fehler zeigt die Anzeige die richtige Lösung, die Aufgabe gilt als nicht gelöst, und es folgt eine neue.
+- **Stand:** Unten in der Bildschirmmitte, über Herzen und Schnellleiste, stehen Modul, Niveau, Aufgabentyp und Stand, darunter die Belohnung für diese Aufgabe. Der obere Rand bleibt dem Chat.
+- **Verlassen:** über einen Ausgangsblock neben der Stelle, an der man erscheint.
+- **Hinkommen:** vorerst über einen Befehl. Später führen das Lehrerpult und ein Portal in der Halle dorthin.
+
+Die Aufgabentruhe stellt dieselben Aufgaben in einem Fenster. Beide nutzen denselben Kern: Aufgabe erzeugen, Antwort prüfen, Versuche zählen.
+
+Die Töne für richtig und falsch gehören dem Fortschritts-Mod und klingen in allen Lernmodulen gleich. Das Modul bestimmt nur den Moment. Dasselbe gilt für die Töne beim Abschluss eines Niveaus und einer Etappe.
+
+Das Rechenmodul kennt keine Belohnungen. Die Zeile mit der Belohnung liefert der Belohnungs-Mod über eine neutrale Anfrage beim Fortschritts-Mod.
 
 ### 8.7 Textfragen
 
@@ -828,7 +866,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_progress` | Ergebnisse annehmen, Niveau und Pensum führen, Ereignisse verteilen |
 | `lep_rewards` | Regeln, Tageslimit, Belohnungskiste, Protokoll |
 | `lep_trophies` | Meilensteine, Ausstellung im Raum |
-| `lep_math` | Rechnen: Aufgabengenerator, Dialogfenster |
+| `lep_math` | Rechnen: Aufgabengenerator, Rechenraum mit Anzeige und Tastenfeld |
 | `lep_quest_chest` | Aufgabentruhe in der Wildnis |
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
 | `lep_attention` | Aufmerksamkeitsmodus: Einfrieren, Overlay, Chat-Sperre |
@@ -871,9 +909,11 @@ Bei der Umsetzung des jeweiligen Teils:
 
 6. **Raumlicht:** Luanti 5.18 kann die Helligkeit pro Spieler einstellen (`set_lighting`, Feld `static.light_curve`). Das könnte die leuchtende Luft in den Lernräumen ersetzen. Zwei kurze Versuche blieben ohne klares Ergebnis. Erneut prüfen, sobald auch die Testumgebung des Nutzers 5.18 hat.
 
+7. **Tasten hervorheben:** Im Rechenraum könnte die Taste unter dem Fadenkreuz heller werden. Luanti meldet dem Server nicht, worauf ein Spieler zeigt. Der Server müsste die Blickrichtung etwa zehnmal pro Sekunde prüfen und die Taste austauschen. Zurückgestellt, weil der Client den anvisierten Block schon umrandet und der Aufwand den Nutzen vorerst nicht lohnt.
+
 Vor einem Einsatz an einer Schule:
 
-7. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
+8. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
 
 ## 17. Quellen
 

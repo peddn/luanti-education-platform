@@ -178,6 +178,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_lobby room [<spieler>]` | bringt dich vor deinen persönlichen Raum oder den eines anderen |
 | `/lep_lobby leave` | von der Lobby in die Wildnis |
 | `/lep_lobby rebuild` | baut Halle, Gänge und Räume neu |
+| `/lep_math` und `/lep_math leave` | bringt dich in deinen Rechenraum und wieder hinaus. Kein Testbefehl, er gilt für alle Spieler |
 | `/lep_trophy bronze \| gold \| daily <anzahl>` | gibt dir einen Testpokal oder erhöht deinen Zähler gelöster Tagesaufgaben |
 | `/lep_rewards_reset [<spieler>]` | setzt das Tageslimit der Tagesaufgaben zurück, als hätte ein neuer Tag begonnen |
 | `/lep_report <aufgabe> [fail \| daily \| daily_low \| daily_high] [<niveau>]` | meldet eine Aufgabe des Testmoduls: gelöst als Niveauaufgabe, falsch, oder gelöst als Tagesaufgabe mit normalem, geringem oder hohem Aufwand. Niveau 2 und 4 sind Etappen. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
