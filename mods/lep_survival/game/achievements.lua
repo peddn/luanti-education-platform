@@ -25,7 +25,10 @@ local function register_plaque(award_name, def)
 	core.register_node(achievements.node_name(award_name), {
 		description = "LEP achievement plaque",
 		drawtype = "nodebox",
-		node_box = { type = "fixed", fixed = { -0.4, -0.5, -0.05, 0.4, 0.3, 0.05 } },
+		-- A face of a node box shows only the part of the texture that the
+		-- box covers. The plaque is as large as a node, so the whole icon
+		-- is visible.
+		node_box = { type = "fixed", fixed = { -0.5, -0.5, -0.05, 0.5, 0.5, 0.05 } },
 		tiles = {
 			"default_wood.png", "default_wood.png", "default_wood.png", "default_wood.png",
 			icon, icon,
