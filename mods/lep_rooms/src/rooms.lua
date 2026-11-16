@@ -99,8 +99,8 @@ function Types:register(id, def)
 	local size = def.size
 	assert(type(size) == "table", "register: size must be a table")
 	for _, axis in ipairs({ "x", "y", "z" }) do
-		assert(is_int(size[axis]) and size[axis] >= 3 and size[axis] <= rooms.MAX_SIZE,
-			"register: size." .. axis .. " must be an integer between 3 and "
+		assert(is_int(size[axis]) and size[axis] >= 1 and size[axis] <= rooms.MAX_SIZE,
+			"register: size." .. axis .. " must be an integer between 1 and "
 			.. rooms.MAX_SIZE)
 	end
 
@@ -147,7 +147,8 @@ end
 --   interior_min, interior_max  the space players can use
 --   shell_min, shell_max        interior plus the one node thick shell
 --   spawn                       where players stand after entering: on the
---                               floor, centred in x, at the front wall (-z)
+--                               floor, centred in x, at the front wall (-z).
+--                               Always inside the interior.
 function rooms.geometry(def, slot)
 	local i, j = rooms.slot_to_cell(slot)
 	assert(math.abs(i) <= rooms.MAX_CELL and math.abs(j) <= rooms.MAX_CELL,
@@ -173,7 +174,8 @@ function rooms.geometry(def, slot)
 		interior_max = max,
 		shell_min = { x = min.x - 1, y = min.y - 1, z = min.z - 1 },
 		shell_max = { x = max.x + 1, y = max.y + 1, z = max.z + 1 },
-		spawn = { x = centre_x, y = min.y, z = min.z + 1 },
+		-- In a room that is only one node deep, the front is all there is.
+		spawn = { x = centre_x, y = min.y, z = math.min(min.z + 1, max.z) },
 	}
 end
 
