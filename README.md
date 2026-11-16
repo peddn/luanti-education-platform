@@ -38,7 +38,7 @@ luanti-education-platform/
 │   ├── lep_trophies/
 │   ├── lep_math/                Rechnen
 │   ├── lep_quest_chest/         Aufgabentruhe
-│   ├── lep_desk/                Lehrerpult
+│   ├── lep_desk/                Lehrerpult mit Reiter „Web-Zugang“
 │   ├── lep_attention/           Aufmerksamkeitsmodus
 │   ├── lep_chat/
 │   ├── lep_bridge/              Verbindung zum Backend
