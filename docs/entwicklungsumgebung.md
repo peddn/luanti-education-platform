@@ -144,7 +144,7 @@ Luanti startet direkt in der Testwelt, als Einzelspieler. Das geht schneller, bi
 scripts/test.sh
 ```
 
-Das führt Luacheck und Busted für alle Mods aus. Dieselben Prüfungen laufen bei jedem Pull Request automatisch auf GitHub.
+Das führt Luacheck und Busted für alle Mods aus, danach Formatprüfung, Clippy und Tests für die Rust-Pakete. Dieselben Prüfungen laufen bei jedem Pull Request automatisch auf GitHub. Mit `scripts/test.sh lua` oder `scripts/test.sh rust` läuft nur ein Teil.
 
 ### Auf den neuesten Stand bringen
 
@@ -195,7 +195,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 
 ## 6. Backend und Oberfläche
 
-**Wird erst ab Schritt 6 gebraucht.**
+Das Backend ist ein Rust-Programm im Ordner `backend/`. Die Typen seiner Schnittstelle liegen in `crates/protocol/`. Die Oberfläche folgt später.
 
 ```sh
 sudo pacman -S --needed rustup nodejs npm sqlite
@@ -211,7 +211,35 @@ npm --version
 sqlite3 --version
 ```
 
-Wie Backend und Oberfläche gebaut und gestartet werden, wird ergänzt, sobald sie existieren.
+### Backend starten
+
+```sh
+scripts/backend-run.sh
+```
+
+Der erste Lauf lädt und übersetzt die Bibliotheken, das dauert einige Minuten. Danach meldet das Terminal `listening on http://127.0.0.1:8080`. Beendet wird mit Strg+C.
+
+Prüfen, in einem zweiten Terminal:
+
+```sh
+curl http://127.0.0.1:8080/api/health
+```
+
+Erwartete Antwort: `{"status":"ok","version":"0.1.0","database":true}`. Die Beschreibung der Schnittstelle liefert `http://127.0.0.1:8080/api/openapi.json`.
+
+### Einstellungen
+
+Das Backend liest seine Einstellungen aus Umgebungsvariablen.
+
+| Variable | Bedeutung | Voreinstellung |
+|---|---|---|
+| `LEP_BIND` | Adresse und Port | `127.0.0.1:8080` |
+| `LEP_DATABASE` | Pfad der SQLite-Datei | `.dev/backend/lep.sqlite` |
+| `RUST_LOG` | Ausführlichkeit der Meldungen | `info` |
+
+Die Datenbank der Testumgebung liegt in `.dev/` und wird nicht eingecheckt. Wer sie löscht, bekommt beim nächsten Start eine leere. Tabellen entstehen und ändern sich über Migrationen in `backend/migrations/`, das Backend spielt sie beim Start von selbst ein.
+
+Wie die Oberfläche gebaut und gestartet wird, wird ergänzt, sobald sie existiert.
 
 ## 7. Empfohlene Werkzeuge
 

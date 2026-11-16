@@ -82,8 +82,8 @@ Für die Anleitung in Schritt 4 gilt:
 
 ### Backend, Agent und Oberfläche
 
-- Backend und Agent in Rust, Oberfläche in Vue mit Pinia und Router.
-- Die Typen der Schnittstelle liegen einmal in `crates/protocol`. Daraus entsteht die OpenAPI-Beschreibung und daraus die TypeScript-Typen.
+- Backend und Agent in Rust, Oberfläche in Vue mit Pinia und Router, geschrieben in JavaScript ohne TypeScript-Syntax.
+- Die Typen der Schnittstelle liegen einmal in `crates/protocol`. Daraus entsteht die OpenAPI-Beschreibung und daraus die Typen der Oberfläche. Die Oberfläche bindet sie über JSDoc-Kommentare ein, eine automatische Prüfung gleicht sie mit dem Code ab.
 - Die Welt ruft das Backend an, nie umgekehrt: HTTPS, Long Polling, ein Schlüssel pro Welt.
 - Jedes Ereignis hat eine eindeutige ID. Das Backend verwirft Doppelte.
 - Das Spiel muss ohne Backend weiterlaufen.
@@ -106,7 +106,8 @@ Die Arbeitsumgebung ist pro Sitzung neu. Was hier steht, muss zu Beginn einer Si
 - Der Server braucht in dieser Umgebung `ipv6_server = false`, `enable_ipv6 = false` und `bind_address = 127.0.0.1` in der Konfiguration.
 - Screenshots aus dem Spiel sind möglich: `Xvfb` als virtueller Bildschirm, Client mit `LIBGL_ALWAYS_SOFTWARE=1` und `enable_sound = false`, Aufnahme mit `import -window root` (Pakete `xvfb xdotool libgl1-mesa-dri imagemagick`). Vorher die Tageszeit auf Mittag setzen, sonst ist das Bild nachts schwarz.
 - Abläufe im Spiel lassen sich mit einem kleinen Hilfsmod in `.dev/mods/` prüfen, der nach dem Beitritt Schritte ausführt und ins Log schreibt. Er wird nicht eingecheckt. Vor jedem Lauf alte Luanti-Prozesse beenden, sonst startet der Server nicht.
-- Prüfungen vor jedem Pull Request: `scripts/test.sh`, dazu ein Start der Testwelt mit `scripts/dev-setup.sh` und `scripts/dev-run.sh --server`, um das Laden der Mods im Log zu prüfen.
+- Rust (`cargo`) und Node (`node`, `npm`) sind vorhanden, crates.io und die npm-Registry sind erreichbar.
+- Prüfungen vor jedem Pull Request: `scripts/test.sh` (Lua und Rust; `scripts/test.sh lua` oder `rust` für einen Teil), dazu ein Start der Testwelt mit `scripts/dev-setup.sh` und `scripts/dev-run.sh --server`, um das Laden der Mods im Log zu prüfen.
 
 ## Lizenzen
 
