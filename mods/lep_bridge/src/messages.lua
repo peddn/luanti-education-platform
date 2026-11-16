@@ -69,6 +69,17 @@ function messages.parse_results(body)
 	return results
 end
 
+--- Counts the outcomes of a batch.
+-- @param results List from messages.parse_results.
+-- @return Table with accepted, duplicate, unknown and invalid.
+function messages.count_outcomes(results)
+	local counts = { accepted = 0, duplicate = 0, unknown = 0, invalid = 0 }
+	for _, result in ipairs(results) do
+		counts[result.outcome] = counts[result.outcome] + 1
+	end
+	return counts
+end
+
 --- Reads the answer to a request for jobs.
 -- @return list of { id, kind, payload }, or nil and an error message
 function messages.parse_jobs(body)

@@ -263,6 +263,14 @@ scripts/backend-run.sh world list
 
 Ohne laufendes Backend spielt die Welt normal weiter. Luanti schreibt dann für jeden vergeblichen Versuch eine Zeile `HTTPFetch ... failed` ins Terminal, die Brücke selbst meldet den Ausfall einmal und versucht es in wachsenden Abständen erneut, höchstens jede Minute.
 
+### Reihenfolge beim Aktualisieren
+
+Nach einem Wechsel des Zweigs oder einem `git pull` immer **zuerst das Backend** neu starten, **dann die Welt**. Ein laufendes Backend bleibt auf seinem alten Stand, bis es beendet und neu gestartet wird.
+
+Kennt das Backend ein Ereignis der Welt nicht, antwortet es mit „unbekannt“, und die Welt verwirft das Ereignis. Für Fortschritt und Trophäen ist das harmlos, `scripts/backend-run.sh world sync dev` holt den Stand nach. Protokolleinträge aus dieser Zeit fehlen dem Backend aber dauerhaft, sie stehen dann nur in den Dateien der Welt.
+
+Die Welt meldet den Fall einmal deutlich im Terminal (`THE BACKEND DOES NOT KNOW EVENTS OF THIS WORLD`), und `/lep_bridge` zeigt, wie viele Ereignisse verworfen wurden.
+
 ### Befehle des Backends
 
 | Befehl | Wirkung |

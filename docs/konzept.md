@@ -802,6 +802,7 @@ Die Brücke braucht einen Eintrag in `secure.http_mods`. Sie ist kein vertrauens
 
 - Die Welt sendet bis zu 100 Ereignisse pro Anfrage, das älteste zuerst.
 - Das Backend antwortet für jedes Ereignis: angenommen, schon bekannt, unbekannte Art oder ungültiger Inhalt. In allen vier Fällen löscht die Welt das Ereignis. Unbekannte und ungültige blockieren so die Warteschlange nicht, die Welt vermerkt sie im Log.
+- **Reihenfolge beim Aktualisieren:** erst das Backend, dann die Welten. Ein Backend, das älter ist als die Mods einer Welt, kennt deren neue Ereignisse nicht. Die Welt verwirft sie dann. Für den Stand ist das harmlos, er lässt sich neu anfordern, Protokolleinträge aus dieser Zeit fehlen dem Backend dauerhaft. Die Brücke meldet den Fall einmal deutlich im Log und zeigt die Zahl der verworfenen Ereignisse bei `/lep_bridge`.
 - Die Warteschlange liegt im Speicher des Mods und übersteht einen Neustart. Gelöscht wird erst nach der Antwort des Backends.
 - Sie hält höchstens 50 000 Ereignisse. Danach fallen die ältesten weg, mit Meldung im Log. Die Protokolldateien der Welt sind davon unabhängig.
 - Nach einem Fehlschlag wartet die Brücke 1, 2, 5, 10, 30 und dann je 60 Sekunden.
