@@ -30,6 +30,9 @@ end
 --   needs_targets  optional, default true. False for an action on the
 --              whole world, such as the time of day: it runs without
 --              marked students and gets an empty list.
+--   single     optional. True for an action on exactly one student: the
+--              one whose row the teacher clicked last. It gets a list
+--              with that one name, whoever is marked.
 --   group      optional heading. Actions with the same group stand
 --              together under it, as smaller buttons side by side.
 --   is_active  optional function() returning true while the action is
@@ -55,6 +58,7 @@ function Actions:register(id, def)
 		privilege = def.privilege,
 		run = def.run,
 		needs_targets = def.needs_targets ~= false,
+		single = def.single == true,
 		group = def.group,
 		is_active = def.is_active,
 	}
@@ -80,11 +84,11 @@ function Actions:allowed(has_privilege)
 end
 
 -- Sizes of the buttons, in formspec units.
-desk.BUTTON_HEIGHT = 0.8
-desk.BUTTON_PITCH = 1
+desk.BUTTON_HEIGHT = 0.7
+desk.BUTTON_PITCH = 0.9
 desk.SMALL_HEIGHT = 0.7
-desk.SMALL_PITCH = 0.85
-desk.HEADING_HEIGHT = 0.75
+desk.SMALL_PITCH = 0.8
+desk.HEADING_HEIGHT = 0.65
 desk.COLUMN_GAP = 0.2
 -- How many buttons of a group stand side by side.
 desk.GROUP_COLUMNS = 3

@@ -11,6 +11,7 @@ local protocol = lep_core.protocols.open("desk", { "account", "action", "targets
 lep_desk.PRIV_VIEW = "lep_view_players"
 lep_desk.PRIV_SEND = "lep_send_players"
 lep_desk.PRIV_TIME = "lep_set_time"
+lep_desk.PRIV_WATCH = "lep_watch_players"
 
 core.register_privilege(lep_desk.PRIV_VIEW, {
 	description = "Can open the teacher's desk and see where the students are",
@@ -26,6 +27,12 @@ core.register_privilege(lep_desk.PRIV_SEND, {
 
 core.register_privilege(lep_desk.PRIV_TIME, {
 	description = "Can set the time of day of the world at the teacher's desk",
+	give_to_singleplayer = false,
+	give_to_admin = true,
+})
+
+core.register_privilege(lep_desk.PRIV_WATCH, {
+	description = "Can jump to a student unseen and watch them",
 	give_to_singleplayer = false,
 	give_to_admin = true,
 })
@@ -104,6 +111,8 @@ end
 --              privilege and that the targets are students who are online.
 --   needs_targets  optional, default true. False for an action on the
 --              whole world: it runs without marked students.
+--   single     optional. True for an action on exactly one student: the
+--              one whose row the teacher clicked last.
 --   group      optional heading, already translated. Actions of a group
 --              stand together as smaller buttons side by side.
 --   is_active  optional function() returning true while the action is

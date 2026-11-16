@@ -35,6 +35,10 @@ describe("lep_desk actions", function()
 			title = "Noon", privilege = "p", run = function() end,
 			needs_targets = false, group = "Time", is_active = function() return true end,
 		})
+		actions:register("one", { title = "Jump", privilege = "p", run = function() end,
+			single = true })
+		assert.is_true(actions:get("one").single)
+		assert.is_false(actions:get("plain").single)
 		assert.is_true(actions:get("plain").needs_targets)
 		assert.is_nil(actions:get("plain").group)
 		assert.is_false(actions:get("world").needs_targets)
@@ -57,25 +61,36 @@ describe("lep_desk actions", function()
 			{ id = "t4", group = "Time" }, { id = "c1", group = "Chat" },
 		}
 		local items, bottom = desk.layout(list, 10, 1, 6.4)
-		assert.are.same({ kind = "button", index = 1, x = 10, y = 1, width = 6.4,
-			height = 0.8 }, items[1])
-		assert.are.same({ kind = "button", index = 3, x = 10, y = 2, width = 6.4,
-			height = 0.8 }, items[2])
-		assert.are.same({ kind = "heading", text = "Time", x = 10, y = 3.375 }, items[3])
-		-- Three buttons side by side, the fourth starts a new row.
 		local function near(a, b) return math.abs(a - b) < 1e-9 end
+		local pitch, small, heading = desk.BUTTON_PITCH, desk.SMALL_PITCH, desk.HEADING_HEIGHT
+
+		-- The two plain actions, full width.
+		assert.are.same({ kind = "button", index = 1, x = 10, y = 1, width = 6.4,
+			height = desk.BUTTON_HEIGHT }, items[1])
+		assert.are.equal(3, items[2].index)
+		assert.is_true(near(items[2].y, 1 + pitch))
+
+		-- The first group: heading, then three buttons side by side, the
+		-- fourth starts a new row.
+		local top = 1 + 2 * pitch
+		assert.are.equal("heading", items[3].kind)
+		assert.are.equal("Time", items[3].text)
+		assert.is_true(near(items[3].y, top + heading / 2))
+		local row = top + heading
 		assert.are.equal(2, items[4].index)
-		assert.is_true(near(items[4].x, 10) and near(items[4].y, 3.75))
-		assert.is_true(near(items[4].width, 2) and near(items[4].height, 0.7))
-		assert.is_true(near(items[5].x, 12.2) and near(items[5].y, 3.75))
-		assert.is_true(near(items[6].x, 14.4) and near(items[6].y, 3.75))
+		assert.is_true(near(items[4].x, 10) and near(items[4].y, row))
+		assert.is_true(near(items[4].width, 2) and near(items[4].height, desk.SMALL_HEIGHT))
+		assert.is_true(near(items[5].x, 12.2) and near(items[5].y, row))
+		assert.is_true(near(items[6].x, 14.4) and near(items[6].y, row))
 		assert.are.equal(6, items[7].index)
-		assert.is_true(near(items[7].x, 10) and near(items[7].y, 4.6))
+		assert.is_true(near(items[7].x, 10) and near(items[7].y, row + small))
+
 		-- The next group follows below the last row.
+		local next_top = row + 2 * small
 		assert.are.equal("Chat", items[8].text)
-		assert.is_true(near(items[8].y, 5.45 + 0.375))
-		assert.is_true(near(items[9].y, 6.2))
-		assert.is_true(near(bottom, 7.05))
+		assert.is_true(near(items[8].y, next_top + heading / 2))
+		assert.is_true(near(items[9].y, next_top + heading))
+		assert.is_true(near(bottom, next_top + heading + small))
 		assert.are.equal(9, #items)
 	end)
 
