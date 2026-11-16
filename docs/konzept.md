@@ -492,7 +492,7 @@ Gerechnet wird in der Welt, nicht in einem Fenster.
 - **Anzeige:** In der Stirnwand sitzt eine Anzeige im Stil einer 7-Segment-Anzeige, neun Zeichen breit und zwei Reihen hoch. Oben steht die Aufgabe, darunter hinter einem Gleichheitszeichen die Eingabe.
 - **Tastenfeld:** In der rechten Wand sitzt senkrecht ein Tastenfeld aus Blöcken, angeordnet wie beim Telefon: 7 8 9 oben, darunter 4 5 6 und 1 2 3, unten Löschen, 0 und die Eingabetaste. Die unterste Reihe liegt auf Bodenhöhe. Das Komma erscheint als weitere Taste, sobald eine Aufgabe es braucht. Getippt wird durch Anklicken.
 - **Rückmeldung:** Bei einer richtigen Antwort leuchtet die Eingabe grün, dazu ein Ton, dann kommt die nächste Aufgabe. Bei einer falschen leuchtet sie rot, und der Schüler darf es noch einmal versuchen. Nach dem zweiten Fehler zeigt die Anzeige die richtige Lösung, die Aufgabe gilt als nicht gelöst, und es folgt eine neue.
-- **Stand:** Am oberen Bildschirmrand stehen Modul, Niveau, Aufgabentyp und Stand, darunter die Belohnung für diese Aufgabe.
+- **Stand:** Unten in der Bildschirmmitte, über Herzen und Schnellleiste, stehen Modul, Niveau, Aufgabentyp und Stand, darunter die Belohnung für diese Aufgabe. Der obere Rand bleibt dem Chat.
 - **Verlassen:** über einen Ausgangsblock neben der Stelle, an der man erscheint.
 - **Hinkommen:** vorerst über einen Befehl. Später führen das Lehrerpult und ein Portal in der Halle dorthin.
 

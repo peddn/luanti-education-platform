@@ -1,5 +1,4 @@
--- Playing: tasks, key presses, feedback and the line at the top of the
--- screen.
+-- Playing: tasks, key presses, feedback and the lines above the hotbar.
 
 local load = lep_core.loader("lep_math")
 local tasks = load("src/tasks")
@@ -27,7 +26,7 @@ local function extra_keys(task)
 end
 
 --------------------------------------------------------------------------
--- Line at the top of the screen
+-- Lines above the hotbar
 
 local function update_hud(player_name)
 	local player = core.get_player_by_name(player_name)
@@ -54,8 +53,10 @@ local function update_hud(player_name)
 		else
 			current.hud[index] = player:hud_add({
 				type = "text",
-				position = { x = 0.5, y = 0.06 },
-				offset = { x = 0, y = (index - 1) * 24 },
+				-- At the bottom, above hearts and hotbar. The top of the
+				-- screen belongs to the chat.
+				position = { x = 0.5, y = 1 },
+				offset = { x = 0, y = -150 + (index - 1) * 24 },
 				alignment = { x = 0, y = 0 },
 				number = index == 1 and 0xFFFFFF or 0xFFD060,
 				text = text,
