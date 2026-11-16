@@ -50,26 +50,33 @@ describe("lep_desk actions", function()
 		end)
 	end)
 
-	it("arranges plain actions below each other and groups in two columns", function()
+	it("arranges plain actions below each other and groups in columns", function()
 		local list = {
 			{ id = "a" }, { id = "t1", group = "Time" }, { id = "b" },
 			{ id = "t2", group = "Time" }, { id = "t3", group = "Time" },
+			{ id = "t4", group = "Time" }, { id = "c1", group = "Chat" },
 		}
-		local items, bottom = desk.layout(list, 10, 1, 5)
-		assert.are.same({ kind = "button", index = 1, x = 10, y = 1, width = 5, height = 0.8 },
-			items[1])
-		assert.are.same({ kind = "button", index = 3, x = 10, y = 2, width = 5, height = 0.8 },
-			items[2])
+		local items, bottom = desk.layout(list, 10, 1, 6.4)
+		assert.are.same({ kind = "button", index = 1, x = 10, y = 1, width = 6.4,
+			height = 0.8 }, items[1])
+		assert.are.same({ kind = "button", index = 3, x = 10, y = 2, width = 6.4,
+			height = 0.8 }, items[2])
 		assert.are.same({ kind = "heading", text = "Time", x = 10, y = 3.375 }, items[3])
-		assert.are.same({ kind = "button", index = 2, x = 10, y = 3.75, width = 2.4,
-			height = 0.7 }, items[4])
-		assert.are.equal(12.6, items[5].x)
-		assert.are.equal(3.75, items[5].y)
-		assert.are.equal(4, items[5].index)
-		assert.are.equal(10, items[6].x)
-		assert.is_true(math.abs(items[6].y - 4.6) < 1e-9)
-		assert.is_true(math.abs(bottom - 5.45) < 1e-9)
-		assert.are.equal(6, #items)
+		-- Three buttons side by side, the fourth starts a new row.
+		local function near(a, b) return math.abs(a - b) < 1e-9 end
+		assert.are.equal(2, items[4].index)
+		assert.is_true(near(items[4].x, 10) and near(items[4].y, 3.75))
+		assert.is_true(near(items[4].width, 2) and near(items[4].height, 0.7))
+		assert.is_true(near(items[5].x, 12.2) and near(items[5].y, 3.75))
+		assert.is_true(near(items[6].x, 14.4) and near(items[6].y, 3.75))
+		assert.are.equal(6, items[7].index)
+		assert.is_true(near(items[7].x, 10) and near(items[7].y, 4.6))
+		-- The next group follows below the last row.
+		assert.are.equal("Chat", items[8].text)
+		assert.is_true(near(items[8].y, 5.45 + 0.375))
+		assert.is_true(near(items[9].y, 6.2))
+		assert.is_true(near(bottom, 7.05))
+		assert.are.equal(9, #items)
 	end)
 
 	it("arranges nothing for no actions", function()

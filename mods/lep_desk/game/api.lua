@@ -105,7 +105,7 @@ end
 --   needs_targets  optional, default true. False for an action on the
 --              whole world: it runs without marked students.
 --   group      optional heading, already translated. Actions of a group
---              stand together as smaller buttons in two columns.
+--              stand together as smaller buttons side by side.
 --   is_active  optional function() returning true while the action is
 --              the current position of a switch.
 function lep_desk.register_action(id, def)

@@ -9,7 +9,7 @@ local S = core.get_translator("lep_desk")
 local formspec = lep_core.formspec
 
 local FORM = "lep_desk:desk"
-local WIDTH, HEIGHT = 18, 12.5
+local WIDTH, HEIGHT = 20, 12.5
 -- Longest text of the teacher that is passed on.
 local MAX_TEXT = 200
 local LIST_WIDTH = 12
