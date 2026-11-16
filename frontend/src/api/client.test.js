@@ -128,4 +128,48 @@ describe('api client', () => {
     expect(errorCode(new Error('x'))).toBe('unexpected')
     expect(errorCode(undefined)).toBe('unexpected')
   })
+
+  it('asks for a login link and logs in and out with POSTs', async () => {
+    /** @type {[string, string | undefined, string | undefined][]} */
+    const asked = []
+    const me = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b'], expires_at: 1 }
+    const client = createClient({
+      fetch: async (input, init) => {
+        asked.push([String(input), init?.method, init?.body ? String(init.body) : undefined])
+        return new Response(JSON.stringify(String(input).endsWith('/login') ? me : {}))
+      },
+    })
+    await client.requestLoginLink('anna@schule.example')
+    expect(await client.login('lepl_abc')).toEqual(me)
+    await client.logout()
+    expect(asked).toEqual([
+      ['/api/web/v1/login/link', 'POST', '{"email":"anna@schule.example"}'],
+      ['/api/web/v1/login', 'POST', '{"token":"lepl_abc"}'],
+      ['/api/web/v1/logout', 'POST', '{}'],
+    ])
+  })
+
+  it('answers the question who is logged in with nobody, quietly', async () => {
+    let told = 0
+    const options = { onUnauthorized: () => (told += 1) }
+    const nobody = createClient({
+      ...options,
+      fetch: answer(401, { code: 'unauthorized', message: 'not logged in' }),
+    })
+    expect(await nobody.me()).toBeNull()
+    expect(told).toBe(0)
+
+    const down = createClient({ ...options, fetch: answer(500, { code: 'internal', message: 'x' }) })
+    expect((await failure(down.me())).code).toBe('internal')
+  })
+
+  it('tells when a session is over in the middle of the work', async () => {
+    let told = 0
+    const client = createClient({
+      onUnauthorized: () => (told += 1),
+      fetch: answer(401, { code: 'unauthorized', message: 'not logged in' }),
+    })
+    expect((await failure(client.health())).code).toBe('unauthorized')
+    expect(told).toBe(1)
+  })
 })
