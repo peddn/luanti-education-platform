@@ -45,6 +45,51 @@ function lep_desk.get_students()
 	return desk.students(online, lep_desk.may_open)
 end
 
+local dispatcher = lep_core.events.new(function(event_name, err)
+	core.log("error", "[lep_desk] callback for " .. event_name .. " failed: "
+		.. tostring(err))
+end)
+
+--- Registers a function() that is called when the last teacher leaves:
+-- from then on nobody who may open the desk is online. Whatever teachers
+-- imposed on students ends here, so a teacher who lost the connection or
+-- forgot somebody leaves no student restricted.
+lep_desk.register_on_unattended = dispatcher:registrar("unattended")
+
+core.register_on_leaveplayer(function(player)
+	local leaving = player:get_player_name()
+	for _, other in ipairs(core.get_connected_players()) do
+		local name = other:get_player_name()
+		if name ~= leaving and lep_desk.may_open(name) then
+			return
+		end
+	end
+	dispatcher:emit("unattended")
+end)
+
+local note_providers = {}
+
+--- Registers a function(student_name) that returns a short note about a
+-- student for the overview of the desk, for example "muted", or nil.
+function lep_desk.register_student_note(provider)
+	assert(type(provider) == "function", "register_student_note: provider must be a function")
+	note_providers[#note_providers + 1] = provider
+end
+
+--- Returns the notes about a student as a list of texts.
+function lep_desk.get_student_notes(student_name)
+	local notes = {}
+	for _, provider in ipairs(note_providers) do
+		local ok, note = pcall(provider, student_name)
+		if not ok then
+			core.log("error", "[lep_desk] student note failed: " .. tostring(note))
+		elseif type(note) == "string" and note ~= "" then
+			notes[#notes + 1] = note
+		end
+	end
+	return notes
+end
+
 --- Registers an action, a button of the desk. Learning modules add their
 -- own actions this way.
 -- @param id Unique id, for example "lep_math:send".
