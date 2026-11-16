@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 36 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 37 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -791,6 +791,35 @@ Luanti-Mods können keine Anfragen annehmen und keine WebSocket-Verbindung aufba
 
 Die Brücke braucht einen Eintrag in `secure.http_mods`. Sie ist kein vertrauenswürdiger Mod und bleibt in der Sandbox.
 
+**Welten und Schlüssel**
+
+- Eine Welt hat im Backend eine feste Kennung, einen änderbaren Namen und einen Schlüssel.
+- Der Schlüssel ist zufällig und wird nur beim Anlegen angezeigt. Das Backend speichert nur seinen Hashwert.
+- Welten lassen sich im Terminal anlegen, auflisten und mit einem neuen Schlüssel versehen (`lep-backend world ...`). Diese Befehle bleiben auch, wenn es die Oberfläche gibt: für die Ersteinrichtung und für den Fall, dass die Oberfläche nicht erreichbar ist.
+- In der Welt stehen Adresse und Schlüssel in der `minetest.conf`, nie im Repository.
+
+**Ereignisse**
+
+- Die Welt sendet bis zu 100 Ereignisse pro Anfrage, das älteste zuerst.
+- Das Backend antwortet für jedes Ereignis: angenommen, schon bekannt, unbekannte Art oder ungültiger Inhalt. In allen vier Fällen löscht die Welt das Ereignis. Unbekannte und ungültige blockieren so die Warteschlange nicht, die Welt vermerkt sie im Log.
+- Die Warteschlange liegt im Speicher des Mods und übersteht einen Neustart. Gelöscht wird erst nach der Antwort des Backends.
+- Sie hält höchstens 50 000 Ereignisse. Danach fallen die ältesten weg, mit Meldung im Log. Die Protokolldateien der Welt sind davon unabhängig.
+- Nach einem Fehlschlag wartet die Brücke 1, 2, 5, 10, 30 und dann je 60 Sekunden.
+
+**Aufträge**
+
+- Die Anfrage nach Aufträgen bleibt bis zu 25 Sekunden offen und kehrt zurück, sobald einer da ist.
+- Ein Auftrag wird so lange ausgegeben, bis die Welt sein Ergebnis gemeldet hat. Er kann deshalb mehrfach ankommen. Jeder Auftrag muss so gebaut sein, dass doppeltes Ausführen nicht schadet.
+- Andere Mods melden bei der Brücke an, welche Aufträge sie ausführen, und stellen Ereignisse über sie ein. Kein anderer Mod spricht selbst mit dem Netz.
+
+**HTTPS**
+
+- Das Backend selbst spricht HTTP. Auf dem Server steht ein Webserver wie Caddy oder nginx davor, der HTTPS und das Zertifikat übernimmt.
+
+**Schema**
+
+- Die OpenAPI-Beschreibung ist als `api/openapi.json` eingecheckt. Ein Test des Backends schlägt fehl, wenn sie nicht zum Code passt. Die Lua-Tests der Brücke prüfen ihre Nachrichten gegen diese Datei.
+
 ### 11.3 Agent (später)
 
 Ein kleines Programm in Rust, einmal pro Spielserver.
@@ -956,7 +985,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
 | `lep_attention` | Aufmerksamkeitsmodus: Zelle, schwarzes Vollbild mit Text, Chat-Sperre |
 | `lep_chat` | Protokoll für Chat und Schildtexte, Stummschalten, Verteilung der Nachrichten |
-| `lep_bridge` | Verbindung zum Backend, Konten anlegen, Warteschlange |
+| `lep_bridge` | Verbindung zum Backend: Warteschlange für Ereignisse, Aufträge per Long Polling |
 | `lep_quiz` | Textfragen: Fragensets, Dialogfenster |
 | `lep_tz` | Technisches Zeichnen: Datenmodell, Generator, Prüfung, Baustein, Raum |
 | `lep_logic` | Logikrätsel: Mesecons-Räume, Prüflauf |
