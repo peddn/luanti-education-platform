@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 35 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 36 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -770,12 +770,14 @@ Regeln für das Ernennen:
 ### 11.1 Aufbau
 
 - Backend in Rust, das auch die gebaute Oberfläche ausliefert.
-- Oberfläche in Vue mit Pinia und Router.
+- Oberfläche in Vue mit Pinia und Router, geschrieben in JavaScript ohne TypeScript-Syntax.
 - SQLite als Datenbank.
+- Bibliotheken des Backends: `axum` als Webserver, `sqlx` für SQLite mit Migrationen im Repository, `utoipa` für die OpenAPI-Beschreibung.
+- Einstellungen des Backends kommen aus Umgebungsvariablen.
 - Zwei getrennte Schnittstellen: eine für den Browser (mit Anmeldung), eine für Welten und Agenten (mit Schlüssel).
 - Mailversand per SMTP über das Webhosting-Postfach, Port 587 mit Anmeldung. Hetzner sperrt auf Cloud-Servern die ausgehenden Ports 25 und 465, Port 587 ist frei.
 - Die Typen der Schnittstelle liegen einmal in einem gemeinsamen Rust-Paket (`crates/protocol`), das Backend und Agent nutzen.
-- OpenAPI-Beschreibung aus den Rust-Typen, TypeScript-Typen daraus erzeugt. Die Nachrichten des Mods werden in den Lua-Tests gegen dasselbe Schema geprüft.
+- OpenAPI-Beschreibung aus den Rust-Typen. Daraus werden die Typen der Oberfläche erzeugt und über JSDoc-Kommentare eingebunden. Eine automatische Prüfung meldet, wenn Oberfläche und Schnittstelle auseinanderlaufen. Die Nachrichten des Mods werden in den Lua-Tests gegen dasselbe Schema geprüft.
 
 ### 11.2 Brücke
 
