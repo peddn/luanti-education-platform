@@ -20,3 +20,9 @@ commit = "d72ad456f024c3291e8590a9cdc90ac590d3cddc"
 license = "MIT (code), CC-BY-3.0 (media)"
 purpose = "Players protect their own plots"
 settings.protector_radius = 8
+
+[awards]
+repo = "https://codeberg.org/rubenwardy/awards"
+commit = "9d2b4586d56a6fcf671b0ed11f772e77a92ed20a"
+license = "MIT (code and media)"
+purpose = "Achievements in the survival part, shown as trophies"

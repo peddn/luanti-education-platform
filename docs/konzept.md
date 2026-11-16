@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 23 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 24 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -431,7 +431,7 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 | Fragenset zu mindestens 80 % richtig abgeschlossen | kommt mit dem Modul Textfragen |
 
 - Für die Zähler gilt jede gelöste Aufgabe, auch eine, die keine Belohnung mehr bringt. Üben ist eine Trophäe wert.
-- Trophäen aus dem Survival-Teil kommen über den Awards-Mod (rubenwardy, MIT). Er zählt Leistungen wie abgebaute Blöcke und meldet freigeschaltete Erfolge. Eine kleine Brücke macht daraus Trophäen. Erfolge, die nicht in eine Schule passen, etwa fürs Sterben, werden abgeschaltet. Die Zähler von Awards bleiben in der Welt, die Trophäen gehören dem Konto.
+- Trophäen aus dem Survival-Teil kommen über den Awards-Mod (rubenwardy, MIT). Er zählt Leistungen wie abgebaute Blöcke und meldet freigeschaltete Erfolge. Eine Brücke in `lep_survival` macht daraus Trophäen. Sie erscheinen auf dem Sockel als Plakette mit dem Symbol des Erfolgs. Abgeschaltet ist nur der Erfolg für hundertfaches Sterben. Die Zähler von Awards bleiben in der Welt, die Trophäen gehören dem Konto. Awards zeigt beim Freischalten eine eigene Einblendung und hat mit `/awards` eine eigene Übersicht.
 
 **Ausstellen**
 
@@ -752,6 +752,11 @@ Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen und Aktionen am Pult.
 - Die Schüler werden darauf hingewiesen, dass der Chat mitgeschrieben wird.
 - Ein Jahr ist lang und muss gegenüber Schule und Eltern begründet werden, etwa mit der Aufklärung von Mobbing-Vorfällen und von Streit um Belohnungen.
 - Das Belohnungsprotokoll zeigt, wann ein Schüler welche Aufgabe gelöst hat. Es ist damit eine Lernhistorie des laufenden Jahres. Auch das gehört in die Information an Schule und Eltern.
+
+**Zähler des Awards-Mods**
+
+- Der Awards-Mod zählt pro Spieler, wie oft er welche Blockart abgebaut, gesetzt oder hergestellt hat. Das ist ein Stand ohne Zeitpunkte, aber es sind Daten über das Spielverhalten.
+- Sie liegen in der Welt und werden beim Jahresabschluss gelöscht.
 
 **Wunschnamen**
 
