@@ -34,6 +34,28 @@ rewards.DEFAULT_ITEMS = {
 	large = "default:diamond 1",
 }
 
+-- Where a reward is put.
+rewards.TO_INVENTORY = "inventory"
+rewards.TO_CHEST = "chest"
+
+--- Returns where a reward goes first.
+--
+-- The reward of a daily task goes straight into the inventory if the
+-- player carries the survival inventory at that moment, for example at a
+-- task chest in the wilderness. Everything else goes into the reward
+-- chest: rewards earned in a learning room, where the survival inventory
+-- is stored away, and the rewards for level tasks and completed levels.
+-- What does not fit into the inventory goes into the chest as well.
+-- @param reason One of the REASON_ constants.
+-- @param carries_survival True if the player is online and carries the
+--   survival inventory.
+function rewards.destination(reason, carries_survival)
+	if reason == rewards.REASON_DAILY and carries_survival == true then
+		return rewards.TO_INVENTORY
+	end
+	return rewards.TO_CHEST
+end
+
 --- Returns size and reason of the reward for a reported task, or nil if
 -- it earns none.
 --

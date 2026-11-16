@@ -59,6 +59,26 @@ describe("lep_rewards rules", function()
 	end)
 end)
 
+describe("lep_rewards destination", function()
+	it("puts daily rewards into the inventory of a player in survival", function()
+		assert.are.equal(rewards.TO_INVENTORY,
+			rewards.destination(rewards.REASON_DAILY, true))
+	end)
+
+	it("puts daily rewards into the chest without the survival inventory", function()
+		assert.are.equal(rewards.TO_CHEST, rewards.destination(rewards.REASON_DAILY, false))
+		assert.are.equal(rewards.TO_CHEST, rewards.destination(rewards.REASON_DAILY, nil))
+	end)
+
+	it("puts all other rewards into the chest", function()
+		for _, reason in ipairs({ rewards.REASON_TASK, rewards.REASON_LEVEL,
+				rewards.REASON_STAGE }) do
+			assert.are.equal(rewards.TO_CHEST, rewards.destination(reason, true))
+		end
+		assert.are.equal(rewards.TO_CHEST, rewards.destination(nil, true))
+	end)
+end)
+
 describe("lep_rewards items", function()
 	it("reads a list of items", function()
 		assert.are.same({

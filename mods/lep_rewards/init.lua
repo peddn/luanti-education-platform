@@ -1,5 +1,5 @@
--- LEP Rewards: pays rewards for solved tasks and completed levels into
--- the reward chest in the player's room.
+-- LEP Rewards: pays rewards for solved tasks and completed levels, into
+-- the reward chest in the player's room or straight into the inventory.
 
 local load = lep_core.loader(core.get_current_modname())
 

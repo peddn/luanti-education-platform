@@ -1,5 +1,8 @@
 # textdomain: lep_rewards
 Reward: @1. It is in the chest in your room.=Belohnung: @1. Sie liegt in der Kiste in deinem Raum.
+Reward: @1. It is in your inventory.=Belohnung: @1. Sie liegt in deinem Inventar.
+Reward: @1.=Belohnung: @1.
+Your inventory is full. In the chest in your room: @1=Dein Inventar ist voll. In der Kiste in deinem Raum: @1
 Your rewards=Deine Belohnungen
 @1 more are waiting until there is room.=@1 weitere warten, bis Platz ist.
 This chest belongs to @1.=Diese Kiste gehört @1.
