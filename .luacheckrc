@@ -19,6 +19,8 @@ read_globals = {
 	"default",
 	-- Door mechanics of Minetest Game.
 	"doors",
+	-- Inventory window of Minetest Game.
+	"sfinv",
 	-- Third-party mod for readable signs, see third_party/mods.toml.
 	"signs_lib",
 	-- Third-party mod for achievements in survival.
@@ -32,7 +34,7 @@ read_globals = {
 }
 
 -- Globals defined by LEP mods.
-globals = { "lep_core", "lep_places", "lep_rooms", "lep_lobby", "lep_progress", "lep_rewards", "lep_trophies", "lep_math", "lep_quest_chest", "lep_desk", "lep_chat" }
+globals = { "lep_core", "lep_places", "lep_rooms", "lep_lobby", "lep_progress", "lep_rewards", "lep_trophies", "lep_math", "lep_quest_chest", "lep_desk", "lep_chat", "lep_attention" }
 
 exclude_files = { ".dev/", "third_party/", "**/spec/fixtures/" }
 
