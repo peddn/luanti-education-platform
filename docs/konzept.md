@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 39 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 40 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -674,7 +674,7 @@ Erste Version:
 - Tageszeit der Welt steuern (Abschnitt 10.3).
 - Unsichtbar zu einem Schüler springen (Zuschauen). Ziel ist der Schüler der hervorgehobenen Zeile. Die Lehrkraft landet an seiner Stelle und ist unsichtbar: keine Figur, kein Namensschild, keine Schrittgeräusche, nicht anklickbar. Der Schüler erfährt davon nichts. Eine Zeile am Bildschirm erinnert die Lehrkraft an den Zustand. „Zurück“ bringt sie an die Stelle, von der sie kam, und macht sie sichtbar. Verlässt sie den Ort auf anderem Weg oder meldet sie sich ab, ist sie ebenfalls wieder sichtbar. Privileg: `lep_watch_players`.
 - Übersicht: wer ist wo, wer bearbeitet was.
-- Reiter „Web-Zugang“ (Abschnitt 11.4).
+- Reiter „Web-Zugang“ (Abschnitt 11.4). Das Pult hat dafür Reiter: „Schüler“ mit Liste und Aktionen, daneben weitere, die Mods anmelden.
 - Für die Schulverwaltung: Lehrkräfte ernennen. Dabei entsteht das Konto der Lehrkraft mit frei gewähltem Namen, das Startpasswort wird einmal angezeigt. Das Backend verteilt das Konto in alle Welten. Die erste Person der Schulverwaltung legt der Server-Admin an.
 
 Grundsätze:
@@ -843,24 +843,41 @@ Registrierung im Pult, Reiter „Web-Zugang“:
 
 - E-Mail-Adresse eintragen oder ändern.
 - Status sehen: nicht eingerichtet, Bestätigung ausstehend, bestätigt.
-- Bestätigungsmail erneut senden.
-- Einmal-Code erzeugen, falls die Mail nicht ankommt.
+- Bestätigungsmail erneut senden, höchstens einmal pro Minute.
 - Web-Zugang entfernen.
+
+Den Reiter sieht, wer das Privileg `lep_web_access` hat. Ist die Welt nicht mit dem Backend verbunden, sagt der Reiter das und bietet nichts an.
 
 Ablauf:
 
 1. Die Lehrkraft trägt ihre dienstliche Adresse ein.
 2. Die Welt meldet sie ans Backend.
-3. Das Backend schickt eine Bestätigungsmail.
-4. Nach dem Klick gilt die Adresse.
+3. Das Backend schickt eine Bestätigungsmail, auf Deutsch und Englisch in einer Mail.
+4. Der Link öffnet eine Seite der Oberfläche. Erst ein Klick auf den Knopf dort bestätigt die Adresse. So verbraucht ein Mailprogramm, das Links vorab prüft, den Link nicht.
+5. Das Backend meldet den neuen Status per Auftrag an die Welt, das Pult zeigt ihn an.
 
 Anmeldung im Browser: Adresse eingeben, Link per Mail, Klick. Eine Registrierungsseite gibt es nicht.
 
-- Der Link gilt etwa 15 Minuten und nur einmal.
+- Ein Link gilt 15 Minuten und nur einmal. Das Backend speichert nur seinen Hash.
 - Danach hält eine Sitzung die Anmeldung.
 - Das Formular antwortet immer gleich, egal ob die Adresse bekannt ist.
 - Beim Ändern gilt die alte Adresse, bis die neue bestätigt ist.
-- Werden die Privilegien entzogen, sperrt das Backend den Zugang sofort.
+- Eine Adresse gehört zu höchstens einem Konto.
+- Einen Einmal-Code als Ersatz für die Mail gibt es nicht. Wer die Adresse ohne Mail bestätigen könnte, bekäme danach die Anmeldelinks trotzdem nicht, und eine vertippte Adresse ließe sich so bestätigen.
+
+Wer Lehrkraft ist, sagt die Welt:
+
+- Eine Lehrkraft ist im Backend ein Kontoname, über alle Welten hinweg.
+- Jede Welt meldet die Liste der Konten, die bei ihr `lep_web_access` haben, beim Start und bei jeder Änderung. Das Backend nimmt Meldungen zum Web-Zugang nur für Konten dieser Liste an.
+- Hat ein Konto das Privileg in keiner Welt mehr, sperrt das Backend den Zugang sofort. Die Adresse bleibt gespeichert, bis die Lehrkraft den Zugang entfernt oder das Konto gelöscht wird. Bekommt sie das Privileg zurück, gilt der Zugang wieder.
+
+Wo die Adresse liegt:
+
+- Die Welt speichert die Adresse nicht. Sie steht nur in der Warteschlange der Brücke, bis das Backend sie hat.
+- Im Pult steht eine gekürzte Form, etwa `m…@schule.example`.
+- Das Protokoll des Pults hält fest, dass eine Lehrkraft ihren Web-Zugang geändert hat, nicht die Adresse.
+
+Solange der Mailversand nicht eingerichtet ist, schreibt das Backend jede Mail in sein Terminal. Die Adresse in den Links kommt aus der Einstellung `LEP_PUBLIC_URL`.
 
 ### 11.5 Funktionen
 
