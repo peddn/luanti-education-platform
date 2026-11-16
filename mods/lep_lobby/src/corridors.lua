@@ -219,6 +219,7 @@ end
 --   interior_min, interior_max  the inside of the room
 --   portal     spot for the personal portal
 --   chest      spot for the reward chest
+--   pedestals  six spots for trophy pedestals: three at each side wall
 function corridors.room(slot)
 	local direction, side, row = corridors.slot_position(slot)
 	local door = FIRST_WALL + PITCH * row + DOOR_OFFSET
@@ -228,6 +229,15 @@ function corridors.room(slot)
 	local a = to_relative(direction, first, side * (SIDE + 1), 1)
 	local b = to_relative(direction, last, side * (OUTER_WALL - 1), corridors.ROOM_HEIGHT)
 	local wall = to_relative(direction, 0, side, 0)
+
+	-- Seen from the door: three at the wall on one side, then three at the
+	-- other. The row at the door and the row at the back stay free.
+	local pedestals = {}
+	for _, axial in ipairs({ first, last }) do
+		for depth = SIDE + 2, OUTER_WALL - 2 do
+			pedestals[#pedestals + 1] = to_relative(direction, axial, side * depth, 1)
+		end
+	end
 
 	return {
 		direction = direction,
@@ -242,6 +252,7 @@ function corridors.room(slot)
 		},
 		portal = to_relative(direction, door, side * (OUTER_WALL - 1), 1),
 		chest = to_relative(direction, first, side * (OUTER_WALL - 1), 1),
+		pedestals = pedestals,
 	}
 end
 

@@ -58,13 +58,20 @@ function lep_progress.get_module_ids()
 	return modules:ids()
 end
 
---- Returns id, title and number of levels of a module, or nil.
+--- Returns id, title, number of levels and the list of levels that end a
+-- stage of a module, or nil.
 function lep_progress.get_module(module_id)
 	local module = modules:get(module_id)
 	if not module then
 		return nil
 	end
-	return { id = module.id, title = module.title, levels = #module.levels }
+	local stages = {}
+	for number, level in ipairs(module.levels) do
+		if level.stage then
+			stages[#stages + 1] = number
+		end
+	end
+	return { id = module.id, title = module.title, levels = #module.levels, stages = stages }
 end
 
 --- Returns the level a player is on in a module, or nil for an unknown

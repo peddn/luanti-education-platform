@@ -291,6 +291,44 @@ describe("lep_lobby corridors rooms", function()
 		end
 	end)
 
+	it("has six pedestal spots at the side walls that block nothing", function()
+		local function key(pos)
+			return pos.x .. "," .. pos.y .. "," .. pos.z
+		end
+		for slot = 0, count - 1 do
+			local room = corridors.room(slot)
+			assert.are.equal(6, #room.pedestals)
+			local taken = {}
+			for _, spot in ipairs(room.pedestals) do
+				assert.is_nil(taken[key(spot)])
+				taken[key(spot)] = true
+				assert.are.equal(1, spot.y)
+				assert.is_true(corridors.is_in_room(slot, spot.x, spot.y, spot.z))
+				assert.is_true(corridors.is_in_room(slot, spot.x, spot.y + 1, spot.z))
+				-- At a side wall: one of the four neighbours is a wall.
+				local at_wall = false
+				for _, n in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
+					if corridors.kind_at(spot.x + n[1], 1, spot.z + n[2], count)
+							== corridors.WALL then
+						at_wall = true
+					end
+				end
+				assert.is_true(at_wall)
+			end
+			assert.is_nil(taken[key(room.chest)])
+			assert.is_nil(taken[key(room.portal)])
+			-- The way from the door to the portal stays free.
+			local step = { x = room.look_dir.x, z = room.look_dir.z }
+			for distance = 3, 6 do
+				local pos = {
+					x = room.entrance.x + step.x * distance, y = 1,
+					z = room.entrance.z + step.z * distance,
+				}
+				assert.is_nil(taken[key(pos)])
+			end
+		end
+	end)
+
 	it("lists where the four corridors start", function()
 		local starts = corridors.starts()
 		assert.are.equal(4, #starts)
