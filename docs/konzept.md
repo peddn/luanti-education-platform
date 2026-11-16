@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 31 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 32 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -313,6 +313,8 @@ Bei jeder Anmeldung werden Rechte und Zustand passend zum aktuellen Ort neu gese
 **Rechte.** `lep_places` vergibt die Rechte eines Ortes selbst und merkt sich pro Spieler, welche es vergeben hat. Entzogen werden nur diese. Wer ein Recht ohnehin hat, etwa eine Lehrkraft das Flugrecht, behält es.
 
 Lern-Gegenstände lassen sich außerhalb der Lernräume nicht verwenden.
+
+**Sichtweite.** Luanti zeigt in der Voreinstellung jeden Spieler jedem Client, egal wie weit entfernt. Dann stehen die Namensschilder von Leuten in der Lobby oder im Lernraum am Himmel über der Wildnis. `lep_places` begrenzt die Sichtweite deshalb auf 160 Blöcke (`player_transfer_distance = 10`), solange der Server nichts anderes einstellt. Wer in seiner `minetest.conf` selbst einen Wert setzt, behält ihn.
 
 ## 8. Lernen
 
