@@ -87,6 +87,18 @@ function lep_places.get_place(player_name)
 	return read_state(player).place
 end
 
+--- Returns true if a player is online and carries the survival
+-- inventory right now, so items given to the player end up in survival.
+-- In learning rooms the survival inventory is stored away.
+function lep_places.has_survival_inventory(player_name)
+	local player = core.get_player_by_name(player_name)
+	if not player then
+		return false
+	end
+	local place = registry:get(read_state(player).place)
+	return place ~= nil and place.inventory == places.INVENTORY_SURVIVAL
+end
+
 --- Moves an online player to a place. This is the only supported way to
 -- change a player's place.
 -- @param player_name Name of the player.

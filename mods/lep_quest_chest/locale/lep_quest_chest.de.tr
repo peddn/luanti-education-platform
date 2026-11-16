@@ -1,0 +1,23 @@
+# textdomain: lep_quest_chest
+Task chest=Aufgabentruhe
+You may not place task chests.=Du darfst keine Aufgabentruhen aufstellen.
+You have already solved this chest.=Diese Truhe hast du schon gelöst.
+That was wrong.=Das war leider falsch.
+You get a new task in @1 seconds.=In @1 Sekunden bekommst du eine neue Aufgabe.
+Check=Prüfen
+There are no tasks at the moment.=Im Moment gibt es keine Aufgaben.
+Remove this chest=Diese Truhe entfernen
+Right!=Richtig!
+north=Norden
+north-east=Nordosten
+east=Osten
+south-east=Südosten
+south=Süden
+south-west=Südwesten
+west=Westen
+north-west=Nordwesten
+A task chest has appeared nearby, to the @1.=In deiner Nähe ist eine Aufgabentruhe aufgetaucht, Richtung @1.
+Get a task chest to place. It stays until it is removed=Gibt dir eine Aufgabentruhe zum Aufstellen. Sie bleibt, bis sie entfernt wird
+You have to be in the game.=Du musst im Spiel sein.
+Your inventory is full.=Dein Inventar ist voll.
+You got a task chest. Place it like a block. Remove it with the button in its window.=Du hast eine Aufgabentruhe bekommen. Stelle sie auf wie einen Block. Entfernt wird sie mit dem Knopf in ihrem Fenster.

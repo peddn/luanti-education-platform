@@ -77,14 +77,41 @@ function lep_rewards.get_log(player_name, limit)
 	end, limit)
 end
 
---- Pays a reward into the chest of a player and writes it down.
+-- Puts items into the main inventory of an online player and returns
+-- what did not fit, as a list of { name, count }.
+local function add_to_inventory(player_name, items)
+	local inv = core.get_player_by_name(player_name):get_inventory()
+	local leftovers = {}
+	for _, item in ipairs(items) do
+		local leftover = inv:add_item("main", ItemStack(item))
+		if not leftover:is_empty() then
+			leftovers[#leftovers + 1] = { name = leftover:get_name(),
+				count = leftover:get_count() }
+		end
+	end
+	return leftovers
+end
+
+--- Pays a reward to a player and writes it down. Where it goes is
+-- decided by rewards.destination: the reward of a daily task goes into
+-- the inventory of a player in survival, everything else and whatever
+-- does not fit into the reward chest.
 -- @param details Optional table with reason, module, level and task.
 function lep_rewards.give(player_name, size, details)
 	local items = config.items(size)
 	assert(items, "lep_rewards.give: unknown size '" .. tostring(size) .. "'")
 	details = details or {}
 
-	inventory.add(player_name, items)
+	local destination = rewards.destination(details.reason,
+		lep_places.has_survival_inventory(player_name))
+	local for_chest = items
+	if destination == rewards.TO_INVENTORY then
+		for_chest = add_to_inventory(player_name, items)
+	end
+	if #for_chest > 0 then
+		inventory.add(player_name, for_chest)
+	end
+
 	protocol:append({
 		account = player_name,
 		size = size,
@@ -97,9 +124,19 @@ function lep_rewards.give(player_name, size, details)
 	core.log("action", "[lep_rewards] " .. player_name .. " received the " .. size
 		.. " reward (" .. tostring(details.reason) .. ")")
 
-	if core.get_player_by_name(player_name) then
-		core.chat_send_player(player_name, S("Reward: @1. It is in the chest in your room.",
-			lep_rewards.describe_items(items)))
+	if not core.get_player_by_name(player_name) then
+		return
+	end
+	local text = lep_rewards.describe_items(items)
+	if destination == rewards.TO_CHEST then
+		core.chat_send_player(player_name,
+			S("Reward: @1. It is in the chest in your room.", text))
+	elseif #for_chest == 0 then
+		core.chat_send_player(player_name, S("Reward: @1. It is in your inventory.", text))
+	else
+		core.chat_send_player(player_name, S("Reward: @1.", text) .. " "
+			.. S("Your inventory is full. In the chest in your room: @1",
+				lep_rewards.describe_items(for_chest)))
 	end
 end
 

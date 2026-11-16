@@ -2,6 +2,7 @@
 
 local load = lep_core.loader("lep_progress")
 local progress = load("src/progress")
+local short_tasks = load("src/short_tasks")
 local storage = load("game/storage")
 
 local modules = progress.new_modules()
@@ -273,6 +274,34 @@ function lep_progress.get_task_info(player_name, module_id, level, task_id, kind
 		end
 	end
 	return lines
+end
+
+local short_task_providers = short_tasks.new()
+
+--- Registers the short tasks of a module: tasks that fit into a small
+-- window with one line of text and one input field. The task chest uses
+-- them. The provider is a function(player_name) that returns nil or a
+-- table with text, task (id of the task type), level and
+-- check = function(input), see src/short_tasks.lua.
+function lep_progress.register_short_tasks(module_id, provider)
+	assert(modules:get(module_id), "register_short_tasks: unknown module '"
+		.. tostring(module_id) .. "'")
+	short_task_providers:register(module_id, provider)
+	core.log("action", "[lep_progress] module " .. module_id .. " offers short tasks")
+end
+
+--- Returns a short task for a player from one of the modules, or nil if
+-- there is none. The table has module, task, level, text and
+-- check = function(input). The solution is not part of it. The caller
+-- reports the outcome with lep_progress.report.
+function lep_progress.get_short_task(player_name)
+	if not check_player(player_name) then
+		return nil
+	end
+	return short_task_providers:pick(player_name, math.random, function(module_id, err)
+		core.log("error", "[lep_progress] short tasks of " .. module_id .. " failed: "
+			.. tostring(err))
+	end)
 end
 
 --- Registers a function(result) called for every reported task. The

@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 25 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 26 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -82,7 +82,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Thema | Entscheidung |
 |---|---|
 | Art | Naturalien (Barren, Diamanten u. Ä.) |
-| Auszahlung | In die Belohnungskiste im eigenen Lobby-Raum |
+| Auszahlung | In die Belohnungskiste im eigenen Lobby-Raum. Tagesaufgaben in der Survival-Welt zahlen direkt ins Inventar |
 | Niveau | Beliebig viele Niveaus pro Modul, von der Lehrkraft pro Schüler gesetzt |
 | Aufstieg | Automatisch beim Abschluss eines Niveaus, von der Lehrkraft sperrbar |
 | Belohnt wird | Nur für Aufgaben auf dem eigenen Niveau und darüber |
@@ -325,7 +325,7 @@ Der Fortschritts-Mod verteilt diese Ereignisse nach dem Beobachter-Muster. Beloh
 
 Ein Modul fragt umgekehrt nur ab: „Auf welchem Niveau steht dieser Schüler bei mir?“ und „Welche Aufgabensets sind ihm zugewiesen?“
 
-Module, die kurze Aufgaben im Dialogfenster stellen können (Rechnen, Textfragen), melden diese Fähigkeit an. Die Aufgabentruhe nutzt sie.
+Module, die kurze Aufgaben im Dialogfenster stellen können (Rechnen, Textfragen), melden diese Fähigkeit bei `lep_progress` an. Die Aufgabentruhe nutzt sie und weiß nicht, aus welchem Modul eine Aufgabe stammt. Eine kurze Aufgabe besteht aus einer Zeile Text, dem Aufgabentyp, dem Niveau und einer Prüffunktion. Die Lösung bleibt in der Prüffunktion auf dem Server.
 
 ### 8.2 Niveau und Pensum
 
@@ -375,7 +375,7 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 
 **Größen und Anlässe**
 
-- Naturalien, ausgezahlt in die Belohnungskiste.
+- Naturalien.
 - Drei Größen, die die zuständige Lehrkraft pro Gruppe in der Web-Anwendung mit Gegenständen füllt. Bis es sie gibt, kommen sie aus den Einstellungen des Servers.
 
 | Anlass | Größe | Voreinstellung |
@@ -402,6 +402,14 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 - Keine Zufallsbelohnungen. Die Belohnung steht vorher fest und ist sichtbar.
 - Belohnung nur auf dem eigenen Niveau und darüber. Weil die Lehrkraft das Niveau passend setzt, ist das für alle fair.
 - Textfragen belohnen nur beim ersten Lösen, Multiple Choice voll nur im ersten Versuch.
+
+**Auszahlung**
+
+- Die Belohnung einer Tagesaufgabe geht direkt ins Inventar, wenn der Schüler in diesem Moment sein Survival-Inventar trägt, also etwa an einer Aufgabentruhe in der Wildnis.
+- Alles andere geht in die Belohnungskiste: Tagesaufgaben in einem Lernraum, wo das Survival-Inventar weggelegt ist, Niveauaufgaben und abgeschlossene Niveaus und Etappen.
+- Was nicht ins Inventar passt, geht ebenfalls in die Kiste.
+- Die Chatnachricht sagt, wo die Belohnung liegt.
+- Was im Inventar liegt, kann wie jeder andere Besitz beim Tod verloren gehen. Das ist so gewollt.
 
 **Belohnungskiste**
 
@@ -448,14 +456,31 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 
 ### 8.5 Aufgabentruhe
 
+Eine Truhe in der Wildnis, die statt eines Inhalts eine kurze Aufgabe stellt. Sie ist eine Tagesaufgabe mit normalem Aufwand und bringt die mittlere Belohnung.
+
+**Regeln**
+
 - Schüler können sie nicht herstellen und nicht abbauen.
 - Herkunft: von der Welt erzeugt oder von der Lehrkraft aufgestellt.
-- Truhen erscheinen laufend neu an zufälligen Orten.
-- Jeder Schüler kann jede Truhe einmal öffnen und bekommt seine eigene Belohnung.
-- Nach dem ersten Öffnen bleibt die Truhe noch etwa 10 Minuten stehen, damit Begleiter sie auch lösen können. Dann verschwindet sie.
-- Die Aufgabe richtet sich nach dem Niveau des Öffnenden, die Belohnung ist gleich.
-- Nach einem Fehlversuch: Wartezeit, dann eine neue Aufgabe.
-- Aufgabe und Lösung merkt sich der Server pro Spieler. Die Lösung steht nie im Fenster. Die Truhendaten sind als privat markiert.
+- Jeder Schüler kann jede Truhe einmal lösen und bekommt seine eigene Belohnung.
+- Die Aufgabe richtet sich nach dem Niveau des Öffnenden, die Belohnung ist gleich. Welches Modul die Aufgabe stellt, entscheidet der Zufall unter den Modulen mit kurzen Aufgaben (Abschnitt 8.1).
+- Das Fenster zeigt die Frage als Text, ein Eingabefeld und die Belohnung. Die Eingabetaste prüft die Antwort.
+- Nach einem Fehlversuch: 30 Sekunden Wartezeit, dann eine neue Aufgabe. Die Lösung wird nie gezeigt.
+- Aufgabe und Lösung merkt sich der Server pro Spieler. Im Block selbst steht nichts, was ein Client auslesen könnte. Beim Absenden prüft der Server erneut, ob der Spieler an der Truhe steht.
+
+**Erzeugte Truhen**
+
+- Alle paar Minuten prüft der Server für jeden Schüler in der Wildnis, ob eine Truhe in seiner Nähe steht. Wenn nicht, erscheint eine in 30 bis 80 Blöcken Entfernung, und der Schüler bekommt einen Hinweis im Chat.
+- Sie steht auf festem, natürlichem Boden: nicht im Wasser, nicht in Höhlen, nicht in Gebäuden und nicht auf geschützten Grundstücken. Im Wald steht sie am Boden unter den Bäumen, nie in der Krone.
+- Eine Truhe, die niemand löst, verschwindet nach 30 Minuten.
+- Nach dem ersten Lösen bleibt sie noch 10 Minuten stehen, damit Begleiter sie auch lösen können. Dann verschwindet sie.
+- Höchstens 20 erzeugte Truhen pro Welt.
+
+**Truhen der Lehrkraft**
+
+- Wer das Privileg `lep_place_quest_chest` hat, bekommt mit `/lep_quest_chest` eine Truhe ins Inventar und stellt sie auf wie einen Block.
+- Diese Truhen laufen nicht ab. Entfernt werden sie über einen Knopf im Fenster, den nur sieht, wer das Privileg hat.
+- Vorerst stellen sie dieselben Aufgaben wie die erzeugten Truhen. Eigene Fragen der Lehrkraft kommen mit den Textfragen (Abschnitt 8.7).
 
 ### 8.6 Rechnen
 
@@ -863,11 +888,11 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_portals` | Festes und persönliches Portalpaar |
 | `lep_rooms` | Lernräume bauen, zuteilen, schützen und neu bauen |
 | `lep_survival` | Regeln der Survival-Welt: Rezepte, die fremde Mods ersetzen |
-| `lep_progress` | Ergebnisse annehmen, Niveau und Pensum führen, Ereignisse verteilen |
-| `lep_rewards` | Regeln, Tageslimit, Belohnungskiste, Protokoll |
+| `lep_progress` | Ergebnisse annehmen, Niveau und Pensum führen, Ereignisse verteilen, kurze Aufgaben vermitteln |
+| `lep_rewards` | Regeln, Tageslimit, Auszahlung in Kiste oder Inventar, Protokoll |
 | `lep_trophies` | Meilensteine, Ausstellung im Raum |
 | `lep_math` | Rechnen: Aufgabengenerator, Rechenraum mit Anzeige und Tastenfeld |
-| `lep_quest_chest` | Aufgabentruhe in der Wildnis |
+| `lep_quest_chest` | Aufgabentruhe in der Wildnis: erzeugen, Fenster, Ablauf |
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
 | `lep_attention` | Aufmerksamkeitsmodus: Einfrieren, Overlay, Chat-Sperre |
 | `lep_chat` | Protokoll, Stummschalten |
@@ -911,9 +936,11 @@ Bei der Umsetzung des jeweiligen Teils:
 
 7. **Tasten hervorheben:** Im Rechenraum könnte die Taste unter dem Fadenkreuz heller werden. Luanti meldet dem Server nicht, worauf ein Spieler zeigt. Der Server müsste die Blickrichtung etwa zehnmal pro Sekunde prüfen und die Taste austauschen. Zurückgestellt, weil der Client den anvisierten Block schon umrandet und der Aufwand den Nutzen vorerst nicht lohnt.
 
+8. **Aufgabentruhen finden:** Eine neue Truhe wird im Chat angekündigt und leuchtet schwach. Ob das reicht oder ob ein Wegweiser im HUD nötig ist, zeigt der Betrieb.
+
 Vor einem Einsatz an einer Schule:
 
-8. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
+9. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
 
 ## 17. Quellen
 
