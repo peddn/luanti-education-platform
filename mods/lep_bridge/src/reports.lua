@@ -11,7 +11,13 @@ reports.EVENT_MODULES = "modules"
 reports.EVENT_PROGRESS = "progress"
 reports.EVENT_TROPHIES = "trophies"
 reports.EVENT_PROTOCOL = "protocol"
+reports.EVENT_TEACHERS = "teachers"
+reports.EVENT_WEB_ACCESS = "web_access"
 reports.JOB_SYNC_STATE = "sync_state"
+reports.JOB_WEB_ACCESS_STATUS = "web_access_status"
+
+-- What a teacher can do with their web access.
+local WEB_ACCESS_ACTIONS = { set = true, resend = true, remove = true }
 
 local function whole(number)
 	return math.max(0, math.floor(tonumber(number) or 0))
@@ -90,6 +96,45 @@ function reports.protocol(name, record)
 		end
 	end
 	return { protocol = name, account = account, fields = fields }
+end
+
+--- Builds the payload of the event "teachers": the accounts that hold
+-- the privilege for web access in this world.
+function reports.teachers(accounts)
+	local list = {}
+	for index, account in ipairs(accounts) do
+		list[index] = tostring(account)
+	end
+	return { accounts = list }
+end
+
+--- Builds the payload of the event "web_access": what a teacher did with
+-- their web access at the desk.
+-- @param action "set", "resend" or "remove"
+-- @param email The address, for "set" only.
+function reports.web_access(account, action, email)
+	assert(type(account) == "string" and account ~= "", "web access needs an account")
+	assert(WEB_ACCESS_ACTIONS[action], "unknown web access action '" .. tostring(action) .. "'")
+	local payload = { account = account, action = action }
+	if action == "set" then
+		assert(type(email) == "string" and email ~= "", "setting web access needs an address")
+		payload.email = email
+	end
+	return payload
+end
+
+--- Reads the payload of the job "web_access_status".
+-- @return account, address, pending (shortened addresses or nil), or nil
+--   if the payload cannot be read
+function reports.parse_web_access_status(payload)
+	if type(payload) ~= "table" or type(payload.account) ~= "string"
+			or payload.account == "" then
+		return nil
+	end
+	local function text(value)
+		return type(value) == "string" and value ~= "" and value or nil
+	end
+	return payload.account, text(payload.address), text(payload.pending)
 end
 
 return reports

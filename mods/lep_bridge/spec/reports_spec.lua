@@ -88,4 +88,47 @@ describe("lep_bridge reports", function()
 		assert.are.equal("progress", reports.EVENT_PROGRESS)
 		assert.are.equal("sync_state", reports.JOB_SYNC_STATE)
 	end)
+
+	it("builds the list of teachers as the backend expects it", function()
+		local payload = reports.teachers({ "lehrer1", "lehrer2" })
+		assert.is_true(fits("Teachers", payload))
+		assert.are.same({ accounts = { "lehrer1", "lehrer2" } }, payload)
+		assert.is_true(fits("Teachers", reports.teachers({})))
+	end)
+
+	it("builds requests about web access as the backend expects them", function()
+		local set = reports.web_access("lehrer1", "set", "anna@schule.example")
+		assert.is_true(fits("WebAccessRequest", set))
+		assert.are.same({ account = "lehrer1", action = "set",
+			email = "anna@schule.example" }, set)
+
+		-- Only "set" carries an address.
+		local resend = reports.web_access("lehrer1", "resend", "anna@schule.example")
+		assert.is_true(fits("WebAccessRequest", resend))
+		assert.are.same({ account = "lehrer1", action = "resend" }, resend)
+		assert.is_true(fits("WebAccessRequest", reports.web_access("lehrer1", "remove")))
+
+		assert.has_error(function() reports.web_access("lehrer1", "explode") end)
+		assert.has_error(function() reports.web_access("lehrer1", "set") end)
+		assert.has_error(function() reports.web_access("", "remove") end)
+	end)
+
+	it("reads how a web access stands", function()
+		local status = { account = "lehrer1", address = "a…@schule.example" }
+		assert.is_true(fits("WebAccessStatus", status))
+		local account, address, pending = reports.parse_web_access_status(status)
+		assert.are.equal("lehrer1", account)
+		assert.are.equal("a…@schule.example", address)
+		assert.is_nil(pending)
+
+		account, address, pending = reports.parse_web_access_status(
+			{ account = "lehrer1", pending = "n…@schule.example" })
+		assert.are.equal("lehrer1", account)
+		assert.is_nil(address)
+		assert.are.equal("n…@schule.example", pending)
+
+		assert.is_nil(reports.parse_web_access_status(nil))
+		assert.is_nil(reports.parse_web_access_status({ address = "x" }))
+		assert.is_nil(reports.parse_web_access_status({ account = "" }))
+	end)
 end)

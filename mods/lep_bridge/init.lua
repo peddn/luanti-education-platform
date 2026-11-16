@@ -11,6 +11,7 @@ local http = core.request_http_api()
 
 load("game/sync").start(http)
 load("game/reports")
+load("game/web_access")
 load("game/commands")
 
 core.log("action", "[lep_bridge] loaded")
