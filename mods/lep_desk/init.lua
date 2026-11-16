@@ -8,6 +8,7 @@ lep_desk = {}
 load("game/api")
 load("game/window")
 load("game/actions")
+load("game/daytime")
 load("game/commands")
 
 core.log("action", "[lep_desk] loaded")

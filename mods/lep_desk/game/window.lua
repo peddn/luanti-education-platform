@@ -13,6 +13,8 @@ local WIDTH, HEIGHT = 18, 11
 local LIST_WIDTH = 12
 -- Colours of the lines in the list.
 local MARKED, UNMARKED = "#9CFF9C", "#BBBBBB"
+-- Colour of the button that is the current position of a switch.
+local ACTIVE = "#30C030"
 
 -- Per teacher: selection (see src/desk.lua), status (last line of text),
 -- open (true while the window is shown), students (the list the window
@@ -100,9 +102,18 @@ local function show(teacher_name)
 	local actions_x = pad + LIST_WIDTH + 0.4
 	fs:label(actions_x, 0.55, S("Actions"))
 	local actions = lep_desk.get_actions(teacher_name)
-	for index, action in ipairs(actions) do
-		fs:button(actions_x, 0.9 + (index - 1) * 1, WIDTH - actions_x - pad, 0.8,
-			"action_" .. index, action.title)
+	for _, item in ipairs(desk.layout(actions, actions_x, 0.9, WIDTH - actions_x - pad)) do
+		if item.kind == "heading" then
+			fs:label(item.x, item.y, item.text)
+		else
+			local action = actions[item.index]
+			local name = "action_" .. item.index
+			if action.is_active and action.is_active() then
+				-- The current position of a switch looks pressed.
+				fs:element("style", name, "bgcolor=" .. ACTIVE)
+			end
+			fs:button(item.x, item.y, item.width, item.height, name, action.title)
+		end
 	end
 	if #actions == 0 then
 		fs:label(actions_x, 1.3, S("You may not use any actions."))
@@ -225,8 +236,9 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 
 	for index, action in ipairs(state.actions or {}) do
 		if fields["action_" .. index] then
-			local targets = desk.targets(state.selection, lep_desk.get_students())
-			if #targets == 0 then
+			local targets = action.needs_targets
+				and desk.targets(state.selection, lep_desk.get_students()) or {}
+			if action.needs_targets and #targets == 0 then
 				state.status = S("Nobody is marked.")
 			else
 				local ok, text = lep_desk.run_action(teacher_name, action.id, targets)
