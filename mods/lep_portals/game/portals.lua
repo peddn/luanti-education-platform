@@ -320,6 +320,14 @@ local function face(player, dir)
 	player:set_look_vertical(0)
 end
 
+-- The place a destination lies in.
+local TARGET_PLACE = {
+	[links.TO_WILDERNESS] = lep_places.WILDERNESS,
+	[links.TO_PLOT] = lep_places.WILDERNESS,
+	[links.TO_HALL] = lep_lobby.PLACE,
+	[links.TO_ROOM] = lep_lobby.PLACE,
+}
+
 local function use(player, field_pos)
 	local name = player:get_player_name()
 	local meta = core.get_meta(field_pos)
@@ -327,9 +335,25 @@ local function use(player, field_pos)
 	local destination = links.destination(
 		meta:get_string("kind"), owner, name, plots:get(owner) ~= nil)
 
+	-- Stepping into a portal is the player's own wish, so the rules for
+	-- that apply. A class mode can close the wilderness this way.
+	local target = TARGET_PLACE[destination]
+	if target then
+		local allowed, message = lep_places.may_go(name, target)
+		if not allowed then
+			if message then
+				core.chat_send_player(name, message)
+			end
+			return false
+		end
+	end
+
 	if destination == links.TO_WILDERNESS then
 		if wilderness then
-			lep_places.move(name, lep_places.WILDERNESS, wilderness.arrival)
+			-- A player who was taken out of the wilderness comes back to
+			-- where they stood.
+			lep_places.move(name, lep_places.WILDERNESS,
+				lep_places.take_return(name, lep_places.WILDERNESS) or wilderness.arrival)
 			face(player, { x = 0, z = 1 })
 		end
 	elseif destination == links.TO_HALL then

@@ -280,18 +280,22 @@ function places.plan_back(registry, state, request)
 	assert(type(state) == "table", "plan_back: state must be a table")
 	assert(type(request) == "table", "plan_back: request must be a table")
 
-	local target_id = request.fallback
-	local previous = registry:get(state.previous)
-	if previous and previous.id ~= state.place
-			and ((state.positions or {})[previous.id] or previous.default_pos) then
-		target_id = previous.id
-	end
-
 	return places.plan_move(registry, state, {
-		target = target_id,
+		target = places.back_target(registry, state, request.fallback),
 		current_pos = request.current_pos,
 		current_privs = request.current_privs,
 	})
+end
+
+--- Returns the id of the place that going back leads to: the previous
+-- place if the player can arrive there, otherwise the fallback.
+function places.back_target(registry, state, fallback)
+	local previous = registry:get(state.previous)
+	if previous and previous.id ~= state.place
+			and ((state.positions or {})[previous.id] or previous.default_pos) then
+		return previous.id
+	end
+	return fallback
 end
 
 --- Plans the repair of a player's state when they join.
