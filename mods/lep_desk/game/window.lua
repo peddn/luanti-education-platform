@@ -1,10 +1,12 @@
 -- The window of the desk: students on the left, actions on the right.
+-- Tabs that mods registered stand next to this first one.
 --
 -- What a teacher marked is kept here, on the server. The window only
 -- says which line or button was pressed.
 
 local load = lep_core.loader("lep_desk")
 local desk = load("src/desk")
+local tabs = load("src/tabs")
 local S = core.get_translator("lep_desk")
 local formspec = lep_core.formspec
 
@@ -22,7 +24,9 @@ local ACTIVE = "#30C030"
 -- open (true while the window is shown), students (the list the window
 -- was drawn with, so a click hits the row the teacher saw), highlight
 -- (name of the student whose row the teacher clicked last, or nil), text
--- (what the teacher typed into the text field).
+-- (what the teacher typed into the text field), tab (id of the tab that
+-- is shown, nil for the students), tabs (the tabs the window was drawn
+-- with).
 local desks = {}
 
 local function state_of(teacher_name)
@@ -74,6 +78,25 @@ local function describe_levels(student)
 	return table.concat(parts, "   ")
 end
 
+-- Adds the row of tabs, if the teacher has more than the first one.
+local function add_tabs(fs, state, teacher_name)
+	local list = lep_desk.get_tabs(teacher_name)
+	state.tabs = list
+	local current = tabs.index_of(list, state.tab)
+	if not current then
+		state.tab = nil
+	end
+	if #list == 0 then
+		return nil
+	end
+	local captions = { formspec.escape(S("Students")) }
+	for index, tab in ipairs(list) do
+		captions[index + 1] = formspec.escape(tab.title)
+	end
+	fs:element("tabheader", { 0, 0 }, "tabs", captions, (current or 0) + 1, "false", "true")
+	return current and list[current] or nil
+end
+
 local function show(teacher_name)
 	local state = state_of(teacher_name)
 	local students = lep_desk.get_students()
@@ -81,6 +104,15 @@ local function show(teacher_name)
 	state.open = true
 
 	local pad = formspec.PADDING
+	local fs = formspec.new(WIDTH, HEIGHT)
+	local tab = add_tabs(fs, state, teacher_name)
+	if tab then
+		tab.build(fs, teacher_name, { x = pad, y = pad, width = WIDTH - 2 * pad,
+			height = HEIGHT - 2 * pad })
+		core.show_formspec(teacher_name, FORM, fs:build())
+		return
+	end
+
 	local targets = desk.targets(state.selection, students)
 
 	local rows = {}
@@ -90,8 +122,7 @@ local function show(teacher_name)
 			describe_place(student), describe_levels(student) }
 	end
 
-	local fs = formspec.new(WIDTH, HEIGHT)
-		:label(pad, 0.55, S("Students (@1): click a box to mark", #students))
+	fs:label(pad, 0.55, S("Students (@1): click a box to mark", #students))
 		:table(pad, 0.9, LIST_WIDTH, HEIGHT - 5.1, "students", COLUMNS, rows,
 			desk.index_of(state.highlight, students))
 
@@ -158,7 +189,9 @@ local function refresh()
 	core.after(0.3, function()
 		refresh_pending = false
 		for teacher_name, state in pairs(desks) do
-			if state.open and lep_desk.may_open(teacher_name) then
+			-- Other tabs are left alone: drawing them again would wipe what
+			-- the teacher is typing.
+			if state.open and not state.tab and lep_desk.may_open(teacher_name) then
 				show(teacher_name)
 			end
 		end
@@ -167,6 +200,15 @@ end
 
 --- Shows open desks again, for example after an action has finished.
 lep_desk.refresh = refresh
+
+--- Shows the desk of one teacher again at once, if it is open on the
+-- tab with this id. For tabs whose content changed from outside.
+function lep_desk.refresh_tab(teacher_name, tab_id)
+	local state = desks[teacher_name]
+	if state and state.open and state.tab == tab_id and lep_desk.may_open(teacher_name) then
+		show(teacher_name)
+	end
+end
 
 lep_places.register_on_place_changed(refresh)
 core.register_on_joinplayer(refresh)
@@ -194,6 +236,27 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 	if not lep_desk.may_open(teacher_name) then
 		state.open = false
 		core.close_formspec(teacher_name, FORM)
+		return true
+	end
+
+	-- A click on a tab changes what is shown.
+	if fields.tabs then
+		local chosen = (state.tabs or {})[(tonumber(fields.tabs) or 1) - 1]
+		state.tab = chosen and chosen.id or nil
+		show(teacher_name)
+		return true
+	end
+	if state.tab then
+		-- The privilege of the tab is checked again: the list is fresh.
+		local list = lep_desk.get_tabs(teacher_name)
+		local tab = list[tabs.index_of(list, state.tab) or 0]
+		if tab then
+			local ok, err = pcall(tab.on_fields, teacher_name, fields)
+			if not ok then
+				core.log("error", "[lep_desk] tab " .. tab.id .. " failed: " .. tostring(err))
+			end
+		end
+		show(teacher_name)
 		return true
 	end
 
