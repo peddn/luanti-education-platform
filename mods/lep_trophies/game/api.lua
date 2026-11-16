@@ -67,6 +67,12 @@ function lep_trophies.get_earned(player_name)
 	return list
 end
 
+--- Returns the names of all players who have a stored state, sorted.
+-- They do not have to be online.
+function lep_trophies.get_players()
+	return storage.players()
+end
+
 --- Gives a trophy to a player. Nothing happens if they already have it.
 -- @return true if the player did not have it yet, false otherwise,
 --   or nil and an error message for an unknown trophy

@@ -68,6 +68,18 @@ describe("lep_bridge messages", function()
 		assert.are.same({ id = "c", outcome = "unknown" }, results[3])
 	end)
 
+	it("counts the outcomes of a batch", function()
+		local counts = messages.count_outcomes(messages.parse_results({ results = {
+			{ id = "a", outcome = "accepted" },
+			{ id = "b", outcome = "unknown" },
+			{ id = "c", outcome = "unknown" },
+			{ id = "d", outcome = "duplicate" },
+		} }))
+		assert.are.same({ accepted = 1, duplicate = 1, unknown = 2, invalid = 0 }, counts)
+		assert.are.same({ accepted = 0, duplicate = 0, unknown = 0, invalid = 0 },
+			messages.count_outcomes({}))
+	end)
+
 	it("does not trust an answer it cannot read", function()
 		assert.is_nil(messages.parse_results(nil))
 		assert.is_nil(messages.parse_results({}))

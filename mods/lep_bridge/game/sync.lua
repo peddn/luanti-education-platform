@@ -26,6 +26,9 @@ local status = {
 	last_contact = nil,
 	send_failures = 0,
 	poll_failures = 0,
+	-- Events the backend did not know, since the start. More than none
+	-- means the backend is older than the mods of this world.
+	unknown = 0,
 }
 
 -- Seconds a request may take. Fetching jobs stays open on purpose.
@@ -103,6 +106,18 @@ local function send_next()
 				core.log("warning", "[lep_bridge] the backend could not use event "
 					.. result.id .. " (" .. result.outcome .. "), dropped")
 			end
+		end
+		local counts = messages.count_outcomes(results)
+		if counts.unknown > 0 then
+			if status.unknown == 0 then
+				-- Said once and loudly: single warnings are easy to miss, and
+				-- what is dropped here does not come back.
+				core.log("error", "[lep_bridge] THE BACKEND DOES NOT KNOW EVENTS OF THIS "
+					.. "WORLD. It is probably older than the mods. Update and restart the "
+					.. "backend first, then the worlds. Until then protocol entries are "
+					.. "lost for the backend; they stay in the files of the world.")
+			end
+			status.unknown = status.unknown + counts.unknown
 		end
 		if queue:remove(answered) == 0 then
 			-- An answer that fits none of the events sent: do not loop on it.
@@ -230,7 +245,8 @@ end
 
 --- Returns the state of the bridge for people who look after the server:
 -- active, reason (why it is not active), url, queued, last_contact (time
--- of the last answer, or nil), failing (true if the last try failed).
+-- of the last answer, or nil), failing (true if the last try failed),
+-- unknown (events the backend did not know since the start).
 function lep_bridge.get_status()
 	return {
 		active = status.active,
@@ -239,6 +255,7 @@ function lep_bridge.get_status()
 		queued = queue:size(),
 		last_contact = status.last_contact,
 		failing = status.send_failures > 0 or status.poll_failures > 0,
+		unknown = status.unknown,
 	}
 end
 

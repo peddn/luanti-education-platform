@@ -8,5 +8,6 @@ pub mod db;
 pub mod events;
 pub mod jobs;
 pub mod keys;
+pub mod state;
 pub mod world_api;
 pub mod worlds;

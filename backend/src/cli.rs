@@ -3,11 +3,11 @@
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use lep_protocol::world::JOB_PING;
+use lep_protocol::world::{JOB_PING, JOB_SYNC_STATE};
 use serde_json::json;
 use sqlx::SqlitePool;
 
-use crate::{app, jobs, worlds};
+use crate::{app, jobs, state, worlds};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -43,6 +43,11 @@ pub enum WorldCommand {
     List,
     /// Put a ping job in for a world, to check the way there and back.
     Ping { name: String },
+    /// Show what the backend knows about a world: modules, progress,
+    /// trophies and protocols.
+    State { name: String },
+    /// Ask a world to send its whole state again.
+    Sync { name: String },
 }
 
 /// Runs a command that works on the database and returns what to print.
@@ -82,6 +87,27 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
                 })
                 .collect();
             Ok(lines.join("\n"))
+        }
+        WorldCommand::State { name } => {
+            let Some(world) = worlds::find_by_name(pool, &name).await? else {
+                bail!("there is no world called '{}'", name.trim());
+            };
+            Ok(format!(
+                "World '{}'\n{}",
+                world.name,
+                state::describe(pool, &world.id).await?
+            ))
+        }
+        WorldCommand::Sync { name } => {
+            let Some(world) = worlds::find_by_name(pool, &name).await? else {
+                bail!("there is no world called '{}'", name.trim());
+            };
+            let id = jobs::add(pool, &world.id, JOB_SYNC_STATE, &json!({})).await?;
+            Ok(format!(
+                "Sync job {id} is waiting for world '{}'. A world that is connected \
+                 fetches it within 25 seconds and sends its whole state.",
+                world.name
+            ))
         }
         WorldCommand::Ping { name } => {
             let Some(world) = worlds::find_by_name(pool, &name).await? else {
@@ -141,6 +167,33 @@ mod tests {
         assert!(pinged.contains("is waiting"));
         let world = worlds::find_by_name(&pool, "7b").await.unwrap().unwrap();
         assert_eq!(jobs::take_waiting(&pool, &world.id).await.unwrap().len(), 1);
+
+        let state = run_world(
+            &pool,
+            WorldCommand::State {
+                name: "7b".to_owned(),
+            },
+        )
+        .await
+        .unwrap();
+        assert!(state.contains("World '7b'") && state.contains("Modules: 0"));
+        let sync = run_world(
+            &pool,
+            WorldCommand::Sync {
+                name: "7b".to_owned(),
+            },
+        )
+        .await
+        .unwrap();
+        assert!(sync.contains("is waiting"));
+        assert!(run_world(
+            &pool,
+            WorldCommand::State {
+                name: "8a".to_owned()
+            }
+        )
+        .await
+        .is_err());
 
         let rekeyed = run_world(
             &pool,
