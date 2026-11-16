@@ -14,8 +14,8 @@ core.register_chatcommand("lep_math", {
 			if lep_places.get_place(name) ~= lep_math.PLACE then
 				return false, S("You are not in your math room.")
 			end
-			lep_rooms.leave(name)
-			return true
+			-- A student who was sent by the teacher stays and is told why.
+			return lep_rooms.leave(name) == true
 		end
 		lep_rooms.enter(name, lep_math.ROOM_TYPE, function(ok, err)
 			if not ok then

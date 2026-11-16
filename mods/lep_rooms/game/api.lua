@@ -3,6 +3,8 @@
 local load = lep_core.loader("lep_rooms")
 local rooms = load("src/rooms")
 local build = load("game/build")
+local holds = load("src/holds").new()
+local S = core.get_translator("lep_rooms")
 
 local STORAGE_KEY = "book"
 -- Pause between two rooms when many are built in a row.
@@ -12,6 +14,8 @@ local mod_storage = core.get_mod_storage()
 local types = rooms.new_types()
 local book = rooms.new_book(core.parse_json(mod_storage:get_string(STORAGE_KEY), nil, true))
 local on_build_callbacks = {}
+-- Set of the place ids that are learning rooms.
+local room_places = {}
 
 local dispatcher = lep_core.events.new(function(event_name, err)
 	core.log("error", "[lep_rooms] callback for '" .. event_name
@@ -51,6 +55,7 @@ lep_rooms._rooms = rooms
 function lep_rooms.register_type(type_id, def)
 	types:register(type_id, def)
 	on_build_callbacks[type_id] = def.on_build
+	room_places[place_id(type_id)] = true
 	lep_places.register_place(place_id(type_id), {
 		inventory = lep_places.INVENTORY_LEARNING,
 		privileges = def.privileges,
@@ -159,10 +164,66 @@ function lep_rooms.enter(player_name, type_id, callback)
 end
 
 --- Brings an online player out of a room, back to where they came from.
+-- A player who is held (see lep_rooms.hold) stays and is told why, unless
+-- `force` is true. Leaving ends the hold.
 -- @return true  or  false, error message
-function lep_rooms.leave(player_name)
+function lep_rooms.leave(player_name, force)
+	if holds:is_held(player_name) and not force then
+		core.chat_send_player(player_name, S("Your teacher has sent you here. "
+			.. "You can leave the room when your teacher brings you back."))
+		return false, "player is held"
+	end
 	return lep_places.move_back(player_name)
 end
+
+--- Holds a player in the learning room they are in: they cannot leave it
+-- on their own. The hold ends when the player leaves the room in any
+-- way, with lep_rooms.release, and with a restart of the server.
+-- @return true, or false if the player is in no room or already held
+function lep_rooms.hold(player_name)
+	if not lep_rooms.get_current_room(player_name) then
+		return false
+	end
+	local changed = holds:hold(player_name)
+	if changed then
+		dispatcher:emit("hold_changed", player_name, true)
+	end
+	return changed
+end
+
+--- Ends the hold of a player. Returns true if the player was held.
+function lep_rooms.release(player_name)
+	local changed = holds:release(player_name)
+	if changed then
+		dispatcher:emit("hold_changed", player_name, false)
+	end
+	return changed
+end
+
+--- Ends all holds. Returns the names of the players who were held.
+function lep_rooms.release_all()
+	local names = holds:release_all()
+	for _, name in ipairs(names) do
+		dispatcher:emit("hold_changed", name, false)
+	end
+	return names
+end
+
+--- Returns true if a player is held in a learning room.
+function lep_rooms.is_held(player_name)
+	return holds:is_held(player_name)
+end
+
+--- Registers a function(player_name, is_held) that is called when a
+-- player is held or released.
+lep_rooms.register_on_hold_changed = dispatcher:registrar("hold_changed")
+
+-- Whoever leaves the learning rooms, in whatever way, is no longer held.
+lep_places.register_on_place_changed(function(player_name, _, new_place)
+	if not room_places[new_place] then
+		lep_rooms.release(player_name)
+	end
+end)
 
 --- Empties the interior of a room and keeps the shell. callback(ok, err)
 function lep_rooms.clear_interior(owner, type_id, callback)

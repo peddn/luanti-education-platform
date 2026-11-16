@@ -649,6 +649,9 @@ Ein eigener Mod mit selbst geschriebenem Fenster. Links die Zielauswahl (alle, e
 Erste Version:
 
 - In einen Lernraum schicken (Modul und Station), zurückholen. Wer geschickt wird, landet in seinem eigenen Raum. Wer zurückgeholt wird, kommt dorthin, wo er vorher war.
+- Festhalten: Wer geschickt wurde, kann den Raum nicht selbst verlassen, bis die Lehrkraft ihn zurückholt oder freigibt. Wer freiwillig hineingegangen ist, bleibt frei. Wird er dort von der Lehrkraft „geschickt“, ist er ab dann festgehalten. Die Übersicht zeigt, wer festgehalten ist.
+- Freigeben: hebt das Festhalten auf, ohne den Schüler herauszuholen.
+- Ist keine Lehrkraft mehr angemeldet, sind alle frei. So sperrt ein Verbindungsabbruch der Lehrkraft, etwa im Fernunterricht, niemanden ein. Auch ein Neustart des Servers gibt alle frei, das Neuanmelden eines Schülers nicht.
 - Aufmerksamkeitsmodus an/aus, mit eigenem Text.
 - Unterrichtsmodus umschalten.
 - Tageszeit der Welt steuern (Abschnitt 10.3).

@@ -28,7 +28,11 @@ end
 
 -- "Lobby   Mental arithmetic 3" for the overview.
 local function describe(student)
-	local parts = { lep_places.get_place_title(lep_places.get_place(student) or "?") }
+	local place = lep_places.get_place_title(lep_places.get_place(student) or "?")
+	if lep_rooms.is_held(student) then
+		place = S("@1 (sent)", place)
+	end
+	local parts = { place }
 	for _, module_id in ipairs(lep_progress.get_module_ids()) do
 		local info = lep_progress.get_progress(student, module_id)
 		parts[#parts + 1] = S("@1 level @2", info.title, info.level)
@@ -112,6 +116,7 @@ core.register_on_leaveplayer(function(player)
 	refresh()
 end)
 lep_progress.register_on_level_changed(refresh)
+lep_rooms.register_on_hold_changed(refresh)
 
 core.register_on_player_receive_fields(function(player, formname, fields)
 	if formname ~= FORM then
