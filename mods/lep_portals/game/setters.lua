@@ -74,13 +74,23 @@ function setters.set_sign(pos, wall, text)
 	signs_lib.update_sign(pos, { text = core.get_translated_string("de", text) })
 end
 
---- Sets a whole portal as src/learning.lua describes it: frame, field and
--- sign.
-function setters.set_portal(portal, kind, owner, node, sign_text)
+--- Sets a whole portal: frame, field and signs. This is the one way a
+-- portal of the server comes into the world.
+-- @param portal Description from frames.portal.
+-- @param options Table with:
+--   kind    one of the kinds of src/links.lua
+--   owner   owner of a personal portal or id of a module, optional
+--   field   name of the field node for a field in its own colour, optional
+--   active  false for the dark field of a portal that leads nowhere yet
+--   text    what the signs say, for portals that have signs
+function setters.set_portal(portal, options)
 	setters.load_around(portal.base)
 	setters.set_frame(portal.base, portal.axis)
-	setters.set_field(portal.base, portal.axis, true, kind, owner, node)
-	setters.set_sign(portal.sign, portal.sign_wall, sign_text)
+	setters.set_field(portal.base, portal.axis, options.active ~= false, options.kind,
+		options.owner, options.field)
+	for _, sign in ipairs(portal.signs) do
+		setters.set_sign(sign.pos, sign.wall, options.text or "")
+	end
 end
 
 return setters

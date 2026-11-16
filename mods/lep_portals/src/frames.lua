@@ -99,6 +99,76 @@ function frames.arrival(base, axis, side)
 	}
 end
 
+--- Describes a whole portal: where it stands, where players arrive and
+-- where its signs hang. Everything that sets or uses a portal works with
+-- this table.
+-- @param base, axis As above.
+-- @param side 1 or -1: the side players arrive on, its front.
+-- @param options Optional table with:
+--   distance  how many steps in front of the portal players arrive,
+--             default 1
+--   signs     "front" for a sign above the opening on the front,
+--             "both" for one on each side, nil for none
+-- @return Table with
+--   base, axis, side
+--   arrival   where arriving players stand
+--   look_dir  the direction they look in, away from the portal
+--   signs     list of { pos, wall }: where a sign hangs and the direction
+--             from there to the frame node it hangs on
+function frames.portal(base, axis, side, options)
+	assert(axis == "x" or axis == "z", "axis must be 'x' or 'z'")
+	assert(side == 1 or side == -1, "side must be 1 or -1")
+	options = options or {}
+	local distance = options.distance or 1
+
+	-- One step across the frame, towards the given side.
+	local function across(steps)
+		return {
+			x = base.x + (axis == "z" and steps or 0),
+			y = base.y,
+			z = base.z + (axis == "x" and steps or 0),
+		}
+	end
+
+	local function sign(on_side)
+		local pos = across(on_side)
+		-- Above the opening, on the top of the frame.
+		pos.y = base.y + 2
+		return {
+			pos = pos,
+			wall = { x = axis == "z" and -on_side or 0, y = 0, z = axis == "x" and -on_side or 0 },
+		}
+	end
+
+	local signs = {}
+	if options.signs == "front" or options.signs == "both" then
+		signs[#signs + 1] = sign(side)
+	end
+	if options.signs == "both" then
+		signs[#signs + 1] = sign(-side)
+	end
+
+	return {
+		base = { x = base.x, y = base.y, z = base.z },
+		axis = axis,
+		side = side,
+		arrival = across(side * distance),
+		look_dir = { x = axis == "z" and side or 0, y = 0, z = axis == "x" and side or 0 },
+		signs = signs,
+	}
+end
+
+--- Returns all nodes a portal occupies: field, frame and corners.
+function frames.nodes(base, axis)
+	local nodes = {}
+	for _, list in ipairs({ FIELD, REQUIRED, CORNERS }) do
+		for _, pos in ipairs(positions(list, base, axis)) do
+			nodes[#nodes + 1] = pos
+		end
+	end
+	return nodes
+end
+
 --- Returns the side (1 or -1) of the portal a position is on.
 function frames.side_of(base, axis, pos)
 	local across = axis == "x" and (pos.z - base.z) or (pos.x - base.x)

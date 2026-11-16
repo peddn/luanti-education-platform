@@ -1,5 +1,6 @@
 local learning = dofile("mods/lep_portals/src/learning.lua")
 local frames = dofile("mods/lep_portals/src/frames.lua")
+learning.use_frames(frames)
 
 describe("lep_portals learning hall", function()
 	it("has room for at least two pairs of portals", function()
@@ -48,13 +49,10 @@ describe("lep_portals learning hall", function()
 
 	-- Every node of a portal and the spot in front of it has to be inside.
 	local function assert_fits(portal, count)
-		local nodes = { portal.arrival, portal.sign }
-		for _, list in ipairs({ frames.field(portal.base, portal.axis),
-				frames.required(portal.base, portal.axis),
-				frames.corners(portal.base, portal.axis) }) do
-			for _, pos in ipairs(list) do
-				nodes[#nodes + 1] = pos
-			end
+		local nodes = frames.nodes(portal.base, portal.axis)
+		nodes[#nodes + 1] = portal.arrival
+		for _, sign in ipairs(portal.signs) do
+			nodes[#nodes + 1] = sign.pos
 		end
 		for _, pos in ipairs(nodes) do
 			local kind = learning.kind_at(pos.x, pos.y, pos.z, count)
@@ -68,10 +66,9 @@ describe("lep_portals learning hall", function()
 		local exit = learning.exit()
 		assert_fits(exit, 0)
 		assert.are.equal("x", exit.axis)
-		-- The sign hangs on the top of the frame.
-		assert.are.same({ x = 0, y = 3, z = 1 }, {
-			x = exit.sign.x + exit.sign_wall.x, y = exit.sign.y,
-			z = exit.sign.z + exit.sign_wall.z })
+		assert.are.same({ x = 0, y = 1, z = 3 }, exit.arrival)
+		assert.are.same({ x = 0, y = 0, z = 1 }, exit.look_dir)
+		assert.are.equal(1, #exit.signs)
 	end)
 
 	it("puts module portals alternately at the west and the east wall", function()
@@ -96,14 +93,12 @@ describe("lep_portals learning hall", function()
 	it("keeps portals clear of each other and of the exit", function()
 		local used = {}
 		local function claim(portal)
-			for _, list in ipairs({ frames.field(portal.base, portal.axis),
-					frames.required(portal.base, portal.axis),
-					frames.corners(portal.base, portal.axis), { portal.arrival } }) do
-				for _, pos in ipairs(list) do
-					local key = pos.x .. "," .. pos.y .. "," .. pos.z
-					assert.is_nil(used[key], "two portals share " .. key)
-					used[key] = true
-				end
+			local nodes = frames.nodes(portal.base, portal.axis)
+			nodes[#nodes + 1] = portal.arrival
+			for _, pos in ipairs(nodes) do
+				local key = pos.x .. "," .. pos.y .. "," .. pos.z
+				assert.is_nil(used[key], "two portals share " .. key)
+				used[key] = true
 			end
 		end
 		claim(learning.exit())
@@ -119,8 +114,12 @@ describe("lep_portals learning hall", function()
 		-- The frames are three wide: one node stays free between them.
 		assert.are.equal(4, hub.learning.base.x - hub.wilderness.base.x)
 		assert.are.same({ x = 102, y = 50, z = 198 }, hub.learning.arrival)
-		assert.are.same({ x = 102, y = 52, z = 199 }, hub.learning.sign)
+		assert.are.same({ x = 0, y = 0, z = -1 }, hub.learning.look_dir)
 		assert.are.equal("x", hub.wilderness.axis)
+		-- A sign on the front and one on the back.
+		assert.are.same({ x = 102, y = 52, z = 199 }, hub.learning.signs[1].pos)
+		assert.are.same({ x = 102, y = 52, z = 201 }, hub.learning.signs[2].pos)
+		assert.are.equal(2, #hub.wilderness.signs)
 	end)
 
 	it("rejects slots that are none", function()

@@ -1,7 +1,9 @@
 -- The learning hall and the portals of the learning modules in it.
 
 local load = lep_core.loader("lep_portals")
+local frames = load("src/frames")
 local learning = load("src/learning")
+learning.use_frames(frames)
 local links = load("src/links")
 local setters = load("game/setters")
 local S = core.get_translator("lep_portals")
@@ -32,11 +34,18 @@ end
 -- Turns a portal of src/learning.lua into world coordinates.
 local function in_world(portal)
 	local base = origin()
-	local result = { axis = portal.axis, look_dir = portal.look_dir, sign_wall = portal.sign_wall }
-	for _, key in ipairs({ "base", "arrival", "sign" }) do
-		result[key] = vector.add(base, portal[key])
+	local signs = {}
+	for index, sign in ipairs(portal.signs) do
+		signs[index] = { pos = vector.add(base, sign.pos), wall = sign.wall }
 	end
-	return result
+	return {
+		base = vector.add(base, portal.base),
+		axis = portal.axis,
+		side = portal.side,
+		arrival = vector.add(base, portal.arrival),
+		look_dir = portal.look_dir,
+		signs = signs,
+	}
 end
 
 --- Returns the two portals in the lobby hall, see learning.hub.
@@ -52,8 +61,9 @@ local function version()
 end
 
 local function set_module_portal(def)
-	setters.set_portal(in_world(learning.portal(def.slot)), links.MODULE, def.id, def.field,
-		def.title)
+	setters.set_portal(in_world(learning.portal(def.slot)), {
+		kind = links.MODULE, owner = def.id, field = def.field, text = def.title,
+	})
 end
 
 local function build(callback)
@@ -87,7 +97,7 @@ local function build(callback)
 		vm:set_data(data)
 		vm:write_to_map(true)
 
-		setters.set_portal(in_world(learning.exit()), links.EXIT, nil, nil, S("Lobby"))
+		setters.set_portal(in_world(learning.exit()), { kind = links.EXIT, text = S("Lobby") })
 		for _, def in pairs(modules) do
 			set_module_portal(def)
 		end

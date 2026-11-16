@@ -9,6 +9,9 @@
 
 local learning = {}
 
+-- Set by the loader of the mod or by the tests: src/frames.lua.
+local frames
+
 -- Half the inner width: the interior spans x from -HALF_WIDTH to it.
 learning.HALF_WIDTH = 3
 -- Inner height.
@@ -68,61 +71,38 @@ function learning.kind_at(x, y, z, count)
 	return learning.AIR
 end
 
---- Returns the portal back to the lobby:
---   base, axis  as in src/frames.lua
---   arrival     where players stand who come into the hall
---   look_dir    the direction they look in, into the hall
---   sign        where its sign hangs
---   sign_wall   direction from the sign to the node it hangs on
+--- Returns the portal back to the lobby, as frames.portal describes it.
+-- It stands at the south wall; players who come into the hall arrive in
+-- front of it and look into the hall.
 function learning.exit()
-	return {
-		base = { x = 0, y = 1, z = 1 },
-		axis = "x",
-		arrival = { x = 0, y = 1, z = 3 },
-		look_dir = { x = 0, y = 0, z = 1 },
-		sign = { x = 0, y = 3, z = 2 },
-		sign_wall = { x = 0, y = 0, z = -1 },
-	}
+	return frames.portal({ x = 0, y = 1, z = 1 }, "x", 1, { distance = 2, signs = "front" })
 end
 
---- Returns the module portal of a slot, counted from 0. Even slots stand
--- at the west wall, odd slots at the east wall. Fields as in
--- learning.exit; `arrival` is where a player stands in front of it, and
--- `look_dir` points from there into the hall, away from the portal.
+--- Returns the module portal of a slot, counted from 0, as frames.portal
+-- describes it. Even slots stand at the west wall, odd slots at the east
+-- wall. A player in front of it looks into the hall, away from the
+-- portal.
 function learning.portal(slot)
 	assert(type(slot) == "number" and slot >= 0 and slot == math.floor(slot),
 		"slot must be a whole number from 0")
 	local side = slot % 2 == 0 and -1 or 1
 	local z = learning.FIRST + math.floor(slot / 2) * learning.PITCH
-	return {
-		base = { x = side * W, y = 1, z = z },
-		axis = "z",
-		arrival = { x = side * (W - 1), y = 1, z = z },
-		look_dir = { x = -side, y = 0, z = 0 },
-		sign = { x = side * (W - 1), y = 3, z = z },
-		sign_wall = { x = side, y = 0, z = 0 },
-	}
+	return frames.portal({ x = side * W, y = 1, z = z }, "z", -side, { signs = "front" })
 end
 
---- Returns the two portals in the lobby hall, in world coordinates. They
--- stand side by side where the hall has its place for a portal: the one
--- to the wilderness on the west, the one to the learning hall on the
--- east. Players arrive south of them.
+--- Returns the two portals in the lobby hall, in world coordinates, as
+-- frames.portal describes them. They stand side by side where the hall
+-- has its place for a portal: the one to the wilderness on the west, the
+-- one to the learning hall on the east. Players arrive south of them.
+-- Both carry a sign on the front and on the back, because people walk
+-- around them.
 -- @param anchor The hall's place for a portal: the lower field node of a
 --   portal that would stand there alone.
--- @return Table with `wilderness` and `learning`, each with base, axis,
---   arrival, look_dir, sign and sign_wall as in learning.exit.
+-- @return Table with `wilderness` and `learning`.
 function learning.hub(anchor)
 	local function portal(dx)
-		local base = { x = anchor.x + dx, y = anchor.y, z = anchor.z }
-		return {
-			base = base,
-			axis = "x",
-			arrival = { x = base.x, y = base.y, z = base.z - 2 },
-			look_dir = { x = 0, y = 0, z = -1 },
-			sign = { x = base.x, y = base.y + 2, z = base.z - 1 },
-			sign_wall = { x = 0, y = 0, z = 1 },
-		}
+		return frames.portal({ x = anchor.x + dx, y = anchor.y, z = anchor.z }, "x", -1,
+			{ distance = 2, signs = "both" })
 	end
 	return { wilderness = portal(-2), learning = portal(2) }
 end
@@ -185,6 +165,12 @@ function Slots:export()
 		copy[id] = slot
 	end
 	return copy
+end
+
+--- Hands in src/frames.lua, which describes single portals. A pure
+-- module cannot load another one by itself.
+function learning.use_frames(module)
+	frames = module
 end
 
 return learning

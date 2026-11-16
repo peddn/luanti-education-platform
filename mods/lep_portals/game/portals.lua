@@ -17,7 +17,7 @@ local DWELL = 1
 -- Seconds until a hint is repeated for a player who keeps standing there.
 local HINT_PAUSE = 6
 -- Raise this when the portals in the lobby change, so they are set again.
-local LOBBY_VERSION = 2
+local LOBBY_VERSION = 3
 
 local storage = core.get_mod_storage()
 local plots = links.new_plots(core.deserialize(storage:get_string("plots")))
@@ -30,7 +30,6 @@ end
 local load_around = setters.load_around
 local set_field = setters.set_field
 local remove_field = setters.remove_field
-local set_frame = setters.set_frame
 
 --------------------------------------------------------------------------
 -- Portals in the lobby
@@ -51,14 +50,11 @@ end
 local function clear_old_hall_portal()
 	local anchor = lep_lobby.get_anchors().portal
 	load_around(anchor)
-	for _, list in ipairs({ frames.field(anchor, "x"), frames.required(anchor, "x"),
-			frames.corners(anchor, "x") }) do
-		for _, pos in ipairs(list) do
-			if pos.y < anchor.y then
-				core.set_node(pos, { name = "lep_lobby:glass" })
-			else
-				core.remove_node(pos)
-			end
+	for _, pos in ipairs(frames.nodes(anchor, "x")) do
+		if pos.y < anchor.y then
+			core.set_node(pos, { name = "lep_lobby:glass" })
+		else
+			core.remove_node(pos)
 		end
 	end
 end
@@ -66,16 +62,18 @@ end
 local function set_hall_portal()
 	clear_old_hall_portal()
 	local portals = hub()
-	setters.set_portal(portals.wilderness, links.LOBBY, nil, nil, S("Wilderness"))
-	setters.set_portal(portals.learning, links.HUB, nil, learning_hall.HUB_FIELD,
-		S("Learning"))
+	setters.set_portal(portals.wilderness, { kind = links.LOBBY, text = S("Wilderness") })
+	setters.set_portal(portals.learning, {
+		kind = links.HUB, field = learning_hall.HUB_FIELD, text = S("Learning"),
+	})
 end
 
 local function set_room_portal(room)
-	local axis = room_axis(room)
-	load_around(room.portal)
-	set_frame(room.portal, axis)
-	set_field(room.portal, axis, plots:get(room.owner) ~= nil, links.ROOM, room.owner)
+	-- The portal stands at the back wall; its front faces the door.
+	local side = -(room.look_dir.x + room.look_dir.z)
+	setters.set_portal(frames.portal(room.portal, room_axis(room), side), {
+		kind = links.ROOM, owner = room.owner, active = plots:get(room.owner) ~= nil,
+	})
 end
 
 local function update_room_field(owner)
@@ -152,12 +150,12 @@ local function build_wilderness_portal()
 				end
 			end
 		end
-		set_frame(base, "x")
-		set_field(base, "x", true, links.WILDERNESS)
+		local portal = frames.portal(base, "x", 1)
+		setters.set_portal(portal, { kind = links.WILDERNESS })
 
 		wilderness = {
 			base = base,
-			arrival = frames.arrival(base, "x", 1),
+			arrival = portal.arrival,
 			min = min,
 			max = max,
 		}

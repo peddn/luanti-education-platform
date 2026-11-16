@@ -238,7 +238,7 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 **Aussehen und Benutzung**
 
 - Ein Portal steht senkrecht. Der Rahmen ist außen 3 breit und 4 hoch, innen ist eine Fläche von 1 × 2 frei. Die vier Ecken des Rahmens dürfen fehlen.
-- Die Fläche leuchtet, beim festen und beim persönlichen Paar violett. Über jedem Portal, das der Server baut, hängt ein Schild mit dem Ziel. Wer etwa eine Sekunde in der Fläche steht, wird versetzt und kommt einen Schritt vor dem Zielportal an.
+- Die Fläche leuchtet, beim festen und beim persönlichen Paar violett. Über den Portalen in Halle und Lernhalle hängt ein Schild mit dem Ziel, bei den beiden frei stehenden Portalen der Halle vorn und hinten. Wer etwa eine Sekunde in der Fläche steht, wird versetzt und kommt einen Schritt vor dem Zielportal an.
 - Jeder Ortswechsel durch ein Portal läuft über die Ortsverwaltung.
 
 **Festes Paar**
