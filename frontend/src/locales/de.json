@@ -1,0 +1,44 @@
+{
+  "app": {
+    "title": "Luanti Education Platform",
+    "short": "LEP",
+    "language": "Sprache"
+  },
+  "languages": {
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "nav": {
+    "health": "Zustand"
+  },
+  "health": {
+    "title": "Zustand",
+    "intro": "Diese Seite zeigt, ob das Backend erreichbar ist und arbeiten kann.",
+    "loading": "Zustand wird abgefragt …",
+    "reload": "Neu abfragen",
+    "backend": "Backend",
+    "database": "Datenbank",
+    "version": "Version",
+    "status": {
+      "ok": "Alles in Ordnung",
+      "degraded": "Eingeschränkt"
+    },
+    "databaseOk": "antwortet",
+    "databaseDown": "antwortet nicht"
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "text": "Diese Adresse gibt es hier nicht.",
+    "home": "Zur Startseite"
+  },
+  "errors": {
+    "title": "Das hat nicht geklappt",
+    "unauthorized": "Dafür fehlt die Anmeldung oder die Berechtigung.",
+    "not_found": "Das gibt es nicht.",
+    "too_large": "Die Anfrage ist zu groß.",
+    "invalid_request": "Die Anfrage war fehlerhaft.",
+    "internal": "Im Backend ist ein Fehler aufgetreten.",
+    "network": "Das Backend ist nicht erreichbar.",
+    "unexpected": "Das Backend hat unerwartet geantwortet."
+  }
+}
