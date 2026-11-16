@@ -4,7 +4,7 @@ Eine Lernplattform auf Basis von [Luanti](https://www.luanti.org/) für Schulen.
 
 Geplante Lernmodule: Rechnen, Textfragen, Technisches Zeichnen, Logikrätsel.
 
-**Status:** Konzeptphase. Das Repository enthält noch keinen lauffähigen Code.
+**Status:** In Entwicklung. Die Mods für Orte, Lobby, Lernräume, Fortschritt, Belohnungen, Rechnen und das Lehrerpult laufen. Das Backend ist begonnen, die Oberfläche fehlt noch.
 
 Dieses Projekt ist unabhängig und gehört nicht zum Luanti-Projekt. Es wird von dessen Entwicklern weder betrieben noch unterstützt.
 
@@ -52,7 +52,7 @@ luanti-education-platform/
 ├── crates/protocol/             gemeinsame Typen der Schnittstelle
 ├── backend/                     Web-Anwendung (Rust)
 ├── agent/                       Agent für Spielserver (Rust)
-├── frontend/                    Oberfläche (Vue, Pinia, Router)
+├── frontend/                    Oberfläche (Vue, Pinia, Router, JavaScript)
 ├── api/                         erzeugte OpenAPI-Beschreibung
 │
 ├── world-template/              Vorlage für eine neue Welt

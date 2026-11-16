@@ -1,0 +1,15 @@
+[package]
+name = "lep-protocol"
+description = "Types of the interface between the LEP backend, the worlds and the web frontend"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+utoipa = "6.0.0"
