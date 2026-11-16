@@ -3,6 +3,8 @@
 
 local load = lep_core.loader(core.get_current_modname())
 
+lep_portals = {}
+
 load("game/nodes")
 load("game/portals")
 

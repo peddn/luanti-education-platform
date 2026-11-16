@@ -3,11 +3,11 @@
 local load = lep_core.loader("lep_portals")
 local frames = load("src/frames")
 local links = load("src/links")
+local setters = load("game/setters")
+local learning_hall = load("game/learning")
 local S = core.get_translator("lep_portals")
 
-local FIELD = "lep_portals:field"
-local FIELD_INACTIVE = "lep_portals:field_inactive"
-local FRAME = "lep_portals:frame"
+local FIELD = setters.FIELD
 local PLATFORM = "lep_portals:platform"
 local PLAYER_FRAME = "default:obsidian"
 local IGNITER = "default:mese_crystal"
@@ -17,7 +17,7 @@ local DWELL = 1
 -- Seconds until a hint is repeated for a player who keeps standing there.
 local HINT_PAUSE = 6
 -- Raise this when the portals in the lobby change, so they are set again.
-local LOBBY_VERSION = 1
+local LOBBY_VERSION = 3
 
 local storage = core.get_mod_storage()
 local plots = links.new_plots(core.deserialize(storage:get_string("plots")))
@@ -27,48 +27,17 @@ local function save_plots()
 	storage:set_string("plots", core.serialize(plots:export()))
 end
 
-local function load_around(pos)
-	core.load_area(vector.offset(pos, -2, -2, -2), vector.offset(pos, 2, 3, 2))
-end
-
---------------------------------------------------------------------------
--- Setting nodes
-
-local function set_field(base, axis, active, kind, owner)
-	for _, pos in ipairs(frames.field(base, axis)) do
-		core.set_node(pos, {
-			name = active and FIELD or FIELD_INACTIVE,
-			param2 = axis == "x" and 0 or 1,
-		})
-		local meta = core.get_meta(pos)
-		meta:set_string("kind", kind)
-		meta:set_string("owner", owner or "")
-		meta:mark_as_private({ "kind", "owner" })
-	end
-end
-
-local function remove_field(base, axis, owner)
-	for _, pos in ipairs(frames.field(base, axis)) do
-		if core.get_node(pos).name == FIELD
-				and core.get_meta(pos):get_string("owner") == owner then
-			core.remove_node(pos)
-		end
-	end
-end
-
-local function set_frame(base, axis)
-	for _, list in ipairs({ frames.required(base, axis), frames.corners(base, axis) }) do
-		for _, pos in ipairs(list) do
-			core.set_node(pos, { name = FRAME })
-		end
-	end
-end
+local load_around = setters.load_around
+local set_field = setters.set_field
+local remove_field = setters.remove_field
 
 --------------------------------------------------------------------------
 -- Portals in the lobby
 
-local function hall_base()
-	return lep_lobby.get_anchors().portal
+-- The two portals in the hall: to the wilderness and to the learning
+-- hall.
+local function hub()
+	return learning_hall.hub()
 end
 
 local function room_axis(room)
@@ -76,18 +45,35 @@ local function room_axis(room)
 	return room.look_dir.x ~= 0 and "z" or "x"
 end
 
+-- Until the learning hall existed, one portal stood alone in the middle.
+-- Its nodes are taken away, and the floor below it is closed again.
+local function clear_old_hall_portal()
+	local anchor = lep_lobby.get_anchors().portal
+	load_around(anchor)
+	for _, pos in ipairs(frames.nodes(anchor, "x")) do
+		if pos.y < anchor.y then
+			core.set_node(pos, { name = "lep_lobby:glass" })
+		else
+			core.remove_node(pos)
+		end
+	end
+end
+
 local function set_hall_portal()
-	local base = hall_base()
-	load_around(base)
-	set_frame(base, "x")
-	set_field(base, "x", true, links.LOBBY)
+	clear_old_hall_portal()
+	local portals = hub()
+	setters.set_portal(portals.wilderness, { kind = links.LOBBY, text = S("Wilderness") })
+	setters.set_portal(portals.learning, {
+		kind = links.HUB, field = learning_hall.HUB_FIELD, text = S("Learning"),
+	})
 end
 
 local function set_room_portal(room)
-	local axis = room_axis(room)
-	load_around(room.portal)
-	set_frame(room.portal, axis)
-	set_field(room.portal, axis, plots:get(room.owner) ~= nil, links.ROOM, room.owner)
+	-- The portal stands at the back wall; its front faces the door.
+	local side = -(room.look_dir.x + room.look_dir.z)
+	setters.set_portal(frames.portal(room.portal, room_axis(room), side), {
+		kind = links.ROOM, owner = room.owner, active = plots:get(room.owner) ~= nil,
+	})
 end
 
 local function update_room_field(owner)
@@ -164,12 +150,12 @@ local function build_wilderness_portal()
 				end
 			end
 		end
-		set_frame(base, "x")
-		set_field(base, "x", true, links.WILDERNESS)
+		local portal = frames.portal(base, "x", 1)
+		setters.set_portal(portal, { kind = links.WILDERNESS })
 
 		wilderness = {
 			base = base,
-			arrival = frames.arrival(base, "x", 1),
+			arrival = portal.arrival,
 			min = min,
 			max = max,
 		}
@@ -325,6 +311,8 @@ local TARGET_PLACE = {
 	[links.TO_WILDERNESS] = lep_places.WILDERNESS,
 	[links.TO_PLOT] = lep_places.WILDERNESS,
 	[links.TO_HALL] = lep_lobby.PLACE,
+	[links.TO_HUB] = lep_lobby.PLACE,
+	[links.TO_LEARNING_HALL] = lep_lobby.PLACE,
 	[links.TO_ROOM] = lep_lobby.PLACE,
 }
 
@@ -357,8 +345,19 @@ local function use(player, field_pos)
 			face(player, { x = 0, z = 1 })
 		end
 	elseif destination == links.TO_HALL then
-		lep_places.move(name, lep_lobby.PLACE, frames.arrival(hall_base(), "x", -1))
-		face(player, { x = 0, z = -1 })
+		local arrival = hub().wilderness
+		lep_places.move(name, lep_lobby.PLACE, arrival.arrival)
+		face(player, arrival.look_dir)
+	elseif destination == links.TO_HUB then
+		local arrival = hub().learning
+		lep_places.move(name, lep_lobby.PLACE, arrival.arrival)
+		face(player, arrival.look_dir)
+	elseif destination == links.TO_LEARNING_HALL then
+		learning_hall.enter(name, function(look_dir)
+			face(player, look_dir)
+		end)
+	elseif destination == links.TO_MODULE then
+		return learning_hall.enter_module(name, owner)
 	elseif destination == links.TO_ROOM then
 		local room = lep_lobby.get_room(name)
 		if room then
@@ -399,7 +398,7 @@ core.register_globalstep(function(dtime)
 		local pos = player:get_pos()
 		local field_pos = vector.round({ x = pos.x, y = pos.y + 0.5, z = pos.z })
 		local node_name = core.get_node(field_pos).name
-		if node_name == FIELD or node_name == FIELD_INACTIVE then
+		if setters.is_field(node_name) then
 			dwell[name] = (dwell[name] or 0) + elapsed
 			if dwell[name] >= DWELL then
 				if use(player, field_pos) then

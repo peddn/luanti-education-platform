@@ -124,4 +124,50 @@ describe("lep_portals frames", function()
 			end
 		end
 	end)
+
+	it("describes a portal with arrival point and signs", function()
+		local portal = frames.portal({ x = 10, y = 5, z = 20 }, "x", -1,
+			{ distance = 2, signs = "both" })
+		assert.are.same({ x = 10, y = 5, z = 20 }, portal.base)
+		assert.are.equal("x", portal.axis)
+		assert.are.same({ x = 10, y = 5, z = 18 }, portal.arrival)
+		assert.are.same({ x = 0, y = 0, z = -1 }, portal.look_dir)
+		-- Front sign first, then the one on the back.
+		assert.are.same({ pos = { x = 10, y = 7, z = 19 }, wall = { x = 0, y = 0, z = 1 } },
+			portal.signs[1])
+		assert.are.same({ pos = { x = 10, y = 7, z = 21 }, wall = { x = 0, y = 0, z = -1 } },
+			portal.signs[2])
+	end)
+
+	it("describes a portal along the other axis", function()
+		local portal = frames.portal({ x = -3, y = 1, z = 6 }, "z", 1, { signs = "front" })
+		assert.are.same({ x = -2, y = 1, z = 6 }, portal.arrival)
+		assert.are.same({ x = 1, y = 0, z = 0 }, portal.look_dir)
+		assert.are.equal(1, #portal.signs)
+		assert.are.same({ pos = { x = -2, y = 3, z = 6 }, wall = { x = -1, y = 0, z = 0 } },
+			portal.signs[1])
+	end)
+
+	it("hangs every sign on the top node of the frame", function()
+		for _, axis in ipairs({ "x", "z" }) do
+			local base = { x = 4, y = 9, z = -2 }
+			local portal = frames.portal(base, axis, 1, { signs = "both" })
+			for _, sign in ipairs(portal.signs) do
+				assert.are.same({ x = base.x, y = base.y + 2, z = base.z }, {
+					x = sign.pos.x + sign.wall.x, y = sign.pos.y, z = sign.pos.z + sign.wall.z })
+			end
+		end
+	end)
+
+	it("describes a portal without signs by default", function()
+		local portal = frames.portal({ x = 0, y = 0, z = 0 }, "x", 1)
+		assert.are.same({}, portal.signs)
+		assert.are.same({ x = 0, y = 0, z = 1 }, portal.arrival)
+		assert.has_error(function() frames.portal({ x = 0, y = 0, z = 0 }, "y", 1) end)
+		assert.has_error(function() frames.portal({ x = 0, y = 0, z = 0 }, "x", 0) end)
+	end)
+
+	it("lists all nodes of a portal", function()
+		assert.are.equal(12, #frames.nodes({ x = 0, y = 0, z = 0 }, "x"))
+	end)
 end)

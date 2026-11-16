@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 33 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 34 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -238,12 +238,12 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 **Aussehen und Benutzung**
 
 - Ein Portal steht senkrecht. Der Rahmen ist außen 3 breit und 4 hoch, innen ist eine Fläche von 1 × 2 frei. Die vier Ecken des Rahmens dürfen fehlen.
-- Die Fläche ist violett und leuchtet. Wer etwa eine Sekunde darin steht, wird versetzt und kommt einen Schritt vor dem Zielportal an.
+- Die Fläche leuchtet, beim festen und beim persönlichen Paar violett. Über den Portalen in Halle und Lernhalle hängt ein Schild mit dem Ziel, bei den beiden frei stehenden Portalen der Halle vorn und hinten. Wer etwa eine Sekunde in der Fläche steht, wird versetzt und kommt einen Schritt vor dem Zielportal an.
 - Jeder Ortswechsel durch ein Portal läuft über die Ortsverwaltung.
 
 **Festes Paar**
 
-- Ein Portal steht in der Mitte der Halle, eines in der Wildnis am Startpunkt der Welt auf einer kleinen Plattform.
+- Ein Portal steht in der Mitte der Halle, links neben dem Portal zur Lernhalle. Das Gegenstück steht in der Wildnis am Startpunkt der Welt auf einer kleinen Plattform.
 - Beide sind unzerstörbar, die Plattform ist geschützt.
 
 **Persönliches Paar**
@@ -258,6 +258,16 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 - Das Portal im Raum funktioniert nur für den Besitzer. Besucher bekommen einen Hinweis.
 - Betritt ein fremder Schüler ein gebautes Portal, landet er in der Halle. Zurück kommt er nur über sein eigenes oder das feste Portal.
 
+**Lernhalle**
+
+- Rechts neben dem Portal zur Wildnis steht in der Halle das Portal „Lernen“ mit grüner Fläche. Es führt in die Lernhalle.
+- Die Lernhalle ist ein gerader, geschlossener Gang hoch über der Lobby, außer Sichtweite. Sie gehört zum Ort Lobby: kein Bauen, kein Schaden.
+- An ihrem Anfang steht das Portal zurück in die Halle. An den Seitenwänden stehen die Portale der Lernmodule, abwechselnd links und rechts, jedes mit einem Schild und einer Fläche in der Farbe des Moduls. Rechnen ist orange.
+- Der Gang wächst mit der Zahl der Module, in Schritten von zwei Portalen. So ist Platz für beliebig viele.
+- Ein Lernmodul meldet sein Portal bei `lep_portals` an: Name, Farbe, Zielort und was beim Betreten passiert. Es weiß nicht, wo das Portal steht. Sein Platz wird einmal vergeben und bleibt.
+- Wer durch ein Modulportal in einen Lernraum geht und ihn wieder verlässt, steht vor diesem Portal.
+- Die Unterrichtsmodi gelten: Im Modus „Unterricht“ weist ein Modulportal Schüler ab.
+
 Portale werden selbst gebaut. Vorhandene Portal-Mods bilden frei verknüpfbare Reisenetze oder verknüpfen Orte statt Spieler und passen nicht zu diesen Regeln. Geprüft wurde auch die Portal-Schnittstelle des Nether-Mods.
 
 ### 7.5 Lobby
@@ -269,7 +279,7 @@ Portale werden selbst gebaut. Vorhandene Portal-Mods bilden frei verknüpfbare R
 - **Licht:** zwei Leuchtringe im Boden, einer lückenlos unter der Glaswand und einer um die Glasscheibe, dazu das leuchtende Portal in der Mitte. Nachts ist es dadurch nirgends dunkel.
 - **Tiere:** Unter der Kuppel schweben Glühwürmchen, weiter unten Schmetterlinge. Sie sind Schmuck an festen Plätzen und lassen sich nicht fangen.
 - **Musik:** In der Halle läuft leise eine eigene Hintergrundmusik in Schleife. Sie beginnt beim Betreten und blendet beim Verlassen aus. Einen Schalter dafür gibt es nicht, wer keine Musik möchte, stellt sie am eigenen Client ab.
-- **Inhalt:** das feste Portal zur Wildnis in der Mitte auf der Glasscheibe, dazu Portale zu freiwilligen Aufgaben und die Anzeigetafel.
+- **Inhalt:** in der Mitte auf der Glasscheibe zwei Portale nebeneinander, links zur Wildnis und rechts zur Lernhalle mit den freiwilligen Aufgaben (Abschnitt 7.4), dazu die Anzeigetafel.
 - **Gänge:** Vier Gänge verlassen die Halle, einer in jede Himmelsrichtung. Sie führen zu den persönlichen Räumen.
 - **Schutz:** Niemand kann in der Lobby bauen oder abbauen, niemand nimmt Schaden. Alle Blöcke sind unzerstörbar.
 
@@ -933,7 +943,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_core` | Gemeinsame Hilfen: Anzeigename, Formspec-Hilfsschicht, Einstellungen |
 | `lep_places` | Ortsverwaltung: Ortswechsel, Inventare, Rechte |
 | `lep_lobby` | Gemeinsamer Bereich, persönliche Räume, Schutzzone |
-| `lep_portals` | Festes und persönliches Portalpaar |
+| `lep_portals` | Festes und persönliches Portalpaar, Lernhalle mit den Portalen der Module |
 | `lep_rooms` | Lernräume bauen, zuteilen, schützen und neu bauen |
 | `lep_survival` | Regeln der Survival-Welt: Rezepte, die fremde Mods ersetzen |
 | `lep_progress` | Ergebnisse annehmen, Niveau und Pensum führen, Ereignisse verteilen, kurze Aufgaben vermitteln |
