@@ -14,6 +14,7 @@ Bisher vorhanden:
 - `lep_quest_chest`: Aufgabentruhen. Sie erscheinen in der Wildnis in der Nähe der Spieler, stellen eine kurze Aufgabe und verschwinden wieder. Lehrkräfte stellen dauerhafte Truhen auf.
 - `lep_desk`: Lehrerpult. Ein Fenster mit den Schülern, ihrem Ort und den Aktionen der Lehrkraft, geöffnet mit `/pult`. Jeder Mod kann Aktionen anmelden.
 - `lep_chat`: Chat. Schreibt Chat, Privatnachrichten und Schildtexte mit und lässt Lehrkräfte einzelne Schüler am Pult stummschalten.
+- `lep_attention`: Aufmerksamkeitsmodus. Versetzt Schüler in eine dunkle Zelle, zeigt den Text der Lehrkraft und sperrt den Chat.
 - `lep_survival`: Regeln der Survival-Welt. Entfernt Rezepte aus Minetest Game, die ein fremder Mod ersetzt, und macht Erfolge des Awards-Mods zu Trophäen.
 - `lep_portals`: Portale. Das feste Paar zwischen Halle und Wildnis und das persönliche Paar zwischen Raum und Grundstück.
 - `lep_lobby`: Lobby. Baut die Glashalle, in der neue Spieler ankommen, und regelt Erscheinen, Tod und Schutz.
@@ -25,6 +26,7 @@ Jeder Raumtyp belegt eine Ebene. Die Nummer darf nie geändert werden, weil sie 
 | Ebene | Raumtyp | Mod |
 |---|---|---|
 | 1 | `lep_math:room` | `lep_math` |
+| 2 | `lep_attention:cell` | `lep_attention` |
 | 38 | `lep_rooms:debug` (nur mit `lep_debug`) | `lep_rooms` |
 
 Tests und Testwelt: siehe [Entwicklungsumgebung](../docs/entwicklungsumgebung.md), Abschnitt 5.

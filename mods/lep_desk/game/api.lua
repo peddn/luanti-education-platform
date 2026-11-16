@@ -96,8 +96,10 @@ end
 -- @param def Table with:
 --   title      text on the button, already translated
 --   privilege  privilege a teacher needs to see and use the action
---   run        function(teacher_name, targets), where `targets` is the
---              list of the chosen students' names. It returns a line of
+--   run        function(teacher_name, targets, text), where `targets` is
+--              the list of the chosen students' names and `text` what the
+--              teacher typed into the text field of the desk, for actions
+--              that show the students a text. It returns a line of
 --              text for the teacher, or nil. The desk has checked the
 --              privilege and that the targets are students who are online.
 --   needs_targets  optional, default true. False for an action on the
@@ -120,8 +122,9 @@ end
 --- Runs an action for a teacher. Everything is checked here again: the
 -- desk, the privilege of the action, and that the targets are students
 -- who are online right now.
+-- @param text Optional text of the teacher for the students.
 -- @return true and a line of text (or nil), or false and an error message
-function lep_desk.run_action(teacher_name, action_id, targets)
+function lep_desk.run_action(teacher_name, action_id, targets, text)
 	local action = actions:get(action_id)
 	if not action then
 		return false, "unknown action '" .. tostring(action_id) .. "'"
@@ -150,12 +153,13 @@ function lep_desk.run_action(teacher_name, action_id, targets)
 	core.log("action", "[lep_desk] " .. teacher_name .. " used " .. action_id .. " on "
 		.. (#checked > 0 and table.concat(checked, ", ") or "nobody"))
 
-	local ok, text = pcall(action.run, teacher_name, checked)
+	local ok, result = pcall(action.run, teacher_name, checked,
+		type(text) == "string" and text or "")
 	if not ok then
-		core.log("error", "[lep_desk] action " .. action_id .. " failed: " .. tostring(text))
+		core.log("error", "[lep_desk] action " .. action_id .. " failed: " .. tostring(result))
 		return false, "the action failed"
 	end
-	return true, type(text) == "string" and text or nil
+	return true, type(result) == "string" and result or nil
 end
 
 --- Returns the last entries of the desk protocol, oldest first, each with

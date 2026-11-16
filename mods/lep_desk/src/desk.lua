@@ -23,9 +23,10 @@ end
 -- @param def Table with:
 --   title      text on the button
 --   privilege  privilege a teacher needs to see and use the action
---   run        function(teacher_name, targets) that does it. `targets` is
---              the list of the chosen students' names. It returns a line
---              of text for the teacher, or nil.
+--   run        function(teacher_name, targets, text) that does it.
+--              `targets` is the list of the chosen students' names, `text`
+--              what the teacher typed into the text field of the desk. It
+--              returns a line of text for the teacher, or nil.
 --   needs_targets  optional, default true. False for an action on the
 --              whole world, such as the time of day: it runs without
 --              marked students and gets an empty list.

@@ -9,7 +9,9 @@ local S = core.get_translator("lep_desk")
 local formspec = lep_core.formspec
 
 local FORM = "lep_desk:desk"
-local WIDTH, HEIGHT = 18, 11
+local WIDTH, HEIGHT = 18, 12.5
+-- Longest text of the teacher that is passed on.
+local MAX_TEXT = 200
 local LIST_WIDTH = 12
 -- Colours of the lines in the list.
 local MARKED, UNMARKED = "#9CFF9C", "#BBBBBB"
@@ -19,7 +21,8 @@ local ACTIVE = "#30C030"
 -- Per teacher: selection (see src/desk.lua), status (last line of text),
 -- open (true while the window is shown), students (the list the window
 -- was drawn with, so a click hits the row the teacher saw), highlight
--- (name of the student whose row the teacher clicked last, or nil).
+-- (name of the student whose row the teacher clicked last, or nil), text
+-- (what the teacher typed into the text field).
 local desks = {}
 
 local function state_of(teacher_name)
@@ -89,20 +92,26 @@ local function show(teacher_name)
 
 	local fs = formspec.new(WIDTH, HEIGHT)
 		:label(pad, 0.55, S("Students (@1): click a box to mark", #students))
-		:table(pad, 0.9, LIST_WIDTH, HEIGHT - 3.4, "students", COLUMNS, rows,
+		:table(pad, 0.9, LIST_WIDTH, HEIGHT - 5.1, "students", COLUMNS, rows,
 			desk.index_of(state.highlight, students))
 
 	-- Helpers that set many boxes at once.
 	local gap = 0.2
 	local helper_width = (LIST_WIDTH - (#HELPERS - 1) * gap) / #HELPERS
 	for index, helper in ipairs(HELPERS) do
-		fs:button(pad + (index - 1) * (helper_width + gap), HEIGHT - 2.3, helper_width, 0.7,
+		fs:button(pad + (index - 1) * (helper_width + gap), HEIGHT - 4, helper_width, 0.7,
 			"mark_" .. helper.id, helper.title)
 	end
 
 	-- "All" also covers students who join later.
-	fs:label(pad, HEIGHT - 1.05, state.selection.all and S("Marked: all (@1)", #targets)
+	fs:label(pad, HEIGHT - 2.9, state.selection.all and S("Marked: all (@1)", #targets)
 		or S("Marked: @1 of @2", #targets, #students))
+
+	-- Text for actions that show the students something. Enter in the
+	-- field must not close the desk.
+	fs:field(pad, HEIGHT - 1.8, LIST_WIDTH, 0.8, "text",
+		S("Text for the students (optional)"), state.text or "")
+	fs:element("field_close_on_enter", "text", "false")
 	fs:label(pad, HEIGHT - 0.5, state.status)
 
 	local actions_x = pad + LIST_WIDTH + 0.4
@@ -188,6 +197,11 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 		return true
 	end
 
+	-- Whatever was pressed, the text field comes along.
+	if type(fields.text) == "string" then
+		state.text = fields.text:sub(1, MAX_TEXT)
+	end
+
 	if fields.students then
 		local event = core.explode_table_event(fields.students)
 		if event.type ~= "CHG" and event.type ~= "DCL" then
@@ -247,7 +261,8 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 			if action.needs_targets and #targets == 0 then
 				state.status = S("Nobody is marked.")
 			else
-				local ok, text = lep_desk.run_action(teacher_name, action.id, targets)
+				local ok, text = lep_desk.run_action(teacher_name, action.id, targets,
+					state.text)
 				state.status = ok and (text or "") or S("That did not work.")
 			end
 			show(teacher_name)
