@@ -41,20 +41,7 @@ lep_desk.register_action("lep_desk:release", {
 
 -- Without a teacher nobody is held: a teacher who lost the connection
 -- must not leave a class locked in. Sending them again is one click.
-local function has_teacher(except)
-	for _, player in ipairs(core.get_connected_players()) do
-		local name = player:get_player_name()
-		if name ~= except and core.check_player_privs(name, { [lep_desk.PRIV_SEND] = true }) then
-			return true
-		end
-	end
-	return false
-end
-
-core.register_on_leaveplayer(function(player)
-	if has_teacher(player:get_player_name()) then
-		return
-	end
+lep_desk.register_on_unattended(function()
 	for _, student in ipairs(lep_rooms.release_all()) do
 		core.log("action", "[lep_desk] released " .. student .. ": no teacher is online")
 		if core.get_player_by_name(student) then

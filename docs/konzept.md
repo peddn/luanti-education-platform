@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 29 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 30 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -626,7 +626,9 @@ Die folgenden Schritte werden bei der Umsetzung auf die Niveaus verteilt.
 - **Grundstücksschutz:** Protector. Schüler stellen einen Schutzblock her und setzen ihn. Der Schutzbereich reicht 8 Blöcke in jede Richtung.
 - **PvP:** aus, pro Welt einstellbar.
 - **Monster:** zunächst keine, später pro Welt zuschaltbar über Mobs Redo.
-- **Chat:** frei und ohne Filter. Jede Nachricht wird protokolliert, auch Privatnachrichten. Lehrkräfte können stummschalten. Pro Welt abschaltbar.
+- **Chat:** frei und ohne Filter. Jede Nachricht wird protokolliert, auch Privatnachrichten und `/me`: Zeitpunkt, Kontoname, Art, Empfänger, Text. Bei der Anmeldung liest jeder Spieler den Hinweis, dass mitgeschrieben wird. Pro Welt abschaltbar.
+- **Stummschalten:** Lehrkräfte schalten einzelne Schüler am Pult stumm (Privileg `lep_mute_players`). Der Schüler verliert dabei Luantis Privileg `shout` und kann weder im Chat schreiben noch Privatnachrichten senden. Die Übersicht im Pult zeigt, wer stumm ist. Ist keine Lehrkraft mehr angemeldet, wird jede Stummschaltung aufgehoben, ebenso bei einem Neustart des Servers. So bleibt kein vergessener Schüler tagelang stumm.
+- **Einsicht:** Wer das Privileg `lep_view_chat` hat, sieht die letzten Einträge mit einem Chatbefehl. Die eigentliche Einsicht kommt in der Web-Anwendung.
 - **Schilder:** Schüler dürfen Schilder aufstellen und beschriften. Der Text ist für alle lesbar. Schildtexte werden wie Chatnachrichten protokolliert, mit Kontoname und Ort. Das Protokoll entsteht zusammen mit dem Chatprotokoll.
 - **Abschließbare Türen, Falltüren und Kisten:** von Protector. Sie folgen dem Schutzbereich: Wer dort als Mitglied eingetragen ist, kann sie benutzen. Die entsprechenden Rezepte aus Minetest Game (Stahltür, Stahlfalltür, abschließbare Kiste) sind entfernt, damit es nicht zwei Sorten gibt. Das erledigt `lep_survival`.
 - **Betten, Knochen, einfache Türen und Kisten:** aus Minetest Game.
@@ -652,7 +654,7 @@ Erste Version:
 - In einen Lernraum schicken (Modul und Station), zurückholen. Wer geschickt wird, landet in seinem eigenen Raum. Wer zurückgeholt wird, kommt dorthin, wo er vorher war.
 - Festhalten: Wer geschickt wurde, kann den Raum nicht selbst verlassen, bis die Lehrkraft ihn zurückholt oder freigibt. Wer freiwillig hineingegangen ist, bleibt frei. Wird er dort von der Lehrkraft „geschickt“, ist er ab dann festgehalten. Die Übersicht zeigt, wer festgehalten ist.
 - Freigeben: hebt das Festhalten auf, ohne den Schüler herauszuholen.
-- Ist keine Lehrkraft mehr angemeldet, sind alle frei. So sperrt ein Verbindungsabbruch der Lehrkraft, etwa im Fernunterricht, niemanden ein. Auch ein Neustart des Servers gibt alle frei, das Neuanmelden eines Schülers nicht.
+- Ist keine Lehrkraft mehr angemeldet, also niemand, der das Pult öffnen darf, sind alle frei. Das gilt für alles, was Lehrkräfte einzelnen Schülern auferlegen, auch für das Stummschalten. So sperrt ein Verbindungsabbruch der Lehrkraft, etwa im Fernunterricht, niemanden ein. Auch ein Neustart des Servers gibt alle frei, das Neuanmelden eines Schülers nicht.
 - Aufmerksamkeitsmodus an/aus, mit eigenem Text.
 - Unterrichtsmodus umschalten.
 - Tageszeit der Welt steuern (Abschnitt 10.3).
@@ -909,7 +911,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_quest_chest` | Aufgabentruhe in der Wildnis: erzeugen, Fenster, Ablauf |
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
 | `lep_attention` | Aufmerksamkeitsmodus: Einfrieren, Overlay, Chat-Sperre |
-| `lep_chat` | Protokoll, Stummschalten |
+| `lep_chat` | Protokoll für Chat und Schildtexte, Stummschalten |
 | `lep_bridge` | Verbindung zum Backend, Konten anlegen, Warteschlange |
 | `lep_quiz` | Textfragen: Fragensets, Dialogfenster |
 | `lep_tz` | Technisches Zeichnen: Datenmodell, Generator, Prüfung, Baustein, Raum |

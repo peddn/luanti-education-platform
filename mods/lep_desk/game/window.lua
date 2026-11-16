@@ -46,11 +46,17 @@ local HELPERS = {
 	{ id = "place", title = S("Same place") },
 }
 
--- Where a student is, for the overview.
+-- Students a teacher sent into a learning room are held there.
+lep_desk.register_student_note(function(student)
+	return lep_rooms.is_held(student) and S("sent") or nil
+end)
+
+-- Where a student is, for the overview, with the notes about them.
 local function describe_place(student)
 	local place = lep_places.get_place_title(lep_places.get_place(student) or "?")
-	if lep_rooms.is_held(student) then
-		place = S("@1 (sent)", place)
+	local notes = lep_desk.get_student_notes(student)
+	if #notes > 0 then
+		place = place .. " (" .. table.concat(notes, ", ") .. ")"
 	end
 	return place
 end
