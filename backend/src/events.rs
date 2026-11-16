@@ -1,10 +1,19 @@
 //! Events from the worlds: taking each one in exactly once.
 
 use anyhow::Result;
-use lep_protocol::world::{Event, EventOutcome, WorldStarted, EVENT_WORLD_STARTED};
+use lep_protocol::world::{
+    Event, EventOutcome, Modules, Progress, ProtocolEntry, Trophies, WorldStarted, EVENT_MODULES,
+    EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_TROPHIES, EVENT_WORLD_STARTED,
+};
+use serde::de::DeserializeOwned;
 use sqlx::SqlitePool;
 
-use crate::{clock, worlds};
+use crate::{clock, state, worlds};
+
+/// Reads the payload of an event as the type its kind asks for.
+fn payload<T: DeserializeOwned>(event: &Event) -> Option<T> {
+    serde_json::from_value(event.payload.clone()).ok()
+}
 
 /// Takes in one event of a world and says what was done with it.
 ///
@@ -26,14 +35,39 @@ pub async fn take_in(pool: &SqlitePool, world_id: &str, event: &Event) -> Result
         return Ok(EventOutcome::Duplicate);
     }
 
-    match event.kind.as_str() {
-        EVENT_WORLD_STARTED => {
-            let Ok(started) = serde_json::from_value::<WorldStarted>(event.payload.clone()) else {
-                return Ok(EventOutcome::Invalid);
-            };
-            worlds::note_started(pool, world_id, event.time, &started).await?;
-        }
+    // Each kind is stored by its own function, which says whether the
+    // payload made sense.
+    let usable = match event.kind.as_str() {
+        EVENT_WORLD_STARTED => match payload::<WorldStarted>(event) {
+            Some(started) => {
+                worlds::note_started(pool, world_id, event.time, &started).await?;
+                true
+            }
+            None => false,
+        },
+        EVENT_MODULES => match payload::<Modules>(event) {
+            Some(modules) => {
+                state::store_modules(pool, world_id, &modules).await?;
+                true
+            }
+            None => false,
+        },
+        EVENT_PROGRESS => match payload::<Progress>(event) {
+            Some(progress) => state::store_progress(pool, world_id, event.time, &progress).await?,
+            None => false,
+        },
+        EVENT_TROPHIES => match payload::<Trophies>(event) {
+            Some(trophies) => state::store_trophies(pool, world_id, event.time, &trophies).await?,
+            None => false,
+        },
+        EVENT_PROTOCOL => match payload::<ProtocolEntry>(event) {
+            Some(entry) => state::store_protocol_entry(pool, world_id, event.time, &entry).await?,
+            None => false,
+        },
         _ => return Ok(EventOutcome::Unknown),
+    };
+    if !usable {
+        return Ok(EventOutcome::Invalid);
     }
 
     sqlx::query("INSERT INTO world_events (world_id, event_id, received_at) VALUES (?, ?, ?)")
@@ -85,6 +119,81 @@ mod tests {
         let found = worlds::find_by_name(&pool, "7b").await.unwrap().unwrap();
         assert_eq!(found.started_at, Some(1000));
         assert_eq!(found.engine.as_deref(), Some("5.18.0"));
+    }
+
+    #[tokio::test]
+    async fn takes_in_state_and_protocol_entries() {
+        let (pool, world) = setup().await;
+        let event = |id: &str, kind: &str, payload| Event {
+            id: id.to_owned(),
+            kind: kind.to_owned(),
+            time: 1000,
+            payload,
+        };
+        let cases = [
+            event(
+                "m",
+                "modules",
+                json!({ "modules": [
+                { "id": "lep_math:math", "title": "Kopfrechnen", "levels": [
+                    { "stage": false, "tasks": [{ "id": "add_10", "title": "A", "required": 10 }] }
+                ] }
+            ] }),
+            ),
+            event(
+                "p",
+                "progress",
+                json!({
+                    "account": "anna", "module": "lep_math:math", "level": 2, "locked": false,
+                    "percent": 50, "completed": false, "tasks": null
+                }),
+            ),
+            event(
+                "t",
+                "trophies",
+                json!({ "account": "anna", "trophies": null }),
+            ),
+            event(
+                "c",
+                "protocol",
+                json!({
+                    "protocol": "chat", "account": "anna", "fields": { "kind": "chat", "text": "hi" }
+                }),
+            ),
+        ];
+        for case in &cases {
+            assert_eq!(
+                take_in(&pool, &world, case).await.unwrap(),
+                EventOutcome::Accepted
+            );
+            assert_eq!(
+                take_in(&pool, &world, case).await.unwrap(),
+                EventOutcome::Duplicate
+            );
+        }
+        // A protocol entry that arrived twice is stored once.
+        let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM protocol_entries")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(entries, 1);
+
+        let unknown_protocol = event(
+            "x",
+            "protocol",
+            json!({
+                "protocol": "diary", "account": "anna", "fields": {}
+            }),
+        );
+        assert_eq!(
+            take_in(&pool, &world, &unknown_protocol).await.unwrap(),
+            EventOutcome::Invalid
+        );
+        let no_level = event("y", "progress", json!({ "account": "anna", "module": "m" }));
+        assert_eq!(
+            take_in(&pool, &world, &no_level).await.unwrap(),
+            EventOutcome::Invalid
+        );
     }
 
     #[tokio::test]

@@ -388,6 +388,223 @@
           }
         }
       },
+      "Level": {
+        "type": "object",
+        "description": "One level of a module: its workload.",
+        "required": [
+          "stage"
+        ],
+        "properties": {
+          "stage": {
+            "type": "boolean",
+            "description": "True if completing this level ends a stage of the module."
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskType"
+            }
+          }
+        }
+      },
+      "Module": {
+        "type": "object",
+        "description": "A learning module as a world knows it.",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Level"
+            }
+          },
+          "title": {
+            "type": "string",
+            "description": "Name for people, in the language of the world."
+          }
+        }
+      },
+      "Modules": {
+        "type": "object",
+        "description": "Payload of the event \"modules\": all modules of the world. It\nreplaces what the backend knew before.",
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Module"
+            }
+          }
+        }
+      },
+      "Progress": {
+        "type": "object",
+        "description": "Payload of the event \"progress\": where one student stands in one\nmodule. It is the whole state, not a change, and replaces what the\nbackend knew before.",
+        "required": [
+          "account",
+          "module",
+          "level",
+          "locked",
+          "percent",
+          "completed"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the student."
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "True if the whole module is completed."
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Current level, counted from 1.",
+            "minimum": 0
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "True if moving up after a completed level is locked."
+          },
+          "module": {
+            "type": "string"
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Share of the workload of the level that is done, 0 to 100.",
+            "minimum": 0
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskProgress"
+            },
+            "description": "The kinds of tasks of the current level."
+          }
+        }
+      },
+      "ProtocolEntry": {
+        "type": "object",
+        "description": "Payload of the event \"protocol\": one entry of one of the protocols\nof a world. The time is the time of the event.",
+        "required": [
+          "protocol",
+          "account"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the player the entry is about. Never a display\nname."
+          },
+          "fields": {
+            "type": "object",
+            "description": "The other columns of the entry, by name.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Which protocol, one of `PROTOCOLS`."
+          }
+        }
+      },
+      "TaskProgress": {
+        "type": "object",
+        "description": "How far a student is with one kind of task of their level.",
+        "required": [
+          "id",
+          "solved",
+          "required"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "required": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "solved": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "TaskType": {
+        "type": "object",
+        "description": "A kind of task of a level, with how often it has to be solved.",
+        "required": [
+          "id",
+          "title",
+          "required"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "required": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "Name for people, in the language of the world."
+          }
+        }
+      },
+      "Trophies": {
+        "type": "object",
+        "description": "Payload of the event \"trophies\": all trophies of one student. It\nreplaces what the backend knew before.",
+        "required": [
+          "account"
+        ],
+        "properties": {
+          "account": {
+            "type": "string"
+          },
+          "trophies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trophy"
+            }
+          }
+        }
+      },
+      "Trophy": {
+        "type": "object",
+        "description": "A trophy a student has earned.",
+        "required": [
+          "id",
+          "title",
+          "material"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "material": {
+            "type": "string",
+            "description": "\"bronze\", \"silver\" or \"gold\"."
+          },
+          "title": {
+            "type": "string",
+            "description": "Name for people, in the language of the world."
+          }
+        }
+      },
       "WorldStarted": {
         "type": "object",
         "description": "Payload of the event \"world_started\".",

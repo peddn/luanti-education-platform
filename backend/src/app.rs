@@ -48,7 +48,11 @@ impl AppState {
         Health,
         lep_protocol::HealthStatus,
         lep_protocol::ApiError,
-        lep_protocol::world::WorldStarted
+        lep_protocol::world::WorldStarted,
+        lep_protocol::world::Modules,
+        lep_protocol::world::Progress,
+        lep_protocol::world::Trophies,
+        lep_protocol::world::ProtocolEntry
     )),
     modifiers(&WorldKey)
 )]

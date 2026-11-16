@@ -58,8 +58,33 @@ pub mod world {
 
     /// Kind of the event a world sends when it has started.
     pub const EVENT_WORLD_STARTED: &str = "world_started";
+    /// Kind of the event that lists the learning modules of a world.
+    pub const EVENT_MODULES: &str = "modules";
+    /// Kind of the event that carries the progress of one student in one
+    /// module.
+    pub const EVENT_PROGRESS: &str = "progress";
+    /// Kind of the event that carries the trophies of one student.
+    pub const EVENT_TROPHIES: &str = "trophies";
+    /// Kind of the event that carries one entry of a protocol.
+    pub const EVENT_PROTOCOL: &str = "protocol";
     /// Kind of the job that only checks the way to the world and back.
     pub const JOB_PING: &str = "ping";
+    /// Kind of the job that makes a world send its whole state again.
+    pub const JOB_SYNC_STATE: &str = "sync_state";
+
+    /// The protocols a world keeps. Their entries are deleted with the end
+    /// of the school year.
+    pub const PROTOCOLS: [&str; 4] = ["rewards", "chat", "signs", "desk"];
+
+    /// Reads a list or a map that may arrive as `null`. A Lua table without
+    /// entries cannot say what it is, so the worlds send `null` for it.
+    fn null_as_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        T: Deserialize<'de> + Default,
+    {
+        Ok(Option::<T>::deserialize(deserializer)?.unwrap_or_default())
+    }
 
     /// One thing that happened in a world.
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
@@ -120,6 +145,104 @@ pub mod world {
         pub mods: Vec<String>,
     }
 
+    /// A kind of task of a level, with how often it has to be solved.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct TaskType {
+        pub id: String,
+        /// Name for people, in the language of the world.
+        pub title: String,
+        pub required: u32,
+    }
+
+    /// One level of a module: its workload.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Level {
+        /// True if completing this level ends a stage of the module.
+        pub stage: bool,
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub tasks: Vec<TaskType>,
+    }
+
+    /// A learning module as a world knows it.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Module {
+        pub id: String,
+        /// Name for people, in the language of the world.
+        pub title: String,
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub levels: Vec<Level>,
+    }
+
+    /// Payload of the event "modules": all modules of the world. It
+    /// replaces what the backend knew before.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Modules {
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub modules: Vec<Module>,
+    }
+
+    /// How far a student is with one kind of task of their level.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct TaskProgress {
+        pub id: String,
+        pub solved: u32,
+        pub required: u32,
+    }
+
+    /// Payload of the event "progress": where one student stands in one
+    /// module. It is the whole state, not a change, and replaces what the
+    /// backend knew before.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Progress {
+        /// Account name of the student.
+        pub account: String,
+        pub module: String,
+        /// Current level, counted from 1.
+        pub level: u32,
+        /// True if moving up after a completed level is locked.
+        pub locked: bool,
+        /// Share of the workload of the level that is done, 0 to 100.
+        pub percent: u32,
+        /// True if the whole module is completed.
+        pub completed: bool,
+        /// The kinds of tasks of the current level.
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub tasks: Vec<TaskProgress>,
+    }
+
+    /// A trophy a student has earned.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Trophy {
+        pub id: String,
+        /// Name for people, in the language of the world.
+        pub title: String,
+        /// "bronze", "silver" or "gold".
+        pub material: String,
+    }
+
+    /// Payload of the event "trophies": all trophies of one student. It
+    /// replaces what the backend knew before.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Trophies {
+        pub account: String,
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub trophies: Vec<Trophy>,
+    }
+
+    /// Payload of the event "protocol": one entry of one of the protocols
+    /// of a world. The time is the time of the event.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ProtocolEntry {
+        /// Which protocol, one of `PROTOCOLS`.
+        pub protocol: String,
+        /// Account name of the player the entry is about. Never a display
+        /// name.
+        pub account: String,
+        /// The other columns of the entry, by name.
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub fields: std::collections::BTreeMap<String, String>,
+    }
+
     /// Something the backend wants a world to do.
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
     pub struct Job {
@@ -161,6 +284,36 @@ pub struct ApiError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_empty_list_may_arrive_as_null() {
+        let progress: world::Progress = serde_json::from_str(
+            r#"{"account":"anna","module":"m","level":1,"locked":false,
+                "percent":0,"completed":false,"tasks":null}"#,
+        )
+        .unwrap();
+        assert!(progress.tasks.is_empty());
+
+        let trophies: world::Trophies = serde_json::from_str(r#"{"account":"anna"}"#).unwrap();
+        assert!(trophies.trophies.is_empty());
+
+        let modules: world::Modules = serde_json::from_str(r#"{"modules":null}"#).unwrap();
+        assert!(modules.modules.is_empty());
+    }
+
+    #[test]
+    fn a_protocol_entry_keeps_its_columns() {
+        let entry: world::ProtocolEntry = serde_json::from_str(
+            r#"{"protocol":"chat","account":"anna","fields":{"kind":"chat","text":"hi"}}"#,
+        )
+        .unwrap();
+        assert_eq!(entry.fields["text"], "hi");
+
+        let bare: world::ProtocolEntry =
+            serde_json::from_str(r#"{"protocol":"desk","account":"anna","fields":null}"#).unwrap();
+        assert!(bare.fields.is_empty());
+        assert!(world::PROTOCOLS.contains(&entry.protocol.as_str()));
+    }
 
     #[test]
     fn health_is_ok_with_a_database() {
