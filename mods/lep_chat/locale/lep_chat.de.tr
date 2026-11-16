@@ -1,0 +1,16 @@
+# textdomain: lep_chat
+Note: chat, private messages and sign texts are recorded.=Hinweis: Chat, Privatnachrichten und Schildtexte werden mitgeschrieben.
+No teacher is online any more. You may write in the chat again.=Es ist keine Lehrkraft mehr angemeldet. Du darfst wieder im Chat schreiben.
+muted=stumm
+Chat=Chat
+Mute=Stummschalten
+Unmute=Stumm aufheben
+Your teacher has muted you. You cannot write in the chat.=Deine Lehrkraft hat dich stummgeschaltet. Du kannst nicht im Chat schreiben.
+Muted: @1 of @2=Stummgeschaltet: @1 von @2
+You may write in the chat again.=Du darfst wieder im Chat schreiben.
+Unmuted: @1 of @2=Stummschaltung aufgehoben: @1 von @2
+Show the last chat messages or sign texts, of all or of one player=Zeigt die letzten Chatnachrichten oder Schildtexte, von allen oder von einem Spieler
+There is no player @1.=Es gibt keinen Spieler @1.
+Nothing is recorded.=Es ist nichts festgehalten.
+Last sign texts (times in UTC):=Letzte Schildtexte (Zeiten in UTC):
+Last chat messages (times in UTC):=Letzte Chatnachrichten (Zeiten in UTC):
