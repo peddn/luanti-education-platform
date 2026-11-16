@@ -31,7 +31,8 @@ end
 lep_rooms.register_type(lep_math.ROOM_TYPE, {
 	layer = 1,
 	size = layout.SIZE,
-	version = 1,
+	-- Raise this when the furniture changes, so existing rooms are rebuilt.
+	version = 2,
 	privileges = {},
 	on_build = furnish,
 })
@@ -62,8 +63,9 @@ function lep_math._show(player_name, text, input, colour, keys)
 
 	for _, entry in ipairs(positions.keys) do
 		if entry.key == "comma" or entry.key == "minus" then
+			-- Without the key, the wall is whole again.
 			set_if_different(entry.pos, keys and keys[entry.key]
-				and lep_math.key_node(entry.key) or "lep_rooms:air")
+				and lep_math.key_node(entry.key) or "lep_rooms:wall")
 		end
 	end
 end

@@ -488,8 +488,9 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 
 Gerechnet wird in der Welt, nicht in einem Fenster.
 
-- **Anzeige:** An der Stirnwand hängt eine Anzeige im Stil einer 7-Segment-Anzeige, neun Zeichen breit und zwei Reihen hoch. Oben steht die Aufgabe, darunter hinter einem Gleichheitszeichen die Eingabe.
-- **Tastenfeld:** An der rechten Wand steht senkrecht ein Tastenfeld aus Blöcken, angeordnet wie beim Telefon: 7 8 9 oben, darunter 4 5 6 und 1 2 3, unten Löschen, 0 und OK. Das Komma erscheint als weitere Taste, sobald eine Aufgabe es braucht. Getippt wird durch Anklicken.
+- **Bündig:** Anzeige, Tastenfeld und Ausgang sind in die Wände eingelassen und ragen nicht in den Raum.
+- **Anzeige:** In der Stirnwand sitzt eine Anzeige im Stil einer 7-Segment-Anzeige, neun Zeichen breit und zwei Reihen hoch. Oben steht die Aufgabe, darunter hinter einem Gleichheitszeichen die Eingabe.
+- **Tastenfeld:** In der rechten Wand sitzt senkrecht ein Tastenfeld aus Blöcken, angeordnet wie beim Telefon: 7 8 9 oben, darunter 4 5 6 und 1 2 3, unten Löschen, 0 und die Eingabetaste. Die unterste Reihe liegt auf Bodenhöhe. Das Komma erscheint als weitere Taste, sobald eine Aufgabe es braucht. Getippt wird durch Anklicken.
 - **Rückmeldung:** Bei einer richtigen Antwort leuchtet die Eingabe grün, dazu ein Ton, dann kommt die nächste Aufgabe. Bei einer falschen leuchtet sie rot, und der Schüler darf es noch einmal versuchen. Nach dem zweiten Fehler zeigt die Anzeige die richtige Lösung, die Aufgabe gilt als nicht gelöst, und es folgt eine neue.
 - **Stand:** Am oberen Bildschirmrand stehen Modul, Niveau, Aufgabentyp und Stand, darunter die Belohnung für diese Aufgabe.
 - **Verlassen:** über einen Ausgangsblock neben der Stelle, an der man erscheint.

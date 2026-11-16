@@ -128,10 +128,13 @@ describe("lep_math room layout", function()
 	}
 	local positions = layout.positions(geometry)
 
-	local function inside(pos)
-		local min, max = geometry.interior_min, geometry.interior_max
-		return pos.x >= min.x and pos.x <= max.x and pos.y >= min.y and pos.y <= max.y
-			and pos.z >= min.z and pos.z <= max.z
+	local min, max = geometry.interior_min, geometry.interior_max
+
+	-- True for a position in a side wall, at a height inside the room.
+	local function in_wall(pos, axis, value)
+		local other = axis == "x" and "z" or "x"
+		return pos[axis] == value and pos.y >= min.y and pos.y <= max.y
+			and pos[other] >= min[other] and pos[other] <= max[other]
 	end
 
 	it("fits the size of the room", function()
@@ -140,13 +143,12 @@ describe("lep_math room layout", function()
 		assert.are.equal(geometry.interior_max.z - geometry.interior_min.z + 1, layout.SIZE.z)
 	end)
 
-	it("puts the display on the front wall, the task above the input", function()
+	it("sets the display into the front wall, the task above the input", function()
 		assert.are.equal(layout.COLUMNS, #positions.task)
 		assert.are.equal(layout.COLUMNS, #positions.input)
 		for column = 1, layout.COLUMNS do
 			local task, input = positions.task[column], positions.input[column]
-			assert.is_true(inside(task) and inside(input))
-			assert.are.equal(geometry.interior_max.z, task.z)
+			assert.is_true(in_wall(task, "z", max.z + 1) and in_wall(input, "z", max.z + 1))
 			assert.are.equal(task.y - 1, input.y)
 			assert.are.equal(task.x, input.x)
 			if column > 1 then
@@ -155,12 +157,11 @@ describe("lep_math room layout", function()
 		end
 	end)
 
-	it("puts the keypad upright on the right wall, 7 8 9 on top", function()
+	it("sets the keypad upright into the right wall, 7 8 9 on top", function()
 		local by_key = {}
 		local taken = {}
 		for _, entry in ipairs(positions.keys) do
-			assert.is_true(inside(entry.pos))
-			assert.are.equal(geometry.interior_max.x, entry.pos.x)
+			assert.is_true(in_wall(entry.pos, "x", max.x + 1))
 			local id = entry.pos.y .. "," .. entry.pos.z
 			assert.is_nil(taken[id])
 			taken[id] = true
@@ -173,16 +174,16 @@ describe("lep_math room layout", function()
 		assert.are.equal(by_key["1"].y - 1, by_key["0"].y)
 		assert.are.equal(by_key["8"].z, by_key["0"].z)
 		assert.is_true(by_key.back.z > by_key["0"].z and by_key["0"].z > by_key.ok.z)
-		-- One row above the floor, and not in the display.
-		assert.are.equal(geometry.interior_min.y + 1, by_key["0"].y)
+		-- The lowest row is at floor level, the top row at eye level.
+		assert.are.equal(min.y, by_key["0"].y)
+		assert.are.equal(min.y + 3, by_key["7"].y)
 		for _, entry in ipairs(positions.keys) do
-			assert.is_true(entry.pos.z < geometry.interior_max.z)
+			assert.is_true(entry.pos.z < max.z)
 		end
 	end)
 
-	it("puts the exit beside the place where the player arrives", function()
-		assert.is_true(inside(positions.exit))
-		assert.are.equal(geometry.interior_min.x, positions.exit.x)
+	it("sets the exit into the left wall beside the place where the player arrives", function()
+		assert.is_true(in_wall(positions.exit, "x", min.x - 1))
 		assert.are.equal(geometry.spawn.z, positions.exit.z)
 	end)
 

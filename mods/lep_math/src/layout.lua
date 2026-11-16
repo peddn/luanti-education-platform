@@ -2,7 +2,10 @@
 --
 -- The player arrives at the back wall and looks at the front wall, which
 -- carries the display: the task in the upper row, the input in the lower.
--- The keypad stands upright at the wall to the right.
+-- The keypad stands upright in the wall to the right.
+--
+-- Display, keypad and exit are set into the walls, flush with them. Their
+-- positions are therefore one node outside the inner space of the room.
 
 local layout = {}
 
@@ -34,22 +37,23 @@ function layout.positions(geometry)
 	-- Looking at the front wall (+z), left is -x.
 	for column = 1, layout.COLUMNS do
 		local x = min.x + column - 1
-		result.task[column] = { x = x, y = min.y + 2, z = max.z }
-		result.input[column] = { x = x, y = min.y + 1, z = max.z }
+		result.task[column] = { x = x, y = min.y + 2, z = max.z + 1 }
+		result.input[column] = { x = x, y = min.y + 1, z = max.z + 1 }
 	end
 
-	-- Looking at the right wall (+x), left is +z.
+	-- Looking at the right wall (+x), left is +z. The lowest row of keys is
+	-- at floor level.
 	for row, keys in ipairs(layout.KEYS) do
 		for column, key in ipairs(keys) do
 			result.keys[#result.keys + 1] = {
 				key = key,
-				pos = { x = max.x, y = min.y + 5 - row, z = max.z - 1 - column },
+				pos = { x = max.x + 1, y = min.y + 4 - row, z = max.z - 1 - column },
 			}
 		end
 	end
 
-	-- At the left wall, beside the place where the player arrives.
-	result.exit = { x = min.x, y = min.y + 1, z = min.z + 1 }
+	-- In the left wall, beside the place where the player arrives.
+	result.exit = { x = min.x - 1, y = min.y + 1, z = min.z + 1 }
 	return result
 end
 

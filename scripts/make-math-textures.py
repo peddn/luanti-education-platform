@@ -100,7 +100,9 @@ def main():
     # Keys without a seven-segment form.
     glyph("back", lambda p: (rect(p, 10, 14, 24, 17), diagonal(p, 13, 8, -1, 7),
                              diagonal(p, 7, 15, 1, 7)))
-    glyph("ok", lambda p: (diagonal(p, 7, 14, 1, 7), diagonal(p, 23, 6, -1, 15)))
+    # The OK key shows an enter arrow: down, then to the left.
+    glyph("ok", lambda p: (rect(p, 21, 6, 24, 20), rect(p, 10, 17, 24, 20),
+                           diagonal(p, 13, 11, -1, 7), diagonal(p, 7, 18, 1, 7)))
     glyph("exit", lambda p: (rect(p, 6, 5, 8, 26), rect(p, 6, 5, 18, 7), rect(p, 6, 24, 18, 26),
                              rect(p, 13, 14, 25, 17), diagonal(p, 20, 9, 1, 6),
                              diagonal(p, 25, 15, -1, 6)))
