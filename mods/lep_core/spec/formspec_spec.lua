@@ -1,0 +1,48 @@
+local formspec = dofile("mods/lep_core/src/formspec.lua")
+
+describe("lep_core formspec", function()
+	it("escapes the characters that have a meaning in formspecs", function()
+		assert.are.equal("a\\, b\\; c \\[d\\] \\\\ e", formspec.escape("a, b; c [d] \\ e"))
+		assert.are.equal("plain text", formspec.escape("plain text"))
+		assert.are.equal("42", formspec.escape(42))
+	end)
+
+	it("starts with version and size", function()
+		assert.are.equal("formspec_version[6]size[10.5,9]", formspec.new(10.5, 9):build())
+	end)
+
+	it("joins the parts of an element", function()
+		local fs = formspec.new(4, 3):element("box", { 0, 0 }, { 4, 3 }, "#000000"):build()
+		assert.are.equal("formspec_version[6]size[4,3]box[0,0;4,3;#000000]", fs)
+	end)
+
+	it("escapes label text", function()
+		local fs = formspec.new(4, 3):label(0.5, 1, "Hi; [you], ok"):build()
+		assert.is_truthy(fs:find("label[0.5,1;Hi\\; \\[you\\]\\, ok]", 1, true))
+	end)
+
+	it("adds lists and list rings", function()
+		local fs = formspec.new(10.5, 9)
+			:list("detached:chest_a", "main", 0.375, 1, 8, 2)
+			:list("current_player", "main", 0.375, 4, 8, 4)
+			:listring("detached:chest_a", "main")
+			:listring("current_player", "main")
+			:build()
+		assert.is_truthy(fs:find("list[detached:chest_a;main;0.375,1;8,2]", 1, true))
+		assert.is_truthy(fs:find("list[current_player;main;0.375,4;8,4]", 1, true))
+		assert.is_truthy(fs:find("listring[detached:chest_a;main]listring[current_player;main]",
+			1, true))
+	end)
+
+	it("cannot be broken out of by a name", function()
+		local fs = formspec.new(4, 3):list("detached:x]button[0,0;1,1;a;b", "main", 0, 0, 1, 1)
+			:build()
+		assert.is_nil(fs:find("]button[", 1, true))
+	end)
+
+	it("knows the size of a row of slots", function()
+		assert.are.equal(1, formspec.slots(1))
+		assert.are.equal(9.75, formspec.slots(8))
+		assert.are.equal(4.75, formspec.slots(4))
+	end)
+end)

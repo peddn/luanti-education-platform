@@ -19,6 +19,9 @@ end
 --- Event dispatcher factory, see src/events.lua.
 lep_core.events = load("src/events")
 
+--- Formspec builder, see src/formspec.lua. Every LEP window uses it.
+lep_core.formspec = load("src/formspec")
+
 --- Protocols: append-only files in the world folder, see
 -- game/protocols.lua.
 lep_core.protocols = load("game/protocols")
