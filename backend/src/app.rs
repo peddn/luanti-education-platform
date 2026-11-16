@@ -1,7 +1,7 @@
 //! The web server: its routes and what they share.
 //!
 //! There are two separate interfaces. `/api/web` is for the browser of a
-//! teacher; so far it only confirms addresses and needs no login.
+//! teacher, who logs in with a link from a mail.
 //! `/api/world` is for the worlds, which call with their key.
 
 use axum::extract::State;
@@ -63,7 +63,11 @@ impl AppState {
         world_api::send_events,
         world_api::fetch_jobs,
         world_api::report_result,
-        web_api::confirm
+        web_api::confirm,
+        web_api::request_login_link,
+        web_api::log_in,
+        web_api::log_out,
+        web_api::me
     ),
     components(schemas(
         Health,
@@ -80,24 +84,39 @@ impl AppState {
         lep_protocol::world::WebAccessAction,
         lep_protocol::world::WebAccessStatus,
         lep_protocol::web::ConfirmRequest,
-        lep_protocol::web::Confirmed
+        lep_protocol::web::Confirmed,
+        lep_protocol::web::LoginLinkRequest,
+        lep_protocol::web::LoginRequest,
+        lep_protocol::web::Me,
+        lep_protocol::world::Done
     )),
     modifiers(&WorldKey)
 )]
 pub struct ApiDoc;
 
-/// Tells the description how worlds prove who they are.
+/// Tells the description how worlds and teachers prove who they are.
 struct WorldKey;
 
 impl utoipa::Modify for WorldKey {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        use utoipa::openapi::security::{Http, HttpAuthScheme, SecurityScheme};
+        use utoipa::openapi::security::{
+            ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme,
+        };
         openapi
             .components
             .get_or_insert_with(Default::default)
             .add_security_scheme(
                 "world_key",
                 SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
+            );
+        openapi
+            .components
+            .get_or_insert_with(Default::default)
+            .add_security_scheme(
+                "session",
+                SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new(
+                    crate::web_api::SESSION_COOKIE,
+                ))),
             );
     }
 }

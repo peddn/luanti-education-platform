@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 40 · 16. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 41 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -859,8 +859,13 @@ Ablauf:
 Anmeldung im Browser: Adresse eingeben, Link per Mail, Klick. Eine Registrierungsseite gibt es nicht.
 
 - Ein Link gilt 15 Minuten und nur einmal. Das Backend speichert nur seinen Hash.
-- Danach hält eine Sitzung die Anmeldung.
+- Auch dieser Link öffnet eine Seite, auf der erst ein Klick anmeldet.
+- Einen Link bekommt nur, wer eine bestätigte Adresse hat und in mindestens einer Welt das Privileg `lep_web_access`. Pro Konto geht höchstens eine Mail pro Minute raus, ein neuer Link macht den alten ungültig.
+- Danach hält eine Sitzung die Anmeldung, 12 Stunden ab dem Klick. Sie verlängert sich nicht: Auf einem Schulrechner, den mehrere nutzen, endet sie spätestens am nächsten Tag von selbst. „Abmelden“ beendet sie sofort.
+- Die Sitzung ist ein Cookie mit zufälligem Wert, das Skripte der Seite nicht lesen können und das der Browser nur an die Web-Anwendung selbst sendet. Das Backend speichert nur den Hash.
+- Jede Anfrage prüft, ob das Privileg noch in einer Welt gilt. „Web-Zugang entfernen“ im Pult beendet alle Sitzungen des Kontos.
 - Das Formular antwortet immer gleich, egal ob die Adresse bekannt ist.
+- Ohne Anmeldung zeigt die Oberfläche nur die Seiten zum Anmelden und zum Bestätigen einer Adresse.
 - Beim Ändern gilt die alte Adresse, bis die neue bestätigt ist.
 - Eine Adresse gehört zu höchstens einem Konto.
 - Einen Einmal-Code als Ersatz für die Mail gibt es nicht. Wer die Adresse ohne Mail bestätigen könnte, bekäme danach die Anmeldelinks trotzdem nicht, und eine vertippte Adresse ließe sich so bestätigen.

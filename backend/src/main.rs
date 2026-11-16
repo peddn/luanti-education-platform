@@ -3,8 +3,8 @@ use clap::Parser;
 use lep_backend::app::{self, AppState};
 use lep_backend::cli::{self, Cli, Command};
 use lep_backend::config::Config;
-use lep_backend::db;
 use lep_backend::mail::Mailer;
+use lep_backend::{clock, db, logins};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -63,6 +63,8 @@ async fn serve() -> Result<()> {
         app::router(state)
     };
 
+    tokio::spawn(clean_up_hourly(pool.clone()));
+
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown())
         .await?;
@@ -70,6 +72,20 @@ async fn serve() -> Result<()> {
     pool.close().await;
     tracing::info!("stopped");
     Ok(())
+}
+
+/// Deletes login links and sessions whose time is over: at the start and
+/// every hour after.
+async fn clean_up_hourly(pool: sqlx::SqlitePool) {
+    let mut hourly = tokio::time::interval(std::time::Duration::from_secs(60 * 60));
+    loop {
+        hourly.tick().await;
+        match logins::clean_up(&pool, clock::now()).await {
+            Ok(0) => {}
+            Ok(count) => tracing::info!("deleted {count} old login link(s) and session(s)"),
+            Err(err) => tracing::error!("cannot delete old login links and sessions: {err:#}"),
+        }
+    }
 }
 
 /// Resolves when the process is asked to stop with Ctrl+C.

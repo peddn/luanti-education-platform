@@ -343,6 +343,33 @@ pub mod web {
         pub token: String,
     }
 
+    /// Request for a mail with a link that logs in.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct LoginLinkRequest {
+        /// The confirmed address of the teacher.
+        pub email: String,
+    }
+
+    /// Request to log in with the token from a mail.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct LoginRequest {
+        pub token: String,
+    }
+
+    /// The teacher who is logged in.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Me {
+        /// Account name of the teacher.
+        pub account: String,
+        /// The confirmed address of the teacher.
+        pub email: String,
+        /// Names of the worlds in which the teacher holds the privilege
+        /// for web access.
+        pub worlds: Vec<String>,
+        /// When the session ends, in seconds since 1970 (UTC).
+        pub expires_at: i64,
+    }
+
     /// Answer to a confirmed address.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct Confirmed {

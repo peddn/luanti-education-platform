@@ -9,6 +9,7 @@ pub mod events;
 pub mod failure;
 pub mod jobs;
 pub mod keys;
+pub mod logins;
 pub mod mail;
 pub mod state;
 pub mod teachers;
