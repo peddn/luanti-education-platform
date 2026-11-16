@@ -122,6 +122,27 @@ describe("lep_desk selection", function()
 		assert.is_true(selection.all)
 	end)
 
+	it("selects nobody", function()
+		assert.are.same({}, desk.targets(desk.select_none(), students))
+	end)
+
+	it("selects exactly the given students", function()
+		local selection = desk.select_names({ "mia", "zoe", "anna" }, students)
+		assert.are.same({ "anna", "mia" }, desk.targets(selection, students))
+		assert.is_false(selection.all)
+		assert.is_true(desk.select_names({ "anna", "ben", "mia" }, students).all)
+		assert.are.same({}, desk.targets(desk.select_names({}, students), students))
+	end)
+
+	it("inverts a selection", function()
+		local selection = desk.select_names({ "ben" }, students)
+		assert.are.same({ "anna", "mia" },
+			desk.targets(desk.invert(selection, students), students))
+		assert.are.same({}, desk.targets(desk.invert(desk.new_selection(), students), students))
+		assert.is_true(desk.invert(desk.select_none(), students).all)
+		assert.are.same({}, desk.targets(desk.invert(desk.select_none(), {}), {}))
+	end)
+
 	it("does not change the selection it was given", function()
 		local selection = desk.new_selection()
 		desk.toggle(selection, "ben", students)
