@@ -21,6 +21,14 @@ read_globals = {
 	"doors",
 	-- Third-party mod for readable signs, see third_party/mods.toml.
 	"signs_lib",
+	-- Third-party mod for achievements in survival.
+	awards = {
+		other_fields = true,
+		fields = {
+			-- Single achievements are switched off through their definition.
+			registered_awards = { other_fields = true, read_only = false },
+		},
+	},
 }
 
 -- Globals defined by LEP mods.
