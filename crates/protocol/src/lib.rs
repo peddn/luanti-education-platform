@@ -67,10 +67,19 @@ pub mod world {
     pub const EVENT_TROPHIES: &str = "trophies";
     /// Kind of the event that carries one entry of a protocol.
     pub const EVENT_PROTOCOL: &str = "protocol";
+    /// Kind of the event that lists the accounts that may have web access.
+    pub const EVENT_TEACHERS: &str = "teachers";
+    /// Kind of the event that carries what a teacher did with their web
+    /// access at the desk.
+    pub const EVENT_WEB_ACCESS: &str = "web_access";
     /// Kind of the job that only checks the way to the world and back.
     pub const JOB_PING: &str = "ping";
     /// Kind of the job that makes a world send its whole state again.
     pub const JOB_SYNC_STATE: &str = "sync_state";
+
+    /// Kind of the job that tells a world how the web access of a teacher
+    /// stands.
+    pub const JOB_WEB_ACCESS_STATUS: &str = "web_access_status";
 
     /// The protocols a world keeps. Their entries are deleted with the end
     /// of the school year.
@@ -243,6 +252,54 @@ pub mod world {
         pub fields: std::collections::BTreeMap<String, String>,
     }
 
+    /// Payload of the event "teachers": the accounts that hold the
+    /// privilege for web access in this world. It replaces what the
+    /// backend knew before.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Teachers {
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub accounts: Vec<String>,
+    }
+
+    /// What a teacher can do with their web access at the desk.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum WebAccessAction {
+        /// Enter an address or change it. The address is in `email`.
+        Set,
+        /// Send the confirmation mail again.
+        Resend,
+        /// Remove the web access with its address.
+        Remove,
+    }
+
+    /// Payload of the event "web_access": what a teacher did with their
+    /// web access.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct WebAccessRequest {
+        /// Account name of the teacher.
+        pub account: String,
+        pub action: WebAccessAction,
+        /// The address, for the action "set" only.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub email: Option<String>,
+    }
+
+    /// Payload of the job "web_access_status": how the web access of a
+    /// teacher stands. Addresses are shortened, the world never gets a
+    /// whole one back.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct WebAccessStatus {
+        /// Account name of the teacher.
+        pub account: String,
+        /// The confirmed address, shortened. Missing without one.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub address: Option<String>,
+        /// The address that waits for its confirmation, shortened.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub pending: Option<String>,
+    }
+
     /// Something the backend wants a world to do.
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
     pub struct Job {
@@ -274,6 +331,26 @@ pub mod world {
     pub struct Done {}
 }
 
+/// Interface for the browser: what the frontend and the backend say to
+/// each other.
+pub mod web {
+    use serde::{Deserialize, Serialize};
+    use utoipa::ToSchema;
+
+    /// Request to confirm an address with the token from a mail.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ConfirmRequest {
+        pub token: String,
+    }
+
+    /// Answer to a confirmed address.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Confirmed {
+        /// Account name of the teacher the address now belongs to.
+        pub account: String,
+    }
+}
+
 /// Why a request failed, as a fixed word. The frontend translates it into
 /// the language of the user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -287,6 +364,10 @@ pub enum ErrorCode {
     TooLarge,
     /// The request cannot be understood.
     InvalidRequest,
+    /// The link from a mail is unknown, used or too old.
+    InvalidToken,
+    /// The address already belongs to another account.
+    AddressTaken,
     /// The backend failed. The details are in its log.
     Internal,
 }

@@ -7,7 +7,7 @@ use lep_protocol::world::{JOB_PING, JOB_SYNC_STATE};
 use serde_json::json;
 use sqlx::SqlitePool;
 
-use crate::{app, jobs, state, worlds};
+use crate::{app, jobs, state, teachers, worlds};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -29,8 +29,52 @@ pub enum Command {
         #[command(subcommand)]
         command: WorldCommand,
     },
+    /// Look after the teachers and their web access.
+    Teacher {
+        #[command(subcommand)]
+        command: TeacherCommand,
+    },
     /// Print the description of the interface, as in api/openapi.json.
     Openapi,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum TeacherCommand {
+    /// List the teachers: their address, whether it is confirmed and in
+    /// how many worlds they hold the privilege for web access.
+    List,
+}
+
+/// Runs a command about teachers and returns what to print.
+pub async fn run_teacher(pool: &SqlitePool, command: TeacherCommand) -> Result<String> {
+    match command {
+        TeacherCommand::List => {
+            let list = teachers::list(pool).await?;
+            if list.is_empty() {
+                return Ok("There are no teachers yet.".to_owned());
+            }
+            let lines: Vec<String> = list
+                .iter()
+                .map(|teacher| {
+                    let address = match (&teacher.email, &teacher.pending_email) {
+                        (Some(email), Some(pending)) => {
+                            format!("{email} (confirmed), {pending} (waiting)")
+                        }
+                        (Some(email), None) => format!("{email} (confirmed)"),
+                        (None, Some(pending)) => format!("{pending} (waiting)"),
+                        (None, None) => "no address".to_owned(),
+                    };
+                    let access = if teacher.worlds > 0 {
+                        format!("privilege in {} world(s)", teacher.worlds)
+                    } else {
+                        "blocked, no world grants the privilege".to_owned()
+                    };
+                    format!("{}  {}  {}", teacher.account, address, access)
+                })
+                .collect();
+            Ok(lines.join("\n"))
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -204,6 +248,41 @@ mod tests {
         .await
         .unwrap();
         assert!(rekeyed.contains("key: lepw_"));
+    }
+
+    #[tokio::test]
+    async fn lists_teachers() {
+        use lep_protocol::world::{WebAccessAction, WebAccessRequest};
+
+        let pool = crate::db::open_in_memory().await.unwrap();
+        assert!(run_teacher(&pool, TeacherCommand::List)
+            .await
+            .unwrap()
+            .contains("no teachers"));
+
+        let (world, _) = worlds::add(&pool, "7b").await.unwrap();
+        teachers::set_holders(&pool, &world.id, &["lehrer1".to_owned()])
+            .await
+            .unwrap();
+        let ask = |account: &str| WebAccessRequest {
+            account: account.to_owned(),
+            action: WebAccessAction::Set,
+            email: Some(format!("{account}@schule.example")),
+        };
+        teachers::request(&pool, &ask("lehrer1"), 1000)
+            .await
+            .unwrap();
+        teachers::request(&pool, &ask("lehrer2"), 1000)
+            .await
+            .unwrap();
+
+        let listed = run_teacher(&pool, TeacherCommand::List).await.unwrap();
+        let lines: Vec<&str> = listed.lines().collect();
+        assert_eq!(lines.len(), 2);
+        assert!(lines[0].contains("lehrer1@schule.example (waiting)"));
+        assert!(lines[0].contains("privilege in 1 world(s)"));
+        assert!(lines[1].contains("lehrer2"));
+        assert!(lines[1].contains("blocked"));
     }
 
     #[tokio::test]

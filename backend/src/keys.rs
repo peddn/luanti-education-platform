@@ -10,9 +10,15 @@ const PREFIX: &str = "lepw_";
 
 /// Makes up a new key.
 pub fn generate() -> String {
+    random(PREFIX)
+}
+
+/// Makes up a long random text that starts with `prefix`. It is used for
+/// everything that opens a door: keys of worlds, links in mails.
+pub fn random(prefix: &str) -> String {
     let mut bytes = [0u8; KEY_BYTES];
     getrandom::fill(&mut bytes).expect("the system has no source of randomness");
-    format!("{PREFIX}{}", hex::encode(bytes))
+    format!("{prefix}{}", hex::encode(bytes))
 }
 
 /// Returns what is stored for a key. Keys are random and long, so a plain

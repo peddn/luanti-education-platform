@@ -2,16 +2,25 @@
 
 use anyhow::Result;
 use lep_protocol::world::{
-    Event, EventOutcome, Modules, Progress, ProtocolEntry, Trophies, WorldStarted, EVENT_MODULES,
-    EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_TROPHIES, EVENT_WORLD_STARTED,
+    Event, EventOutcome, Modules, Progress, ProtocolEntry, Teachers, Trophies, WebAccessRequest,
+    WorldStarted, EVENT_MODULES, EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_TEACHERS, EVENT_TROPHIES,
+    EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
 };
 use serde::de::DeserializeOwned;
-use sqlx::SqlitePool;
 
-use crate::{clock, state, worlds};
+use crate::app::AppState;
+use crate::{clock, state, web_access, worlds};
 
 /// Reads the payload of an event as the type its kind asks for.
+///
+/// A payload whose only content is an empty list arrives as `null`: a Lua
+/// table without entries cannot say what it is, and after a night in the
+/// queue of a world nothing of it is left. It is read as an object
+/// without fields.
 fn payload<T: DeserializeOwned>(event: &Event) -> Option<T> {
+    if event.payload.is_null() {
+        return serde_json::from_value(serde_json::json!({})).ok();
+    }
     serde_json::from_value(event.payload.clone()).ok()
 }
 
@@ -21,7 +30,8 @@ fn payload<T: DeserializeOwned>(event: &Event) -> Option<T> {
 /// a duplicate and changes nothing. Events of an unknown kind or with a
 /// payload that does not fit are not remembered: the world is told, and it
 /// drops them.
-pub async fn take_in(pool: &SqlitePool, world_id: &str, event: &Event) -> Result<EventOutcome> {
+pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<EventOutcome> {
+    let pool = &app.db;
     if event.id.trim().is_empty() || event.id.len() > 100 {
         return Ok(EventOutcome::Invalid);
     }
@@ -64,6 +74,17 @@ pub async fn take_in(pool: &SqlitePool, world_id: &str, event: &Event) -> Result
             Some(entry) => state::store_protocol_entry(pool, world_id, event.time, &entry).await?,
             None => false,
         },
+        EVENT_TEACHERS => match payload::<Teachers>(event) {
+            Some(teachers) => {
+                web_access::note_holders(app, world_id, &teachers).await?;
+                true
+            }
+            None => false,
+        },
+        EVENT_WEB_ACCESS => match payload::<WebAccessRequest>(event) {
+            Some(request) => web_access::handle(app, world_id, &request).await?,
+            None => false,
+        },
         _ => return Ok(EventOutcome::Unknown),
     };
     if !usable {
@@ -84,6 +105,12 @@ mod tests {
     use super::*;
     use crate::db;
     use serde_json::json;
+    use sqlx::SqlitePool;
+
+    /// Takes an event in with a state around the pool.
+    async fn take_in(pool: &SqlitePool, world_id: &str, event: &Event) -> Result<EventOutcome> {
+        super::take_in(&AppState::new(pool.clone()), world_id, event).await
+    }
 
     fn started(id: &str) -> Event {
         Event {

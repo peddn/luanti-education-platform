@@ -30,6 +30,10 @@ impl Failure {
         Self::new(StatusCode::NOT_FOUND, ErrorCode::NotFound, message)
     }
 
+    pub fn invalid_request(message: impl Into<String>) -> Self {
+        Self::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidRequest, message)
+    }
+
     pub fn too_large(message: impl Into<String>) -> Self {
         Self::new(StatusCode::PAYLOAD_TOO_LARGE, ErrorCode::TooLarge, message)
     }
