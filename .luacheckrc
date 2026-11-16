@@ -24,7 +24,7 @@ read_globals = {
 }
 
 -- Globals defined by LEP mods.
-globals = { "lep_core", "lep_places", "lep_rooms", "lep_lobby", "lep_progress", "lep_rewards" }
+globals = { "lep_core", "lep_places", "lep_rooms", "lep_lobby", "lep_progress", "lep_rewards", "lep_trophies" }
 
 exclude_files = { ".dev/", "third_party/", "**/spec/fixtures/" }
 

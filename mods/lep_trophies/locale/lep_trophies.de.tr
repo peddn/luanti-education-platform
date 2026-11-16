@@ -1,0 +1,22 @@
+# textdomain: lep_trophies
+New trophy: @1. You can put it on a pedestal in your room.=Neue Trophäe: @1. Du kannst sie in deinem Raum auf einen Sockel stellen.
+@1: stage @2=@1: Etappe @2
+Completed all levels of @1.=Alle Niveaus von @1 abgeschlossen.
+Completed level @1 of @2.=Niveau @1 von @2 abgeschlossen.
+@1: @2 tasks=@1: @2 Aufgaben
+Solved @1 level tasks in @2.=@1 Niveauaufgaben in @2 gelöst.
+@1 daily tasks=@1 Tagesaufgaben
+Solved @1 daily tasks.=@1 Tagesaufgaben gelöst.
+(stands here)=(steht hier)
+(on pedestal @1)=(auf Sockel @1)
+Pedestal @1 of @2=Sockel @1 von @2
+You have not earned any trophies yet.=Du hast noch keine Trophäen verdient.
+Choose a trophy:=Wähle eine Trophäe:
+Put it here=Hier aufstellen
+Clear pedestal=Sockel leeren
+Close=Schließen
+This pedestal belongs to @1.=Dieser Sockel gehört @1.
+Show your trophies and how far the next ones are=Zeigt deine Trophäen und wie weit die nächsten entfernt sind
+Your trophies:=Deine Trophäen:
+Next:=Als Nächstes:
+@1: @2 of @3=@1: @2 von @3

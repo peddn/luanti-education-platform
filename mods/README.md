@@ -9,6 +9,7 @@ Bisher vorhanden:
 - `lep_rooms`: Lernräume. Baut persönliche Räume hoch über der Welt, teilt sie zu und schützt sie.
 - `lep_progress`: Fortschritt. Nimmt Ergebnisse der Lernmodule an, führt Niveau und Pensum pro Schüler und verteilt Ereignisse an andere Mods.
 - `lep_rewards`: Belohnungen. Zahlt für gelöste Aufgaben und abgeschlossene Niveaus in die Belohnungskiste im Raum, mit Tageslimit und Protokoll.
+- `lep_trophies`: Trophäen. Vergibt sie für Meilensteine und zeigt sie auf den Sockeln im Raum. Jeder Mod kann Trophäen anmelden.
 - `lep_survival`: Regeln der Survival-Welt. Entfernt Rezepte aus Minetest Game, die ein fremder Mod ersetzt.
 - `lep_portals`: Portale. Das feste Paar zwischen Halle und Wildnis und das persönliche Paar zwischen Raum und Grundstück.
 - `lep_lobby`: Lobby. Baut die Glashalle, in der neue Spieler ankommen, und regelt Erscheinen, Tod und Schutz.
