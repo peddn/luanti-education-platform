@@ -1,0 +1,127 @@
+local attention = dofile("mods/lep_attention/src/attention.lua")
+
+local WILD = { place = "wilderness", pos = { x = 10, y = 5, z = -3 }, held = false }
+local ROOM = { place = "room:math", pos = { x = 0, y = 9000, z = 1 }, held = true }
+
+describe("lep_attention text", function()
+	it("trims and keeps what the teacher typed", function()
+		assert.are.equal("Look here", attention.clean_text("  Look here \n"))
+		assert.are.equal("a b", attention.clean_text("a\tb"))
+	end)
+
+	it("returns nil for an empty text", function()
+		assert.is_nil(attention.clean_text(""))
+		assert.is_nil(attention.clean_text("   \n"))
+		assert.is_nil(attention.clean_text(nil))
+		assert.is_nil(attention.clean_text(5))
+	end)
+
+	it("cuts very long texts", function()
+		assert.are.equal(attention.MAX_TEXT, #attention.clean_text(string.rep("x", 500)))
+	end)
+end)
+
+describe("lep_attention list", function()
+	it("starts the mode and remembers the origin", function()
+		local list = attention.new()
+		assert.is_false(list:is_active("anna"))
+		assert.is_true(list:start("anna", WILD, "Look here"))
+		assert.is_true(list:is_active("anna"))
+		assert.are.equal("Look here", list:get_text("anna"))
+		assert.are.same({ "anna" }, list:active_names())
+	end)
+
+	it("only changes the text of a player who is in the mode", function()
+		local list = attention.new()
+		list:start("anna", WILD, "one")
+		assert.is_false(list:start("anna", ROOM, "two"))
+		assert.are.equal("two", list:get_text("anna"))
+		list:stop("anna")
+		assert.are.same(WILD, list:take_origin("anna"))
+	end)
+
+	it("gives the origin back after the mode ended, once", function()
+		local list = attention.new()
+		list:start("anna", ROOM, nil)
+		assert.is_nil(list:take_origin("anna"))
+		assert.is_true(list:stop("anna"))
+		assert.is_false(list:stop("anna"))
+		assert.is_false(list:is_active("anna"))
+		assert.is_true(list:awaits_return("anna"))
+		assert.are.same(ROOM, list:take_origin("anna"))
+		assert.is_false(list:awaits_return("anna"))
+		assert.is_nil(list:take_origin("anna"))
+	end)
+
+	it("keeps the first origin if the mode starts again before the return", function()
+		local list = attention.new()
+		list:start("anna", WILD, nil)
+		list:stop("anna")
+		-- Anna is offline in her cell; the mode starts again for her.
+		assert.is_true(list:start("anna", { place = "cell", pos = { x = 0, y = 1, z = 0 } }, nil))
+		list:stop("anna")
+		assert.are.same(WILD, list:take_origin("anna"))
+	end)
+
+	it("does not keep the tables it was given", function()
+		local list = attention.new()
+		local origin = { place = "wilderness", pos = { x = 1, y = 2, z = 3 }, held = false }
+		list:start("anna", origin, nil)
+		origin.pos.x = 99
+		list:stop("anna")
+		assert.are.equal(1, list:take_origin("anna").pos.x)
+	end)
+
+	it("rejects an origin without place or position", function()
+		local list = attention.new()
+		assert.has_error(function() list:start("anna", { place = "x" }, nil) end)
+		assert.has_error(function() list:start("anna", { pos = { x = 1, y = 2, z = 3 } }, nil) end)
+	end)
+
+	it("can forget that players were held at their origin", function()
+		local list = attention.new()
+		list:start("anna", ROOM, nil)
+		list:start("ben", ROOM, nil)
+		list:stop("ben")
+		list:forget_holds()
+		list:stop("anna")
+		assert.is_false(list:take_origin("anna").held)
+		assert.is_false(list:take_origin("ben").held)
+		assert.is_true(ROOM.held)
+	end)
+
+	it("lists the active players sorted", function()
+		local list = attention.new()
+		list:start("mia", WILD, nil)
+		list:start("anna", WILD, nil)
+		list:start("ben", WILD, nil)
+		list:stop("ben")
+		assert.are.same({ "anna", "mia" }, list:active_names())
+	end)
+
+	it("survives saving and loading", function()
+		local list = attention.new()
+		list:start("anna", ROOM, "Look")
+		list:start("ben", WILD, nil)
+		list:stop("ben")
+		local copy = attention.new(list:data())
+		assert.is_true(copy:is_active("anna"))
+		assert.are.equal("Look", copy:get_text("anna"))
+		assert.is_true(copy:awaits_return("ben"))
+		assert.are.same(WILD, copy:take_origin("ben"))
+		copy:stop("anna")
+		assert.are.same(ROOM, copy:take_origin("anna"))
+	end)
+
+	it("drops stored entries it cannot read", function()
+		local list = attention.new({
+			anna = { origin = WILD, active = true },
+			ben = { active = true },
+			mia = "broken",
+			[5] = { origin = WILD },
+		})
+		assert.are.same({ "anna" }, list:active_names())
+		assert.is_false(list:awaits_return("ben"))
+		assert.are.same({}, attention.new("broken"):active_names())
+	end)
+end)
