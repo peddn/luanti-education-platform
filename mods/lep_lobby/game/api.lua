@@ -125,7 +125,7 @@ end
 
 --- Returns the personal room of a player, or nil if they have none:
 -- a table with owner, slot, entrance, look_dir, door, sign, interior_min,
--- interior_max, portal and chest in world coordinates. See
+-- interior_max, portal, chest and pedestals in world coordinates. See
 -- src/corridors.lua.
 function lep_lobby.get_room(player_name)
 	local slot = book:get(player_name)
@@ -133,6 +133,10 @@ function lep_lobby.get_room(player_name)
 		return nil
 	end
 	local room = corridors.room(slot)
+	local pedestals = {}
+	for index, spot in ipairs(room.pedestals) do
+		pedestals[index] = vector.add(ORIGIN, spot)
+	end
 	return {
 		owner = player_name,
 		slot = slot,
@@ -144,6 +148,7 @@ function lep_lobby.get_room(player_name)
 		interior_max = vector.add(ORIGIN, room.interior_max),
 		portal = vector.add(ORIGIN, room.portal),
 		chest = vector.add(ORIGIN, room.chest),
+		pedestals = pedestals,
 	}
 end
 

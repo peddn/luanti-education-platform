@@ -163,8 +163,12 @@ describe("lep_lobby corridors rooms", function()
 		for slot = 0, count - 1 do
 			local room = corridors.room(slot)
 			local min, max = room.interior_min, room.interior_max
-			assert.are.equal(corridors.ROOM_SIZE, max.x - min.x + 1)
-			assert.are.equal(corridors.ROOM_SIZE, max.z - min.z + 1)
+			-- Wide along the corridor, deep away from it.
+			local deep_in_x = room.look_dir.x ~= 0
+			assert.are.equal(deep_in_x and corridors.ROOM_DEPTH or corridors.ROOM_SIZE,
+				max.x - min.x + 1)
+			assert.are.equal(deep_in_x and corridors.ROOM_SIZE or corridors.ROOM_DEPTH,
+				max.z - min.z + 1)
 			assert.are.equal(corridors.ROOM_HEIGHT, max.y - min.y + 1)
 			for x = min.x, max.x do
 				for z = min.z, max.z do
@@ -288,6 +292,52 @@ describe("lep_lobby corridors rooms", function()
 				assert.are.equal(1, spot.y)
 			end
 			assert.are.not_same(room.portal, room.chest)
+		end
+	end)
+
+	it("has six pedestal spots at the side walls that block nothing", function()
+		local function key(pos)
+			return pos.x .. "," .. pos.y .. "," .. pos.z
+		end
+		for slot = 0, count - 1 do
+			local room = corridors.room(slot)
+			assert.are.equal(6, #room.pedestals)
+			local taken = {}
+			for _, spot in ipairs(room.pedestals) do
+				assert.is_nil(taken[key(spot)])
+				taken[key(spot)] = true
+				assert.are.equal(1, spot.y)
+				assert.is_true(corridors.is_in_room(slot, spot.x, spot.y, spot.z))
+				assert.is_true(corridors.is_in_room(slot, spot.x, spot.y + 1, spot.z))
+				-- At a side wall: one of the four neighbours is a wall.
+				local at_wall = false
+				for _, n in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
+					if corridors.kind_at(spot.x + n[1], 1, spot.z + n[2], count)
+							== corridors.WALL then
+						at_wall = true
+					end
+				end
+				assert.is_true(at_wall)
+			end
+			assert.is_nil(taken[key(room.chest)])
+			assert.is_nil(taken[key(room.portal)])
+			-- The way from the door to the portal stays free.
+			local step = { x = room.look_dir.x, z = room.look_dir.z }
+			for distance = 3, corridors.ROOM_DEPTH + 1 do
+				local pos = {
+					x = room.entrance.x + step.x * distance, y = 1,
+					z = room.entrance.z + step.z * distance,
+				}
+				assert.is_nil(taken[key(pos)])
+			end
+			-- The chest can be reached: the spot in front of it, towards the
+			-- door, is free.
+			local front = {
+				x = room.chest.x - step.x, y = 1, z = room.chest.z - step.z,
+			}
+			assert.is_nil(taken[key(front)])
+			assert.is_true(corridors.is_in_room(slot, front.x, front.y, front.z))
+			assert.are.not_same(room.portal, front)
 		end
 	end)
 

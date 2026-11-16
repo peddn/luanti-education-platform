@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 21 · 15. November 2026 · Status: Konzept, noch kein Code
+Fassung 23 · 15. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -278,13 +278,13 @@ Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später er
 **Persönliche Räume** an den vier Gängen, einer pro Schüler:
 
 - Die Räume liegen auf beiden Seiten jedes Gangs. Neue Räume werden reihum auf die vier Gänge verteilt, damit kein Gang viel länger wird als die anderen. Bei 30 Schülern ist kein Raum weiter als 30 Blöcke von der Halle entfernt.
-- Ein Raum ist innen 5 × 4 × 5 Blöcke groß. Wände und Decke sind aus Silbersandstein, von außen sieht man nicht hinein. Licht geben je eine Lampe in Boden und Decke.
+- Ein Raum ist innen 5 Blöcke breit, 7 tief und 4 hoch. Die Tiefe kostet keinen Laufweg im Gang. Vorn stehen die Sockel, die beiden hinteren Reihen bleiben frei für Portal und Kiste. Wände und Decke sind aus Silbersandstein, von außen sieht man nicht hinein. Licht geben je eine Lampe in Boden und Decke.
 - **Tür:** Jeder Raum hat eine Tür, die dem Besitzer gehorcht. Er öffnet und schließt sie mit einem Klick. Offen heißt Besuch willkommen, geschlossen heißt gesperrt. Andere können eine geschlossene Tür von außen nicht öffnen und eine offene nicht schließen. Wer im Raum steht, kann eine geschlossene Tür immer von innen öffnen, damit niemand eingesperrt wird. Schließen kann sie nur der Besitzer. Lehrkräfte kommen immer hinein. Die Tür ist zu Beginn offen und lässt sich nicht abbauen.
 - Gänge und Räume gehören zum Ort Lobby. Schutz und Musik gelten dort wie in der Halle.
 
 - Persönliches Portal.
 - Belohnungskiste: Nur der Besitzer öffnet sie, und er kann nur entnehmen.
-- Feste Plätze für Trophäen (Sockel, Wandhalter).
+- Sechs Sockel für Trophäen, drei an jeder Seitenwand (Abschnitt 8.4).
 - Türschild über dem Eingang mit dem Anzeigenamen in lesbarer Schrift, dort wird auch der Wunschname beantragt. Kontonamen stehen in zwei Zeilen, getrennt am Unterstrich. Umlaute brauchen eine zweite Schrift von signs_lib, sie wird mit den Wunschnamen eingeschaltet.
 - Andere dürfen den Raum betreten und schauen, solange die Tür offen ist. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
 - Wände, Portal, Kiste und Sockel sind unveränderlich.
@@ -417,16 +417,34 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 
 ### 8.4 Trophäen
 
-- Ein eigener Mod meldet sich beim Fortschritts-Mod an und vergibt Trophäen für Meilensteine.
-- Schema der Meilensteine:
-  - Etappe abgeschlossen: eine Trophäe pro Etappe und Modul (Etappen siehe Abschnitt 8.3),
-  - gelöste Aufgaben pro Modul: 10, 50, 100,
-  - gelöste Aufgabentruhen: 10, 50,
-  - Fragenset zu mindestens 80 % richtig abgeschlossen.
-- Die konkreten Trophäen entstehen mit jedem Modul.
-- Trophäen sind nicht übertragbar und lassen sich nur im eigenen Lobby-Raum aufstellen.
-- Trophäen sind Daten im Backend. Der Raum zeigt sie nur an. Nach einem Gruppenwechsel baut die neue Welt den Raum mit denselben Trophäen wieder auf.
-- Der vorhandene Awards-Mod wird nicht verwendet: Er speichert lokal in der Welt und ist nur noch in Wartung.
+**Verdienen**
+
+- Ein eigener Mod vergibt Trophäen für Meilensteine. Eine Trophäe wird einmal verdient und gehört dann dem Konto.
+- Jeder Mod kann Trophäen anmelden und vergeben, nicht nur die Lernmodule.
+- Meilensteine aus dem Lernen:
+
+| Meilenstein | Trophäe |
+|---|---|
+| Etappe eines Moduls abgeschlossen (Etappen siehe Abschnitt 8.3) | Silber, die letzte Etappe Gold |
+| 10, 50, 100 gelöste Niveauaufgaben in einem Modul | Bronze, Silber, Gold |
+| 10, 50 gelöste Tagesaufgaben insgesamt | Bronze, Silber |
+| Fragenset zu mindestens 80 % richtig abgeschlossen | kommt mit dem Modul Textfragen |
+
+- Für die Zähler gilt jede gelöste Aufgabe, auch eine, die keine Belohnung mehr bringt. Üben ist eine Trophäe wert.
+- Trophäen aus dem Survival-Teil kommen über den Awards-Mod (rubenwardy, MIT). Er zählt Leistungen wie abgebaute Blöcke und meldet freigeschaltete Erfolge. Eine kleine Brücke macht daraus Trophäen. Erfolge, die nicht in eine Schule passen, etwa fürs Sterben, werden abgeschaltet. Die Zähler von Awards bleiben in der Welt, die Trophäen gehören dem Konto.
+
+**Ausstellen**
+
+- Im eigenen Lobby-Raum stehen sechs feste Sockel, drei an jeder Seitenwand. Die Trophäe steht als Block auf dem Sockel.
+- Der Besitzer klickt einen Sockel an, sieht die Liste seiner verdienten Trophäen und wählt eine aus oder leert den Sockel.
+- Jede Trophäe steht nur auf einem Sockel. Wird sie woanders gewählt, zieht sie um.
+- Besucher sehen die Auswahl und beim Zeigen auf eine Trophäe, wofür sie steht. Ändern können sie nichts.
+- Voreingestellt sind Pokale in Bronze, Silber und Gold. Ein Mod kann für seine Trophäen ein eigenes Aussehen angeben.
+- Trophäen sind nicht übertragbar. Sie sind kein Gegenstand im Inventar.
+
+**Daten**
+
+- Verdiente Trophäen, Zähler und die Belegung der Sockel sind Daten des Kontos, später im Backend. Der Raum zeigt sie nur an. Nach einem Gruppenwechsel baut die neue Welt den Raum mit denselben Trophäen wieder auf.
 
 ### 8.5 Aufgabentruhe
 
@@ -785,9 +803,10 @@ Fremd-Mods werden nicht ins Repository kopiert. `third_party/mods.toml` nennt Qu
 | Monster und Tiere (später) | Mobs Redo, Mobs Monster, Mobs Animal | MIT |
 | Logikschaltungen (später) | Mesecons, ohne `mesecons_luacontroller` | LGPL 3 für Code, Creative Commons für Medien |
 | Physik zusammenführen | player_monoids | Apache 2.0 |
+| Erfolge im Survival-Teil | Awards (rubenwardy) | MIT |
 | Lesbare Schrift auf Schildern | signs_lib (mt-mods) | LGPL 3 für Code, CC BY-SA 4.0 für Medien |
 
-Bewusst nicht verwendet: Classroom Manager (eigenes Pult), Account Manager (Konten kommen aus dem Backend), Awards (Trophäen sind Backend-Daten), flow (Formspecs werden selbst geschrieben).
+Bewusst nicht verwendet: Classroom Manager (eigenes Pult), Account Manager (Konten kommen aus dem Backend), flow (Formspecs werden selbst geschrieben).
 
 ### 14.2 Eigene Mods
 

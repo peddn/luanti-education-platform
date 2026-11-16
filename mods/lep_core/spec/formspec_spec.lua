@@ -34,6 +34,23 @@ describe("lep_core formspec", function()
 			1, true))
 	end)
 
+	it("adds a text list with escaped lines", function()
+		local fs = formspec.new(8, 6)
+			:textlist(0.5, 1, 7, 3, "list", { "Gold, big", "Silver [2]", "Bronze" }, 2)
+			:build()
+		assert.is_truthy(fs:find(
+			"textlist[0.5,1;7,3;list;Gold\\, big,Silver \\[2\\],Bronze;2]", 1, true))
+	end)
+
+	it("adds buttons", function()
+		local fs = formspec.new(8, 6)
+			:button(0.5, 5, 3, 0.8, "place", "Put it here")
+			:button_exit(4, 5, 3, 0.8, "close", "Close")
+			:build()
+		assert.is_truthy(fs:find("button[0.5,5;3,0.8;place;Put it here]", 1, true))
+		assert.is_truthy(fs:find("button_exit[4,5;3,0.8;close;Close]", 1, true))
+	end)
+
 	it("cannot be broken out of by a name", function()
 		local fs = formspec.new(4, 3):list("detached:x]button[0,0;1,1;a;b", "main", 0, 0, 1, 1)
 			:build()

@@ -13,7 +13,7 @@
 local corridors = {}
 
 -- Raise this when the shape changes, so existing corridors are rebuilt.
-corridors.VERSION = 3
+corridors.VERSION = 4
 
 -- Axial position of the opening in the hall wall: hall radius + 1.
 corridors.OPENING = 16
@@ -23,6 +23,9 @@ corridors.FIRST_WALL = 19
 corridors.PITCH = 6
 -- Inner size of a room.
 corridors.ROOM_SIZE = 5
+-- Inner depth of a room, away from the corridor. Depth costs no walking
+-- distance in the corridor, so rooms are deeper than wide.
+corridors.ROOM_DEPTH = 7
 corridors.ROOM_HEIGHT = 4
 -- Inner height of the corridor. Its inner width is 3.
 corridors.HEIGHT = 3
@@ -47,7 +50,12 @@ local FIRST_WALL = corridors.FIRST_WALL
 local PITCH = corridors.PITCH
 local DOOR_OFFSET = 3
 local SIDE = 2
-local OUTER_WALL = SIDE + corridors.ROOM_SIZE + 1
+local OUTER_WALL = SIDE + corridors.ROOM_DEPTH + 1
+-- Depth of the lamps in floor and ceiling: the middle of the room.
+local LAMP_DEPTH = SIDE + math.ceil(corridors.ROOM_DEPTH / 2)
+-- Trophy pedestals stand in three rows behind the row at the door.
+local PEDESTAL_FIRST = SIDE + 2
+local PEDESTAL_LAST = SIDE + 4
 local ROOM_CEILING = corridors.ROOM_HEIGHT + 1
 local CEILING = corridors.HEIGHT + 1
 
@@ -128,7 +136,7 @@ local function room_kind(direction, count, axial, lateral, y)
 			local exists = slot_at(direction, side, row) < count
 				or (along == 0 and row > 0 and slot_at(direction, side, row - 1) < count)
 			if exists then
-				local centre = along == DOOR_OFFSET and across == SIDE + DOOR_OFFSET
+				local centre = along == DOOR_OFFSET and across == LAMP_DEPTH
 				if y == 0 then
 					return centre and corridors.LAMP or corridors.FLOOR
 				elseif y == ROOM_CEILING then
@@ -219,6 +227,7 @@ end
 --   interior_min, interior_max  the inside of the room
 --   portal     spot for the personal portal
 --   chest      spot for the reward chest
+--   pedestals  six spots for trophy pedestals: three at each side wall
 function corridors.room(slot)
 	local direction, side, row = corridors.slot_position(slot)
 	local door = FIRST_WALL + PITCH * row + DOOR_OFFSET
@@ -228,6 +237,16 @@ function corridors.room(slot)
 	local a = to_relative(direction, first, side * (SIDE + 1), 1)
 	local b = to_relative(direction, last, side * (OUTER_WALL - 1), corridors.ROOM_HEIGHT)
 	local wall = to_relative(direction, 0, side, 0)
+
+	-- Seen from the door: three at the wall on one side, then three at the
+	-- other. The row at the door stays free, and so do the two rows at the
+	-- back, so portal and chest are easy to reach.
+	local pedestals = {}
+	for _, axial in ipairs({ first, last }) do
+		for depth = PEDESTAL_FIRST, PEDESTAL_LAST do
+			pedestals[#pedestals + 1] = to_relative(direction, axial, side * depth, 1)
+		end
+	end
 
 	return {
 		direction = direction,
@@ -242,6 +261,7 @@ function corridors.room(slot)
 		},
 		portal = to_relative(direction, door, side * (OUTER_WALL - 1), 1),
 		chest = to_relative(direction, first, side * (OUTER_WALL - 1), 1),
+		pedestals = pedestals,
 	}
 end
 

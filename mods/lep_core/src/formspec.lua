@@ -72,6 +72,30 @@ function Builder:listring(location, list_name)
 	return self:element("listring", formspec.escape(location), formspec.escape(list_name))
 end
 
+--- Adds a list of text lines the player can select from. The lines are
+-- escaped here. The selection arrives as a field named `name`.
+-- @param selected Optional index of the selected line.
+function Builder:textlist(x, y, width, height, name, lines, selected)
+	local escaped = {}
+	for index, line in ipairs(lines) do
+		escaped[index] = formspec.escape(line)
+	end
+	return self:element("textlist", { x, y }, { width, height }, formspec.escape(name),
+		table.concat(escaped, ","), selected or "")
+end
+
+--- Adds a button. The label is escaped here.
+function Builder:button(x, y, width, height, name, label)
+	return self:element("button", { x, y }, { width, height }, formspec.escape(name),
+		formspec.escape(label))
+end
+
+--- Adds a button that also closes the window.
+function Builder:button_exit(x, y, width, height, name, label)
+	return self:element("button_exit", { x, y }, { width, height }, formspec.escape(name),
+		formspec.escape(label))
+end
+
 --- Returns the finished formspec string.
 function Builder:build()
 	return table.concat(self._parts)
