@@ -18,7 +18,8 @@ end
 local function emit(player_name, module, events)
 	for _, event in ipairs(events) do
 		if event.name == progress.LEVEL_COMPLETED then
-			dispatcher:emit("level_completed", player_name, module.id, event.level)
+			dispatcher:emit("level_completed", player_name, module.id, event.level,
+				event.stage)
 		elseif event.name == progress.LEVEL_CHANGED then
 			dispatcher:emit("level_changed", player_name, module.id,
 				event.old_level, event.new_level, event.reason)
@@ -35,6 +36,11 @@ local function check_player(player_name)
 	return true
 end
 
+lep_progress.KIND_TASK = progress.KIND_TASK
+lep_progress.KIND_DAILY = progress.KIND_DAILY
+lep_progress.EFFORT_LOW = progress.EFFORT_LOW
+lep_progress.EFFORT_NORMAL = progress.EFFORT_NORMAL
+lep_progress.EFFORT_HIGH = progress.EFFORT_HIGH
 lep_progress.REASON_COMPLETED = progress.REASON_COMPLETED
 lep_progress.REASON_TEACHER = progress.REASON_TEACHER
 
@@ -117,6 +123,12 @@ end
 --   task      id of the task type
 --   level     level the task belongs to
 --   solved    true or false
+--   kind      optional: lep_progress.KIND_TASK (default) for a task of the
+--             level's workload, lep_progress.KIND_DAILY for a daily task,
+--             for example from a task chest. Daily tasks can be repeated
+--             every day and never count for the workload.
+--   effort    optional, for daily tasks: lep_progress.EFFORT_LOW,
+--             EFFORT_NORMAL (default) or EFFORT_HIGH
 --   attempts, hints, duration   optional numbers, passed on unchanged
 -- @return true  or  false, error message
 function lep_progress.report(result)
@@ -136,11 +148,22 @@ function lep_progress.report(result)
 		return false, err
 	end
 
+	local kind = result.kind or progress.KIND_TASK
+	if kind ~= progress.KIND_TASK and kind ~= progress.KIND_DAILY then
+		return false, "unknown kind '" .. tostring(kind) .. "'"
+	end
+	local effort = result.effort or progress.EFFORT_NORMAL
+	if effort ~= progress.EFFORT_LOW and effort ~= progress.EFFORT_NORMAL
+			and effort ~= progress.EFFORT_HIGH then
+		return false, "unknown effort '" .. tostring(effort) .. "'"
+	end
+
 	local state = get_state(result.player, module)
 	local new_state, events, counted = progress.record(module, state, {
 		level = result.level,
 		task = result.task,
 		solved = result.solved == true,
+		kind = kind,
 	})
 	if counted then
 		storage.save(result.player, module.id, new_state)
@@ -152,6 +175,8 @@ function lep_progress.report(result)
 		task = result.task,
 		level = result.level,
 		solved = result.solved == true,
+		kind = kind,
+		effort = effort,
 		attempts = result.attempts,
 		hints = result.hints,
 		duration = result.duration,
@@ -207,8 +232,9 @@ end
 -- counted.
 lep_progress.register_on_result = dispatcher:registrar("result")
 
---- Registers a function(player_name, module_id, level) called when a
--- player completes a level.
+--- Registers a function(player_name, module_id, level, is_stage) called
+-- when a player completes a level. is_stage is true if the level ends a
+-- stage of the module.
 lep_progress.register_on_level_completed = dispatcher:registrar("level_completed")
 
 --- Registers a function(player_name, module_id, old_level, new_level,

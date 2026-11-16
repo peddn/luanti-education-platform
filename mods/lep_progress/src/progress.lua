@@ -12,9 +12,19 @@ local progress = {}
 progress.DEFAULT_REQUIRED = 5
 
 -- Events returned by the functions below, as { name = ..., ... } tables.
-progress.LEVEL_COMPLETED = "level_completed"   -- level
+progress.LEVEL_COMPLETED = "level_completed"   -- level, stage
 progress.LEVEL_CHANGED = "level_changed"       -- old_level, new_level, reason
 progress.MODULE_COMPLETED = "module_completed"
+
+-- Kinds of tasks. A level task belongs to the workload of a level. A
+-- daily task can be repeated every day and never counts for the workload.
+progress.KIND_TASK = "task"
+progress.KIND_DAILY = "daily"
+
+-- How much effort a daily task takes.
+progress.EFFORT_LOW = "low"
+progress.EFFORT_NORMAL = "normal"
+progress.EFFORT_HIGH = "high"
 
 -- Reasons for a level change.
 progress.REASON_COMPLETED = "completed"
@@ -39,6 +49,8 @@ function progress.new_modules()
 	--   title   name shown to players
 	--   levels  list of levels, each a table with
 	--     title  optional name of the level
+	--     stage  optional: true if completing this level ends a stage.
+	--            The last level always ends one.
 	--     tasks  list of task types, each a table with
 	--       id        id of the task type, unique within the module
 	--       title     name shown to players
@@ -77,6 +89,7 @@ function progress.new_modules()
 			end
 			levels[number] = {
 				title = level.title or tostring(number),
+				stage = level.stage == true or number == #def.levels,
 				tasks = tasks,
 				by_id = by_id,
 			}
@@ -218,15 +231,17 @@ function progress.check_result(module, level, task_id)
 end
 
 --- Records a result.
--- Only solved tasks on the player's current level count for the workload.
--- @param result Table with level, task and solved.
+-- Only solved level tasks on the player's current level count for the
+-- workload. Daily tasks never do.
+-- @param result Table with level, task, solved and optionally kind.
 -- @return new state, list of events, true if the result counted
 function progress.record(module, state, result)
 	assert(progress.check_result(module, result.level, result.task))
 	local new_state = copy_state(state)
 	local events = {}
 
-	if result.solved ~= true or result.level ~= new_state.level then
+	if result.solved ~= true or result.level ~= new_state.level
+			or result.kind == progress.KIND_DAILY then
 		return new_state, events, false
 	end
 
@@ -242,7 +257,11 @@ function progress.record(module, state, result)
 	local done, total = progress.done_tasks(module, new_state, level)
 	if done == total and not new_state.completed[level] then
 		new_state.completed[level] = true
-		events[#events + 1] = { name = progress.LEVEL_COMPLETED, level = level }
+		events[#events + 1] = {
+			name = progress.LEVEL_COMPLETED,
+			level = level,
+			stage = module.levels[level].stage,
+		}
 		if level == #module.levels then
 			events[#events + 1] = { name = progress.MODULE_COMPLETED }
 		end

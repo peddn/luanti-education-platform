@@ -35,4 +35,26 @@ function loader.new(base_path)
 	end
 end
 
+--- Creates a function that hands out one load function per mod.
+-- Asking twice for the same mod returns the same load function, so every
+-- file of a mod is loaded exactly once, no matter from how many files it
+-- is requested. Otherwise a module that keeps state would exist twice.
+-- @param resolve_path Function(mod_name) returning the mod directory or nil.
+-- @return function(mod_name) Returns the load function of that mod.
+function loader.new_set(resolve_path)
+	assert(type(resolve_path) == "function", "loader.new_set: resolve_path must be a function")
+
+	local loaders = {}
+
+	return function(mod_name)
+		if loaders[mod_name] then
+			return loaders[mod_name]
+		end
+		local path = resolve_path(mod_name)
+		assert(path, "loader: unknown mod '" .. tostring(mod_name) .. "'")
+		loaders[mod_name] = loader.new(path)
+		return loaders[mod_name]
+	end
+end
+
 return loader

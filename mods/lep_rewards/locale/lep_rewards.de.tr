@@ -1,0 +1,23 @@
+# textdomain: lep_rewards
+Reward: @1. It is in the chest in your room.=Belohnung: @1. Sie liegt in der Kiste in deinem Raum.
+Your rewards=Deine Belohnungen
+@1 more are waiting until there is room.=@1 weitere warten, bis Platz ist.
+This chest belongs to @1.=Diese Kiste gehört @1.
+level completed=Niveau abgeschlossen
+stage completed=Etappe abgeschlossen
+Show the last rewards, your own or those of another player=Zeigt die letzten Belohnungen, deine eigenen oder die eines anderen Spielers
+You may only view your own rewards.=Du darfst nur deine eigenen Belohnungen ansehen.
+There is no player @1.=Es gibt keinen Spieler @1.
+@1 has not received any rewards yet.=@1 hat noch keine Belohnungen erhalten.
+Last rewards of @1 (times in UTC):=Letzte Belohnungen von @1 (Zeiten in UTC):
+That was the last rewarded daily task for today.=Das war die letzte belohnte Tagesaufgabe für heute.
+Show what the rewards contain and how many daily tasks are left today=Zeigt, was die Belohnungen enthalten und wie viele Tagesaufgaben heute noch frei sind
+Small reward: @1=Kleine Belohnung: @1
+for a level task that counts for your level, or an easy daily task=für eine Niveauaufgabe, die für dein Niveau zählt, oder eine leichte Tagesaufgabe
+Medium reward: @1=Mittlere Belohnung: @1
+for a daily task or a completed level=für eine Tagesaufgabe oder ein abgeschlossenes Niveau
+Large reward: @1=Große Belohnung: @1
+for a hard daily task or a completed stage=für eine schwere Tagesaufgabe oder eine abgeschlossene Etappe
+Daily tasks left today: @1 of @2=Tagesaufgaben heute noch frei: @1 von @2
+level task=Niveauaufgabe
+daily task=Tagesaufgabe
