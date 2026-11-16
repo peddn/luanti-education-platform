@@ -471,7 +471,7 @@ Eine Truhe in der Wildnis, die statt eines Inhalts eine kurze Aufgabe stellt. Si
 **Erzeugte Truhen**
 
 - Alle paar Minuten prüft der Server für jeden Schüler in der Wildnis, ob eine Truhe in seiner Nähe steht. Wenn nicht, erscheint eine in 30 bis 80 Blöcken Entfernung, und der Schüler bekommt einen Hinweis im Chat.
-- Sie steht auf festem Boden unter freiem Himmel: nicht im Wasser, nicht in Höhlen, nicht auf Bäumen und nicht auf geschützten Grundstücken.
+- Sie steht auf festem, natürlichem Boden: nicht im Wasser, nicht in Höhlen, nicht in Gebäuden und nicht auf geschützten Grundstücken. Im Wald steht sie am Boden unter den Bäumen, nie in der Krone.
 - Eine Truhe, die niemand löst, verschwindet nach 30 Minuten.
 - Nach dem ersten Lösen bleibt sie noch 10 Minuten stehen, damit Begleiter sie auch lösen können. Dann verschwindet sie.
 - Höchstens 20 erzeugte Truhen pro Welt.
