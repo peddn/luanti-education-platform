@@ -53,27 +53,13 @@ describe("lep_desk students", function()
 	end)
 end)
 
-describe("lep_desk rows", function()
-	local students = { "anna", "ben", "mia" }
-
-	it("maps rows to what they stand for", function()
-		assert.are.equal(desk.ALL, desk.row_target(1, students))
-		assert.are.equal("anna", desk.row_target(2, students))
-		assert.are.equal("mia", desk.row_target(4, students))
-		assert.is_nil(desk.row_target(5, students))
-		assert.is_nil(desk.row_target(0, students))
-	end)
-
-	it("finds the row of a target", function()
-		assert.are.equal(1, desk.target_row(desk.ALL, students))
-		assert.are.equal(2, desk.target_row("anna", students))
-		assert.are.equal(4, desk.target_row("mia", students))
-		assert.is_nil(desk.target_row("zoe", students))
-		assert.is_nil(desk.target_row(nil, students))
-	end)
-
-	it("keeps a student called like nothing special apart from the first row", function()
-		assert.are.equal(2, desk.target_row("true", { "true" }))
+describe("lep_desk list", function()
+	it("finds a student in the list", function()
+		local students = { "anna", "ben", "mia" }
+		assert.are.equal(1, desk.index_of("anna", students))
+		assert.are.equal(3, desk.index_of("mia", students))
+		assert.is_nil(desk.index_of("zoe", students))
+		assert.is_nil(desk.index_of(nil, students))
 	end)
 end)
 

@@ -17,7 +17,7 @@ local MARKED, UNMARKED = "#9CFF9C", "#BBBBBB"
 -- Per teacher: selection (see src/desk.lua), status (last line of text),
 -- open (true while the window is shown), students (the list the window
 -- was drawn with, so a click hits the row the teacher saw), highlight
--- (the row the teacher clicked last: desk.ALL, a name or nil).
+-- (name of the student whose row the teacher clicked last, or nil).
 local desks = {}
 
 local function state_of(teacher_name)
@@ -72,9 +72,7 @@ local function show(teacher_name)
 	local pad = formspec.PADDING
 	local targets = desk.targets(state.selection, students)
 
-	local all = state.selection.all
-	local rows = { { all and MARKED or UNMARKED, box(all),
-		S("All students (@1)", #students), "", "" } }
+	local rows = {}
 	for _, student in ipairs(students) do
 		local marked = desk.is_selected(state.selection, student)
 		rows[#rows + 1] = { marked and MARKED or UNMARKED, box(marked), student,
@@ -82,9 +80,9 @@ local function show(teacher_name)
 	end
 
 	local fs = formspec.new(WIDTH, HEIGHT)
-		:label(pad, 0.55, S("Students: click a box to mark"))
+		:label(pad, 0.55, S("Students (@1): click a box to mark", #students))
 		:table(pad, 0.9, LIST_WIDTH, HEIGHT - 3.4, "students", COLUMNS, rows,
-			desk.target_row(state.highlight, students))
+			desk.index_of(state.highlight, students))
 
 	-- Helpers that set many boxes at once.
 	local gap = 0.2
@@ -94,7 +92,9 @@ local function show(teacher_name)
 			"mark_" .. helper.id, helper.title)
 	end
 
-	fs:label(pad, HEIGHT - 1.05, S("Marked: @1", #targets))
+	-- "All" also covers students who join later.
+	fs:label(pad, HEIGHT - 1.05, state.selection.all and S("Marked: all (@1)", #targets)
+		or S("Marked: @1 of @2", #targets, #students))
 	fs:label(pad, HEIGHT - 0.5, state.status)
 
 	local actions_x = pad + LIST_WIDTH + 0.4
@@ -176,7 +176,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 		if event.type ~= "CHG" and event.type ~= "DCL" then
 			return true
 		end
-		local target = desk.row_target(event.row, state.students or {})
+		local target = (state.students or {})[event.row]
 		if target == nil then
 			return true
 		end
@@ -187,11 +187,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 			-- Only a click on the box changes who is marked.
 			return true
 		end
-		if target == desk.ALL then
-			state.selection = desk.toggle_all(state.selection)
-		else
-			state.selection = desk.toggle(state.selection, target, lep_desk.get_students())
-		end
+		state.selection = desk.toggle(state.selection, target, lep_desk.get_students())
 		show(teacher_name)
 		return true
 	end
@@ -208,8 +204,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 		state.status = ""
 	elseif fields.mark_place then
 		-- Everybody who is where the highlighted student is.
-		local place = type(state.highlight) == "string"
-			and lep_places.get_place(state.highlight)
+		local place = state.highlight and lep_places.get_place(state.highlight)
 		if place then
 			local names = {}
 			for _, student in ipairs(students) do
