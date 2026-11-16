@@ -153,12 +153,12 @@ function lep_math._on_key(player, key)
 	current.state = state
 
 	if what == session.TYPED then
-		core.sound_play("lep_math_key", { to_player = player_name, gain = 0.5 }, true)
+		core.sound_play("lep_math_key", { to_player = player_name, gain = 0.12 }, true)
 		show(player_name, state.input, lep_math.NORMAL)
 
 	elseif what == session.CORRECT then
 		current.busy = true
-		core.sound_play("lep_math_right", { to_player = player_name }, true)
+		lep_progress.play_feedback(player_name, true)
 		show(player_name, typed, lep_math.RIGHT)
 		report(player_name, current, true)
 		later(player_name, FLASH, function()
@@ -167,7 +167,7 @@ function lep_math._on_key(player, key)
 
 	elseif what == session.WRONG then
 		current.busy = true
-		core.sound_play("lep_math_wrong", { to_player = player_name }, true)
+		lep_progress.play_feedback(player_name, false)
 		show(player_name, typed, lep_math.WRONG)
 		later(player_name, FLASH, function()
 			current.busy = false
@@ -176,7 +176,7 @@ function lep_math._on_key(player, key)
 
 	elseif what == session.REVEALED then
 		current.busy = true
-		core.sound_play("lep_math_wrong", { to_player = player_name }, true)
+		lep_progress.play_feedback(player_name, false)
 		show(player_name, typed, lep_math.WRONG)
 		report(player_name, current, false)
 		later(player_name, FLASH, function()

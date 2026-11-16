@@ -234,6 +234,19 @@ function lep_progress.set_locked(player_name, module_id, locked)
 	return true
 end
 
+-- How loud the feedback sounds are played. The files are recorded at
+-- full volume.
+local FEEDBACK_GAIN = 0.5
+
+--- Plays the sound for a right or a wrong answer to one player. All
+-- learning modules use this, so an answer sounds the same everywhere. The
+-- module decides the moment, for example together with its own feedback
+-- on screen.
+function lep_progress.play_feedback(player_name, solved)
+	core.sound_play(solved and "lep_progress_right" or "lep_progress_wrong",
+		{ to_player = player_name, gain = FEEDBACK_GAIN }, true)
+end
+
 local task_info_providers = {}
 
 --- Registers a function(player_name, module_id, level, task_id, kind)

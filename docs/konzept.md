@@ -498,6 +498,8 @@ Gerechnet wird in der Welt, nicht in einem Fenster.
 
 Die Aufgabentruhe stellt dieselben Aufgaben in einem Fenster. Beide nutzen denselben Kern: Aufgabe erzeugen, Antwort prüfen, Versuche zählen.
 
+Die Töne für richtig und falsch gehören dem Fortschritts-Mod und klingen in allen Lernmodulen gleich. Das Modul bestimmt nur den Moment. Dasselbe gilt für die Töne beim Abschluss eines Niveaus und einer Etappe.
+
 Das Rechenmodul kennt keine Belohnungen. Die Zeile mit der Belohnung liefert der Belohnungs-Mod über eine neutrale Anfrage beim Fortschritts-Mod.
 
 ### 8.7 Textfragen
