@@ -56,7 +56,7 @@ local function update_hud(player_name)
 				-- At the bottom, above hearts and hotbar. The top of the
 				-- screen belongs to the chat.
 				position = { x = 0.5, y = 1 },
-				offset = { x = 0, y = -150 + (index - 1) * 24 },
+				offset = { x = 0, y = -190 + (index - 1) * 34 },
 				alignment = { x = 0, y = 0 },
 				number = index == 1 and 0xFFFFFF or 0xFFD060,
 				text = text,
