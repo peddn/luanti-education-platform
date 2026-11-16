@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 30 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 31 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -300,7 +300,6 @@ Jeder Ortswechsel läuft über eine einzige Funktion in einem eigenen Mod, egal 
 - Position merken,
 - Inventar tauschen,
 - Rechte setzen,
-- Aufmerksamkeitsmodus beibehalten,
 - den vorigen Ort merken.
 
 Bei jeder Anmeldung werden Rechte und Zustand passend zum aktuellen Ort neu gesetzt. So bleibt nach einem Absturz kein Flugrecht in der Wildnis hängen.
@@ -647,6 +646,7 @@ Ein eigener Mod mit selbst geschriebenem Fenster. Links die Zielauswahl (alle, e
 - **Übersicht:** Jede Zeile zeigt den Ort des Schülers und sein Niveau in jedem Modul. Die Liste aktualisiert sich bei jedem Ortswechsel.
 - **Privilegien:** `lep_view_players` öffnet das Pult und zeigt die Übersicht. Jede Aktion nennt ihr eigenes Privileg und ist nur für den sichtbar, der es hat. `lep_send_players` erlaubt Schicken und Zurückholen.
 - **Protokoll:** Jede Aktion wird festgehalten: Zeitpunkt, Kontoname der Lehrkraft, Aktion, Ziele.
+- **Textfeld:** Unter der Tabelle steht ein Feld für einen Text an die Schüler. Aktionen, die den Schülern etwas zeigen, bekommen ihn mit.
 - **Aktionen:** Eine Aktion wirkt auf die markierten Schüler oder, wenn sie es so anmeldet, auf die ganze Welt. Aktionen können eine Gruppe mit Überschrift bilden und als Schalter ihre geltende Stellung anzeigen.
 
 Erste Version:
@@ -691,14 +691,32 @@ Die Lehrkraft steuert die Tageszeit am Pult. Sie gilt für die ganze Welt, also 
 
 ### 10.4 Aufmerksamkeitsmodus
 
-- **Bewegungsunfähig:** Laufen, Springen, Bauen und Abbauen gesperrt.
-- **Blind:** bildschirmfüllendes HUD-Bild mit Text der Lehrkraft. Offene Fenster werden geschlossen, das Inventar öffnet nicht.
-- **Taub:** kein Chat in beide Richtungen. Der Server unterdrückt die Klänge, die er selbst abspielt.
-- Unverwundbar während der Sperre.
+Die Lehrkraft holt sich die Aufmerksamkeit einzelner oder aller Schüler. Wer erfasst ist, sitzt in einer dunklen Zelle, sieht nur den Text der Lehrkraft und kann weder schreiben noch lesen.
+
+**Zelle**
+
+- Jeder Schüler hat eine eigene Zelle hoch über der Welt: ein Block Grundfläche, zwei Blöcke hoch, schwarze unzerstörbare Wände, kein Licht, kein Ausgang.
+- Die Zelle ist ein Raumtyp von `lep_rooms`. Wie in jedem Lernraum ist das Survival-Inventar weggelegt.
+- Statt den Schüler an Ort und Stelle einzufrieren, wird er versetzt. So kann ihm in der Wildnis nichts zustoßen, während er nicht handeln kann, und kein Mod muss Physik oder Privilegien anfassen.
+
+**Wirkung**
+
+- **Bewegungsunfähig:** In der Zelle ist kein Platz zum Laufen, und es gibt nichts zu bauen oder abzubauen.
+- **Blind:** schwarzes Vollbild als HUD, darauf der Text der Lehrkraft. Schnellleiste, Herzen, Fadenkreuz und Chat sind ausgeblendet. Offene Fenster werden geschlossen, das Inventarfenster öffnet nicht.
+- **Taub:** Der Schüler sendet nichts, auch keine Befehle, und empfängt weder Chat noch Privatnachrichten. Dafür verteilt `lep_chat` die Nachrichten selbst. Meldungen des Servers an alle, etwa wer sich anmeldet, sieht er nach dem Ende im Chatverlauf.
+- **Still:** Der Server kann den Ton eines Clients nicht abschalten. In der Zelle gibt es aber keine Geräusche der Umgebung, und die Musik der Lobby endet mit dem Ortswechsel.
+- **Unverwundbar:** ergibt sich aus der Zelle.
+
+**Regeln**
+
+- Der Text kommt aus dem Textfeld des Pults. Bleibt es leer, steht dort „Bitte achte auf deine Lehrkraft.“
+- Beim Ausschalten kommt der Schüler an genau die Stelle zurück, an der er stand, in Wildnis, Lobby und Lernraum. War er in einen Lernraum geschickt, ist er dort wieder festgehalten. Im Rechenraum bekommt er eine neue Aufgabe desselben Typs, sein Fortschritt bleibt.
 - Der Zustand übersteht Neuanmelden.
-- Einzelne Schüler können ausgenommen werden.
-- Wer das Privileg zum Schalten hat, wird selbst nicht erfasst.
-- Physik-Änderungen laufen über player_monoids, damit sich Mods nicht gegenseitig überschreiben. Ortsgebundene Rechte wie das Flugrecht vergibt `lep_places` (Abschnitt 7.6).
+- Ist keine Lehrkraft mehr angemeldet, endet der Modus für alle, ebenso bei einem Neustart des Servers. Wer zu dem Zeitpunkt abgemeldet war, wird bei seiner nächsten Anmeldung zurückgebracht.
+- Holt etwas anderes den Schüler aus der Zelle, etwa „In den Rechenraum schicken“, endet der Modus dort.
+- Einzelne Schüler können ausgenommen werden: Die Aktion wirkt auf die Markierten.
+- Wer das Pult öffnen darf, wird selbst nicht erfasst.
+- Privileg: `lep_set_attention`.
 
 ### 10.5 Rechte
 
@@ -886,7 +904,6 @@ Fremd-Mods werden nicht ins Repository kopiert. `third_party/mods.toml` nennt Qu
 | Grundstücksschutz, abschließbare Türen und Kisten | Protector (TenPlus1) | MIT für Code, CC BY 3.0 für Medien |
 | Monster und Tiere (später) | Mobs Redo, Mobs Monster, Mobs Animal | MIT |
 | Logikschaltungen (später) | Mesecons, ohne `mesecons_luacontroller` | LGPL 3 für Code, Creative Commons für Medien |
-| Physik zusammenführen | player_monoids | Apache 2.0 |
 | Erfolge im Survival-Teil | Awards (rubenwardy) | MIT |
 | Lesbare Schrift auf Schildern | signs_lib (mt-mods) | LGPL 3 für Code, CC BY-SA 4.0 für Medien |
 
@@ -910,8 +927,8 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_math` | Rechnen: Aufgabengenerator, Rechenraum mit Anzeige und Tastenfeld |
 | `lep_quest_chest` | Aufgabentruhe in der Wildnis: erzeugen, Fenster, Ablauf |
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
-| `lep_attention` | Aufmerksamkeitsmodus: Einfrieren, Overlay, Chat-Sperre |
-| `lep_chat` | Protokoll für Chat und Schildtexte, Stummschalten |
+| `lep_attention` | Aufmerksamkeitsmodus: Zelle, schwarzes Vollbild mit Text, Chat-Sperre |
+| `lep_chat` | Protokoll für Chat und Schildtexte, Stummschalten, Verteilung der Nachrichten |
 | `lep_bridge` | Verbindung zum Backend, Konten anlegen, Warteschlange |
 | `lep_quiz` | Textfragen: Fragensets, Dialogfenster |
 | `lep_tz` | Technisches Zeichnen: Datenmodell, Generator, Prüfung, Baustein, Raum |
@@ -975,6 +992,5 @@ Vor einem Einsatz an einer Schule:
 - [ContentDB: Protector](https://content.luanti.org/packages/tenplus1/protector/)
 - [ContentDB: Mobs Redo API](https://content.luanti.org/packages/TenPlus1/mobs/)
 - [ContentDB: Mesecons](https://content.luanti.org/packages/Jeija/mesecons/)
-- [ContentDB: player_monoids](https://content.luanti.org/packages/Byakuren/player_monoids/)
 - [mtt, Test-Framework](https://content.luanti.org/packages/BuckarooBanzay/mtt/)
 - [Moodle: GIFT-Format](https://docs.moodle.org/de/GIFT)
