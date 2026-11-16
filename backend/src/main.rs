@@ -38,7 +38,19 @@ async fn serve() -> Result<()> {
         .with_context(|| format!("cannot listen on {}", config.bind))?;
     tracing::info!("listening on http://{}", listener.local_addr()?);
 
-    axum::serve(listener, app::router(AppState::new(pool.clone())))
+    let state = AppState::new(pool.clone());
+    let router = if app::has_frontend(&config.frontend) {
+        tracing::info!(folder = %config.frontend.display(), "serving the frontend");
+        app::router_with_frontend(state, &config.frontend)
+    } else {
+        tracing::info!(
+            folder = %config.frontend.display(),
+            "no built frontend found, serving the interface only"
+        );
+        app::router(state)
+    };
+
+    axum::serve(listener, router)
         .with_graceful_shutdown(shutdown())
         .await?;
 

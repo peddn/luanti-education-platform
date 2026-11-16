@@ -11,6 +11,11 @@ use lep_protocol::Health;
 use sqlx::SqlitePool;
 use utoipa::OpenApi;
 
+use std::path::Path;
+
+use tower_http::services::{ServeDir, ServeFile};
+
+use crate::failure::Failure;
 use crate::jobs::Waiters;
 use crate::{db, world_api};
 
@@ -48,6 +53,7 @@ impl AppState {
         Health,
         lep_protocol::HealthStatus,
         lep_protocol::ApiError,
+        lep_protocol::ErrorCode,
         lep_protocol::world::WorldStarted,
         lep_protocol::world::Modules,
         lep_protocol::world::Progress,
@@ -84,16 +90,36 @@ pub fn openapi_json() -> String {
     json
 }
 
-/// Builds the router with all routes.
+/// Builds the router with all routes of the interface. Without a
+/// frontend every other path is not found.
 pub fn router(state: AppState) -> Router {
+    Router::new().nest("/api", api(state))
+}
+
+/// Builds the router with the interface and the built frontend from a
+/// folder. Paths the folder does not know get its `index.html`, because
+/// the frontend has its own addresses for its pages.
+pub fn router_with_frontend(state: AppState, folder: &Path) -> Router {
+    let pages = ServeDir::new(folder).fallback(ServeFile::new(folder.join("index.html")));
+    router(state).fallback_service(pages)
+}
+
+/// Returns true if a folder holds a built frontend.
+pub fn has_frontend(folder: &Path) -> bool {
+    folder.join("index.html").is_file()
+}
+
+fn api(state: AppState) -> Router {
     let web = Router::new();
     let world = world_api::router();
 
     Router::new()
-        .route("/api/health", get(health))
-        .route("/api/openapi.json", get(openapi))
-        .nest("/api/web", web)
-        .nest("/api/world", world)
+        .route("/health", get(health))
+        .route("/openapi.json", get(openapi))
+        .nest("/web", web)
+        .nest("/world", world)
+        // An unknown path of the interface is an error, not a page.
+        .fallback(|| async { Failure::not_found("no such path") })
         .with_state(state)
 }
 

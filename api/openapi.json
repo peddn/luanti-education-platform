@@ -208,18 +208,33 @@
         "type": "object",
         "description": "Answer to a request that failed.",
         "required": [
-          "error"
+          "code",
+          "message"
         ],
         "properties": {
-          "error": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
             "type": "string",
-            "description": "What went wrong, for people."
+            "description": "What went wrong, in English, for logs and developers. It is not\nshown to users."
           }
         }
       },
       "Done": {
         "type": "object",
         "description": "Answer to a request that needs nothing said."
+      },
+      "ErrorCode": {
+        "type": "string",
+        "description": "Why a request failed, as a fixed word. The frontend translates it into\nthe language of the user.",
+        "enum": [
+          "unauthorized",
+          "not_found",
+          "too_large",
+          "invalid_request",
+          "internal"
+        ]
       },
       "Event": {
         "type": "object",

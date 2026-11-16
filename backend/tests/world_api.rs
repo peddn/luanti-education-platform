@@ -97,7 +97,8 @@ async fn requests_without_a_valid_key_are_turned_away() {
             )
             .await;
         assert_eq!(status, StatusCode::UNAUTHORIZED);
-        assert!(json["error"].is_string());
+        assert_eq!(json["code"], "unauthorized");
+        assert!(json["message"].is_string());
 
         let (status, _) = setup
             .call(Method::GET, "/api/world/v1/jobs", key, None)
