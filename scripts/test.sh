@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Runs all static checks and unit tests: Lua mods and Rust backend.
-#   scripts/test.sh          everything
-#   scripts/test.sh lua      only the Lua mods
-#   scripts/test.sh rust     only the Rust packages
+# Runs all static checks and unit tests: Lua mods, Rust backend and
+# frontend.
+#   scripts/test.sh            everything
+#   scripts/test.sh lua        only the Lua mods
+#   scripts/test.sh rust       only the Rust packages
+#   scripts/test.sh frontend   only the frontend
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -30,4 +32,32 @@ if [ "$what" = "all" ] || [ "$what" = "rust" ]; then
 
 	echo "== cargo test"
 	cargo test --quiet
+fi
+
+if [ "$what" = "all" ] || [ "$what" = "frontend" ]; then
+	if ! command -v npm >/dev/null; then
+		echo "== frontend: npm not found, skipped" >&2
+		exit 1
+	fi
+	cd frontend
+	if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
+		echo "== npm ci"
+		npm ci --silent
+	fi
+
+	echo "== generated types"
+	npm run --silent types:check
+
+	echo "== eslint"
+	npm run --silent lint
+
+	echo "== type check"
+	npm run --silent typecheck
+
+	echo "== vitest"
+	npm run --silent test
+
+	echo "== build"
+	npm run --silent build
+	cd ..
 fi

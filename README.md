@@ -52,7 +52,7 @@ luanti-education-platform/
 ├── crates/protocol/             gemeinsame Typen der Schnittstelle
 ├── backend/                     Web-Anwendung (Rust)
 ├── agent/                       Agent für Spielserver (Rust)
-├── frontend/                    Oberfläche (Vue, Pinia, Router, JavaScript)
+├── frontend/                    Oberfläche (Vue, Pinia, Router, Tailwind, JavaScript)
 ├── api/                         erzeugte OpenAPI-Beschreibung
 │
 ├── world-template/              Vorlage für eine neue Welt

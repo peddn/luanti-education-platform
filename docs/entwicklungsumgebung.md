@@ -145,7 +145,7 @@ Luanti startet direkt in der Testwelt, als Einzelspieler. Das geht schneller, bi
 scripts/test.sh
 ```
 
-Das führt Luacheck und Busted für alle Mods aus, danach Formatprüfung, Clippy und Tests für die Rust-Pakete. Dieselben Prüfungen laufen bei jedem Pull Request automatisch auf GitHub. Mit `scripts/test.sh lua` oder `scripts/test.sh rust` läuft nur ein Teil.
+Das führt Luacheck und Busted für alle Mods aus, danach Formatprüfung, Clippy und Tests für die Rust-Pakete, zuletzt die Prüfungen der Oberfläche. Dieselben Prüfungen laufen bei jedem Pull Request automatisch auf GitHub. Mit `scripts/test.sh lua`, `scripts/test.sh rust` oder `scripts/test.sh frontend` läuft nur ein Teil.
 
 ### Auf den neuesten Stand bringen
 
@@ -196,7 +196,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 
 ## 6. Backend und Oberfläche
 
-Das Backend ist ein Rust-Programm im Ordner `backend/`. Die Typen seiner Schnittstelle liegen in `crates/protocol/`. Die Oberfläche folgt später.
+Das Backend ist ein Rust-Programm im Ordner `backend/`. Die Typen seiner Schnittstelle liegen in `crates/protocol/`. Die Oberfläche ist eine Vue-Anwendung im Ordner `frontend/`.
 
 ```sh
 sudo pacman -S --needed rustup nodejs npm sqlite
@@ -236,6 +236,7 @@ Das Backend liest seine Einstellungen aus Umgebungsvariablen.
 |---|---|---|
 | `LEP_BIND` | Adresse und Port | `127.0.0.1:8080` |
 | `LEP_DATABASE` | Pfad der SQLite-Datei | `.dev/backend/lep.sqlite` |
+| `LEP_FRONTEND` | Ordner mit der gebauten Oberfläche | `frontend/dist` |
 | `RUST_LOG` | Ausführlichkeit der Meldungen | `info` |
 
 Die Datenbank der Testumgebung liegt in `.dev/` und wird nicht eingecheckt. Wer sie löscht, bekommt beim nächsten Start eine leere. Tabellen entstehen und ändern sich über Migrationen in `backend/migrations/`, das Backend spielt sie beim Start von selbst ein.
@@ -282,11 +283,50 @@ Die Welt meldet den Fall einmal deutlich im Terminal (`THE BACKEND DOES NOT KNOW
 | `scripts/backend-run.sh world ping <name>` | stellt einen Ping-Auftrag ein, um den Weg zur Welt und zurück zu prüfen |
 | `scripts/backend-run.sh world state <name>` | zeigt, was das Backend von einer Welt weiß: Module, Fortschritt, Trophäen, Protokolle |
 | `scripts/backend-run.sh world sync <name>` | bittet die Welt, ihren ganzen Stand noch einmal zu senden |
-| `scripts/update-openapi.sh` | schreibt `api/openapi.json` neu, nach Änderungen an der Schnittstelle |
+| `scripts/update-openapi.sh` | schreibt `api/openapi.json` und die Typen der Oberfläche neu, nach Änderungen an der Schnittstelle |
 
 Die Befehle arbeiten direkt auf der Datenbank und brauchen keinen laufenden Server. Ein Ping, der so eingestellt wird, erreicht eine verbundene Welt innerhalb von 25 Sekunden.
 
-Wie die Oberfläche gebaut und gestartet wird, wird ergänzt, sobald sie existiert.
+### Oberfläche
+
+Die Oberfläche lässt sich auf zwei Arten starten.
+
+**Gebaut, vom Backend ausgeliefert.** So läuft sie später im Betrieb, und so reicht es zum Ausprobieren:
+
+```sh
+scripts/frontend-run.sh build
+scripts/backend-run.sh
+```
+
+Der erste Befehl lädt beim ersten Lauf die npm-Pakete nach `frontend/node_modules/` und baut die Oberfläche nach `frontend/dist/`. Das Backend meldet beim Start `serving the frontend` und liefert sie unter `http://127.0.0.1:8080/` aus. Fehlt der Ordner, meldet es `no built frontend found` und bedient nur die Schnittstelle. Nach einem Wechsel des Zweigs neu bauen, das Backend muss dafür nicht neu starten.
+
+**Entwicklungsserver.** Zum Arbeiten an der Oberfläche, jede Änderung erscheint sofort im Browser:
+
+```sh
+scripts/backend-run.sh      # erstes Terminal
+scripts/frontend-run.sh     # zweites Terminal
+```
+
+Die Oberfläche steht dann unter `http://127.0.0.1:5173/`. Anfragen an `/api` reicht der Entwicklungsserver an das Backend auf Port 8080 weiter, `LEP_DEV_URL` ändert das Ziel.
+
+Aufbau in `frontend/src/`:
+
+| Ort | Inhalt |
+|---|---|
+| `api/client.js` | die eine Stelle, die mit dem Backend spricht |
+| `api/schema.d.ts` | Typen der Schnittstelle, erzeugt aus `api/openapi.json`, nie von Hand ändern |
+| `stores/` | Zustand mit Pinia |
+| `pages/`, `components/` | Seiten und Bausteine |
+| `locales/de.json`, `locales/en.json` | alle Texte, in beiden Sprachen mit denselben Schlüsseln |
+| `router.js`, `i18n.js` | Adressen der Seiten, Wahl der Sprache |
+
+Regeln, die die Prüfungen durchsetzen:
+
+- **Kein Text in einer Seite.** Jeder Text steht in beiden Sprachdateien und wird über `$t('schlüssel')` geholt. ESLint lehnt Text direkt in einer Vorlage ab, ebenso unbekannte und ungenutzte Schlüssel. Ein Test vergleicht die Schlüssel beider Sprachen.
+- **Fehler haben einen festen Code.** Das Backend antwortet bei einem Fehler mit `{"code": "...", "message": "..."}`. Die Oberfläche zeigt den Text zu `errors.<code>` aus den Sprachdateien, die englische `message` ist nur für Protokolle da. Ein neuer Code in `crates/protocol` braucht einen Eintrag in beiden Sprachdateien, ein Test prüft das.
+- **Typen kommen aus der Schnittstelle.** Der Code ist JavaScript, die Typen stehen in JSDoc-Kommentaren und verweisen auf `schema.d.ts`. Die Typprüfung (`npm run typecheck`) findet damit Tippfehler in Feldnamen, auch in den Vorlagen. Nach einer Änderung an der Schnittstelle `scripts/update-openapi.sh` ausführen, sonst schlägt die Prüfung auf veraltete Typen fehl.
+
+Die Sprache richtet sich nach dem Browser, Deutsch ist die Rückfallsprache. Die Auswahl oben rechts gilt für diesen Browser und bleibt gespeichert.
 
 ## 7. Empfohlene Werkzeuge
 

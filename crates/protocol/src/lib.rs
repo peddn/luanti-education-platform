@@ -274,11 +274,30 @@ pub mod world {
     pub struct Done {}
 }
 
+/// Why a request failed, as a fixed word. The frontend translates it into
+/// the language of the user.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorCode {
+    /// The caller did not prove who they are, or may not do this.
+    Unauthorized,
+    /// What was asked for does not exist.
+    NotFound,
+    /// The request carries more than is allowed.
+    TooLarge,
+    /// The request cannot be understood.
+    InvalidRequest,
+    /// The backend failed. The details are in its log.
+    Internal,
+}
+
 /// Answer to a request that failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct ApiError {
-    /// What went wrong, for people.
-    pub error: String,
+    pub code: ErrorCode,
+    /// What went wrong, in English, for logs and developers. It is not
+    /// shown to users.
+    pub message: String,
 }
 
 #[cfg(test)]

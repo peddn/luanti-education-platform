@@ -9,8 +9,6 @@ use std::time::Duration;
 use axum::extract::{FromRequestParts, Path, Query, State};
 use axum::http::header::AUTHORIZATION;
 use axum::http::request::Parts;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use lep_protocol::world::{
@@ -21,6 +19,7 @@ use lep_protocol::ApiError;
 use serde::Deserialize;
 
 use crate::app::AppState;
+use crate::failure::Failure;
 use crate::worlds::World;
 use crate::{events, jobs, worlds};
 
@@ -31,32 +30,6 @@ pub fn router() -> Router<AppState> {
         .route("/v1/jobs/{id}/result", post(report_result))
 }
 
-/// An answer that says what went wrong.
-pub struct Failure(StatusCode, String);
-
-impl Failure {
-    fn new(status: StatusCode, message: impl Into<String>) -> Self {
-        Self(status, message.into())
-    }
-}
-
-impl IntoResponse for Failure {
-    fn into_response(self) -> Response {
-        (self.0, Json(ApiError { error: self.1 })).into_response()
-    }
-}
-
-impl From<anyhow::Error> for Failure {
-    fn from(err: anyhow::Error) -> Self {
-        // The details belong into the log, not to the caller.
-        tracing::error!("request failed: {err:#}");
-        Self::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "the backend could not do this",
-        )
-    }
-}
-
 /// The world a request comes from, found by its key.
 pub struct CallingWorld(pub World);
 
@@ -64,7 +37,7 @@ impl FromRequestParts<AppState> for CallingWorld {
     type Rejection = Failure;
 
     async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Failure> {
-        let denied = || Failure::new(StatusCode::UNAUTHORIZED, "missing or wrong key");
+        let denied = || Failure::unauthorized("missing or wrong key");
         let key = parts
             .headers
             .get(AUTHORIZATION)
@@ -99,10 +72,9 @@ pub async fn send_events(
     Json(batch): Json<EventBatch>,
 ) -> Result<Json<EventBatchResult>, Failure> {
     if batch.events.len() > MAX_BATCH {
-        return Err(Failure::new(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            format!("at most {MAX_BATCH} events per request"),
-        ));
+        return Err(Failure::too_large(format!(
+            "at most {MAX_BATCH} events per request"
+        )));
     }
     let mut results = Vec::with_capacity(batch.events.len());
     for event in &batch.events {
@@ -183,7 +155,7 @@ pub async fn report_result(
     Json(result): Json<JobResult>,
 ) -> Result<Json<Done>, Failure> {
     if !jobs::finish(&state.db, &world.id, &job_id, &result).await? {
-        return Err(Failure::new(StatusCode::NOT_FOUND, "no such job"));
+        return Err(Failure::not_found("no such job"));
     }
     Ok(Json(Done {}))
 }

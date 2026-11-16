@@ -11,13 +11,19 @@ pub const ENV_BIND: &str = "LEP_BIND";
 /// Path of the SQLite database file.
 pub const ENV_DATABASE: &str = "LEP_DATABASE";
 
+/// Folder with the built frontend. It is served if it holds an
+/// `index.html`.
+pub const ENV_FRONTEND: &str = "LEP_FRONTEND";
+
 const DEFAULT_BIND: &str = "127.0.0.1:8080";
+const DEFAULT_FRONTEND: &str = "frontend/dist";
 const DEFAULT_DATABASE: &str = ".dev/backend/lep.sqlite";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
     pub bind: SocketAddr,
     pub database: PathBuf,
+    pub frontend: PathBuf,
 }
 
 impl Config {
@@ -43,6 +49,7 @@ impl Config {
         Ok(Self {
             bind,
             database: PathBuf::from(get(ENV_DATABASE, DEFAULT_DATABASE)),
+            frontend: PathBuf::from(get(ENV_FRONTEND, DEFAULT_FRONTEND)),
         })
     }
 }
@@ -56,6 +63,7 @@ mod tests {
         let config = Config::from_lookup(|_| None).unwrap();
         assert_eq!(config.bind, "127.0.0.1:8080".parse().unwrap());
         assert_eq!(config.database, PathBuf::from(".dev/backend/lep.sqlite"));
+        assert_eq!(config.frontend, PathBuf::from("frontend/dist"));
     }
 
     #[test]

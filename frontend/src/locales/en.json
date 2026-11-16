@@ -1,0 +1,44 @@
+{
+  "app": {
+    "title": "Luanti Education Platform",
+    "short": "LEP",
+    "language": "Language"
+  },
+  "languages": {
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "nav": {
+    "health": "Status"
+  },
+  "health": {
+    "title": "Status",
+    "intro": "This page shows whether the backend can be reached and can do its work.",
+    "loading": "Asking for the status …",
+    "reload": "Ask again",
+    "backend": "Backend",
+    "database": "Database",
+    "version": "Version",
+    "status": {
+      "ok": "Everything is fine",
+      "degraded": "Limited"
+    },
+    "databaseOk": "answers",
+    "databaseDown": "does not answer"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This address does not exist here.",
+    "home": "To the start page"
+  },
+  "errors": {
+    "title": "That did not work",
+    "unauthorized": "You are not signed in or not allowed to do this.",
+    "not_found": "This does not exist.",
+    "too_large": "The request is too large.",
+    "invalid_request": "The request was faulty.",
+    "internal": "The backend ran into an error.",
+    "network": "The backend cannot be reached.",
+    "unexpected": "The backend gave an unexpected answer."
+  }
+}
