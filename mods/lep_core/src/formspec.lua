@@ -96,6 +96,21 @@ function Builder:button_exit(x, y, width, height, name, label)
 		formspec.escape(label))
 end
 
+--- Adds a one-line input field. The typed text arrives as a field named
+-- `name`. Label and default text are escaped here.
+function Builder:field(x, y, width, height, name, label, default)
+	return self:element("field", { x, y }, { width, height }, formspec.escape(name),
+		formspec.escape(label or ""), formspec.escape(default or ""))
+end
+
+--- Makes the Enter key in a field submit the window instead of closing
+-- it, and puts the cursor into the field. The submit arrives with the
+-- field `key_enter_field` set to `name`.
+function Builder:submit_on_enter(name)
+	self:element("field_close_on_enter", formspec.escape(name), "false")
+	return self:element("set_focus", formspec.escape(name), "true")
+end
+
 --- Returns the finished formspec string.
 function Builder:build()
 	return table.concat(self._parts)
