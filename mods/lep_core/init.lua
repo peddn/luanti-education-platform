@@ -19,4 +19,8 @@ end
 --- Event dispatcher factory, see src/events.lua.
 lep_core.events = load("src/events")
 
+--- Protocols: append-only files in the world folder, see
+-- game/protocols.lua.
+lep_core.protocols = load("game/protocols")
+
 core.log("action", "[lep_core] loaded")
