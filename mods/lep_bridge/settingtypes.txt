@@ -1,0 +1,6 @@
+# Address of the LEP backend, for example https://lep.example.org
+# Leave empty to keep the world unconnected.
+lep_bridge_url (Address of the LEP backend) string
+
+# Key of this world, as the backend gave it out. Keep it secret.
+lep_bridge_key (Key of this world) string

@@ -47,6 +47,7 @@ Busted und Luacheck werden pro Benutzer über LuaRocks installiert, für Lua 5.1
 ```sh
 luarocks --lua-version 5.1 --local install busted
 luarocks --lua-version 5.1 --local install luacheck
+luarocks --lua-version 5.1 --local install dkjson
 ```
 
 Damit die Programme gefunden werden, diese Zeile in `~/.bashrc` oder `~/.zshrc` eintragen:
@@ -238,6 +239,42 @@ Das Backend liest seine Einstellungen aus Umgebungsvariablen.
 | `RUST_LOG` | Ausführlichkeit der Meldungen | `info` |
 
 Die Datenbank der Testumgebung liegt in `.dev/` und wird nicht eingecheckt. Wer sie löscht, bekommt beim nächsten Start eine leere. Tabellen entstehen und ändern sich über Migrationen in `backend/migrations/`, das Backend spielt sie beim Start von selbst ein.
+
+### Testwelt mit dem Backend verbinden
+
+Der Mod `lep_bridge` verbindet eine Welt mit dem Backend. Dafür braucht die Welt die Adresse des Backends, ihren Schlüssel und die Erlaubnis für Netzzugriff. Für die Testwelt erledigt das ein Skript:
+
+```sh
+scripts/dev-bridge.sh
+```
+
+Es legt im lokalen Backend die Welt `dev` an und trägt drei Zeilen in `.dev/minetest.conf` ein: `secure.http_mods`, `lep_bridge_url` und `lep_bridge_key`. Ein erneuter Lauf vergibt einen neuen Schlüssel. Danach beide starten, jedes in seinem Terminal:
+
+```sh
+scripts/backend-run.sh
+scripts/dev-run.sh --server
+```
+
+Im Terminal der Welt steht `[lep_bridge] connecting to http://127.0.0.1:8080`. Ob die Verbindung steht, zeigen im Spiel `/lep_bridge` (braucht das Privileg `server`) und im Terminal:
+
+```sh
+scripts/backend-run.sh world list
+```
+
+Ohne laufendes Backend spielt die Welt normal weiter. Luanti schreibt dann für jeden vergeblichen Versuch eine Zeile `HTTPFetch ... failed` ins Terminal, die Brücke selbst meldet den Ausfall einmal und versucht es in wachsenden Abständen erneut, höchstens jede Minute.
+
+### Befehle des Backends
+
+| Befehl | Wirkung |
+|---|---|
+| `scripts/backend-run.sh` | startet den Server |
+| `scripts/backend-run.sh world add <name>` | legt eine Welt an und zeigt ihren Schlüssel, nur dieses eine Mal |
+| `scripts/backend-run.sh world rekey <name>` | gibt einer Welt einen neuen Schlüssel, der alte gilt nicht mehr |
+| `scripts/backend-run.sh world list` | listet die Welten mit letztem Kontakt |
+| `scripts/backend-run.sh world ping <name>` | stellt einen Ping-Auftrag ein, um den Weg zur Welt und zurück zu prüfen |
+| `scripts/update-openapi.sh` | schreibt `api/openapi.json` neu, nach Änderungen an der Schnittstelle |
+
+Die Befehle arbeiten direkt auf der Datenbank und brauchen keinen laufenden Server. Ein Ping, der so eingestellt wird, erreicht eine verbundene Welt innerhalb von 25 Sekunden.
 
 Wie die Oberfläche gebaut und gestartet wird, wird ergänzt, sobald sie existiert.
 
