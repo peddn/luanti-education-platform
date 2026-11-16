@@ -9,4 +9,8 @@ load("game/api")
 load("game/chest")
 load("game/commands")
 
+if core.settings:get_bool("lep_debug", false) then
+	load("game/debug")
+end
+
 core.log("action", "[lep_rewards] loaded")

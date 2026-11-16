@@ -61,6 +61,15 @@ function lep_rewards.get_remaining(player_name)
 		{ task = limits.task, chest = limits.chest }
 end
 
+--- Gives a player the full daily allowance back, as at the start of a
+-- new day. Rewards already paid stay where they are.
+function lep_rewards.reset_allowance(player_name)
+	local data = storage.load(player_name)
+	data.allowance = rewards.new_allowance()
+	storage.save(player_name, data)
+	core.log("action", "[lep_rewards] daily allowance of " .. player_name .. " was reset")
+end
+
 --- Returns the last entries of the reward protocol of a player, oldest
 -- first. Each has time, size, reason, module, level, task and items.
 function lep_rewards.get_log(player_name, limit)
