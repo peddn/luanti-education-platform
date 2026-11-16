@@ -2,18 +2,18 @@
 
 local modpath = core.get_modpath("lep_core")
 local loader = dofile(modpath .. "/src/loader.lua")
-local load = loader.new(modpath)
+local loaders = loader.new_set(core.get_modpath)
+local load = loaders("lep_core")
 
 lep_core = {}
 
---- Returns a load function for the given mod.
--- Usage in another mod's init.lua:
---   local load = lep_core.loader(core.get_current_modname())
+--- Returns the load function of the given mod. Every file of a mod is
+-- loaded only once, from wherever it is requested.
+-- Usage in any file of another mod:
+--   local load = lep_core.loader("lep_example")
 --   local api = load("src/api")
 function lep_core.loader(modname)
-	local path = core.get_modpath(modname)
-	assert(path, "lep_core.loader: unknown mod '" .. tostring(modname) .. "'")
-	return loader.new(path)
+	return loaders(modname)
 end
 
 --- Event dispatcher factory, see src/events.lua.

@@ -22,6 +22,21 @@ describe("lep_core loader", function()
 		assert.are_not.equal(a, b)
 	end)
 
+	it("hands out the same load function for the same mod", function()
+		local calls = 0
+		local loaders = loader.new_set(function(mod_name)
+			calls = calls + 1
+			return mod_name == "known" and base or nil
+		end)
+		local first = loaders("known")
+		local second = loaders("known")
+		assert.are.equal(first, second)
+		assert.are.equal(1, calls)
+		-- So a file is loaded once, from wherever it is requested.
+		assert.are.equal(first("answer"), second("answer"))
+		assert.has_error(function() loaders("unknown") end)
+	end)
+
 	it("caches files that return false", function()
 		local load = loader.new(base)
 		assert.is_false(load("returns_false"))
