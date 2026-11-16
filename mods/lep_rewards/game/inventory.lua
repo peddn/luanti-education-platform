@@ -13,6 +13,14 @@ inventory.ROWS = 2
 
 local SIZE = inventory.COLUMNS * inventory.ROWS
 local inventories = {}
+local on_refilled = function() end
+
+--- Sets the function(player_name) that is called when waiting rewards
+-- moved into the chest because the owner took something out. The chest
+-- window uses it to show the new state.
+function inventory.set_on_refilled(callback)
+	on_refilled = callback
+end
 
 --- Returns the name of the detached inventory of a player.
 function inventory.location(player_name)
@@ -62,7 +70,11 @@ local function get(player_name)
 			return 0
 		end,
 		on_take = function()
+			local had_waiting = #storage.load(player_name).pending > 0
 			refill(player_name)
+			if had_waiting then
+				on_refilled(player_name)
+			end
 		end,
 	}, player_name)
 	inv:set_size(inventory.LIST, SIZE)

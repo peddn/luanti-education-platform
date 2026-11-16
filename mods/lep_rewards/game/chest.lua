@@ -36,6 +36,10 @@ local function show(player_name)
 	core.show_formspec(player_name, "lep_rewards:chest", fs:build())
 end
 
+-- The owner has the window open when they take something out. Show it
+-- again, so the number of waiting rewards is up to date.
+inventory.set_on_refilled(show)
+
 core.register_node(CHEST, {
 	description = "LEP reward chest",
 	tiles = {
