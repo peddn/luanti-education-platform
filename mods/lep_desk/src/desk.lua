@@ -26,6 +26,14 @@ end
 --   run        function(teacher_name, targets) that does it. `targets` is
 --              the list of the chosen students' names. It returns a line
 --              of text for the teacher, or nil.
+--   needs_targets  optional, default true. False for an action on the
+--              whole world, such as the time of day: it runs without
+--              marked students and gets an empty list.
+--   group      optional heading. Actions with the same group stand
+--              together under it, as smaller buttons in two columns.
+--   is_active  optional function() returning true while the action is
+--              the current position of a switch. Its button is shown
+--              as pressed.
 function Actions:register(id, def)
 	assert(type(id) == "string" and id ~= "", "action id must be a non-empty string")
 	assert(type(def) == "table", "action definition must be a table")
@@ -35,8 +43,20 @@ function Actions:register(id, def)
 	assert(type(def.privilege) == "string" and def.privilege ~= "",
 		"action privilege must be a non-empty string")
 	assert(type(def.run) == "function", "action run must be a function")
+	assert(def.group == nil or (type(def.group) == "string" and def.group ~= ""),
+		"action group must be a non-empty string")
+	assert(def.is_active == nil or type(def.is_active) == "function",
+		"action is_active must be a function")
 	self._ids[#self._ids + 1] = id
-	self._defs[id] = { id = id, title = def.title, privilege = def.privilege, run = def.run }
+	self._defs[id] = {
+		id = id,
+		title = def.title,
+		privilege = def.privilege,
+		run = def.run,
+		needs_targets = def.needs_targets ~= false,
+		group = def.group,
+		is_active = def.is_active,
+	}
 end
 
 --- Returns an action or nil.
@@ -56,6 +76,57 @@ function Actions:allowed(has_privilege)
 		end
 	end
 	return list
+end
+
+-- Sizes of the buttons, in formspec units.
+desk.BUTTON_HEIGHT = 0.8
+desk.BUTTON_PITCH = 1
+desk.SMALL_HEIGHT = 0.7
+desk.SMALL_PITCH = 0.85
+desk.HEADING_HEIGHT = 0.75
+desk.COLUMN_GAP = 0.2
+
+--- Arranges the buttons of a list of actions in a column.
+-- Actions without a group come first, one below the other. Every group
+-- follows with its heading and its actions in two columns.
+-- @param actions List of actions, as Actions:allowed returns it.
+-- @param x, y Top left corner of the column.
+-- @param width Width of the column.
+-- @return List of items, each { kind = "button", index, x, y, width,
+--   height } with the index of the action in `actions`, or
+--   { kind = "heading", text, x, y }; and the y below the last item.
+function desk.layout(actions, x, y, width)
+	local items = {}
+	local groups, by_group = {}, {}
+	for index, action in ipairs(actions) do
+		if not action.group then
+			items[#items + 1] = { kind = "button", index = index, x = x, y = y,
+				width = width, height = desk.BUTTON_HEIGHT }
+			y = y + desk.BUTTON_PITCH
+		else
+			if not by_group[action.group] then
+				by_group[action.group] = {}
+				groups[#groups + 1] = action.group
+			end
+			table.insert(by_group[action.group], index)
+		end
+	end
+	local small_width = (width - desk.COLUMN_GAP) / 2
+	for _, group in ipairs(groups) do
+		items[#items + 1] = { kind = "heading", text = group, x = x,
+			y = y + desk.HEADING_HEIGHT / 2 }
+		y = y + desk.HEADING_HEIGHT
+		for position, index in ipairs(by_group[group]) do
+			local column = (position - 1) % 2
+			items[#items + 1] = { kind = "button", index = index,
+				x = x + column * (small_width + desk.COLUMN_GAP), y = y,
+				width = small_width, height = desk.SMALL_HEIGHT }
+			if column == 1 or position == #by_group[group] then
+				y = y + desk.SMALL_PITCH
+			end
+		end
+	end
+	return items, y
 end
 
 --------------------------------------------------------------------------

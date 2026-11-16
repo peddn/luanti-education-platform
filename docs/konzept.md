@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 28 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 29 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -645,6 +645,7 @@ Ein eigener Mod mit selbst geschriebenem Fenster. Links die Zielauswahl (alle, e
 - **Übersicht:** Jede Zeile zeigt den Ort des Schülers und sein Niveau in jedem Modul. Die Liste aktualisiert sich bei jedem Ortswechsel.
 - **Privilegien:** `lep_view_players` öffnet das Pult und zeigt die Übersicht. Jede Aktion nennt ihr eigenes Privileg und ist nur für den sichtbar, der es hat. `lep_send_players` erlaubt Schicken und Zurückholen.
 - **Protokoll:** Jede Aktion wird festgehalten: Zeitpunkt, Kontoname der Lehrkraft, Aktion, Ziele.
+- **Aktionen:** Eine Aktion wirkt auf die markierten Schüler oder, wenn sie es so anmeldet, auf die ganze Welt. Aktionen können eine Gruppe mit Überschrift bilden und als Schalter ihre geltende Stellung anzeigen.
 
 Erste Version:
 
@@ -677,11 +678,14 @@ Grundsätze:
 
 Die Lehrkraft steuert die Tageszeit am Pult. Sie gilt für die ganze Welt, also für die ganze Gruppe.
 
-- **Zeit setzen:** Morgen, Mittag, Abend, Nacht.
-- **Schalter mit drei Stellungen:** Zeit läuft, dauernd Tag, dauernd Nacht. Bei „dauernd“ steht die Zeit still.
+- **Zeit setzen:** Morgen (6 Uhr), Mittag (12 Uhr), Abend (18 Uhr), Nacht (0 Uhr).
+- **Schalter mit drei Stellungen:** Zeit läuft, dauernd Tag, dauernd Nacht. Bei „dauernd“ steht die Zeit still, am Mittag oder um Mitternacht. Das Pult zeigt die geltende Stellung.
+- Wer bei „dauernd“ eine Zeit setzt, stellt den Schalter damit auf „Zeit läuft“.
+- Die Knöpfe wirken auf die Welt und brauchen keine markierten Schüler.
+- Angehalten wird über Luantis Einstellung `time_speed`. Der vorige Wert wird gemerkt und mit „Zeit läuft“ wiederhergestellt.
 - Die Einstellung bleibt über einen Neustart des Servers erhalten.
 - In den Lernräumen spielt die Tageszeit keine Rolle, dort ist es immer hell. Die Aktion betrifft Wildnis und Lobby.
-- Die Aktion hat ein eigenes Privileg im Bündel „Lehrkraft“. Luantis eingebautes `settime` wird nicht vergeben, weil es den Chatbefehl freischaltet und am Pult vorbeiführt.
+- Die Aktion hat ein eigenes Privileg im Bündel „Lehrkraft“: `lep_set_time`. Luantis eingebautes `settime` wird nicht vergeben, weil es den Chatbefehl freischaltet und am Pult vorbeiführt.
 
 ### 10.4 Aufmerksamkeitsmodus
 

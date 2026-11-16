@@ -10,6 +10,7 @@ local protocol = lep_core.protocols.open("desk", { "account", "action", "targets
 
 lep_desk.PRIV_VIEW = "lep_view_players"
 lep_desk.PRIV_SEND = "lep_send_players"
+lep_desk.PRIV_TIME = "lep_set_time"
 
 core.register_privilege(lep_desk.PRIV_VIEW, {
 	description = "Can open the teacher's desk and see where the students are",
@@ -19,6 +20,12 @@ core.register_privilege(lep_desk.PRIV_VIEW, {
 
 core.register_privilege(lep_desk.PRIV_SEND, {
 	description = "Can send students into learning rooms and bring them back",
+	give_to_singleplayer = false,
+	give_to_admin = true,
+})
+
+core.register_privilege(lep_desk.PRIV_TIME, {
+	description = "Can set the time of day of the world at the teacher's desk",
 	give_to_singleplayer = false,
 	give_to_admin = true,
 })
@@ -48,6 +55,12 @@ end
 --              list of the chosen students' names. It returns a line of
 --              text for the teacher, or nil. The desk has checked the
 --              privilege and that the targets are students who are online.
+--   needs_targets  optional, default true. False for an action on the
+--              whole world: it runs without marked students.
+--   group      optional heading, already translated. Actions of a group
+--              stand together as smaller buttons in two columns.
+--   is_active  optional function() returning true while the action is
+--              the current position of a switch.
 function lep_desk.register_action(id, def)
 	actions:register(id, def)
 end

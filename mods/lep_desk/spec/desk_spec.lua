@@ -28,6 +28,56 @@ describe("lep_desk actions", function()
 		assert.are.same({}, actions:allowed(function() return false end))
 	end)
 
+	it("keeps the optional fields of an action", function()
+		local actions = desk.new_actions()
+		actions:register("plain", action("p"))
+		actions:register("world", {
+			title = "Noon", privilege = "p", run = function() end,
+			needs_targets = false, group = "Time", is_active = function() return true end,
+		})
+		assert.is_true(actions:get("plain").needs_targets)
+		assert.is_nil(actions:get("plain").group)
+		assert.is_false(actions:get("world").needs_targets)
+		assert.are.equal("Time", actions:get("world").group)
+		assert.is_true(actions:get("world").is_active())
+		assert.has_error(function()
+			actions:register("x", { title = "x", privilege = "p", run = function() end,
+				group = "" })
+		end)
+		assert.has_error(function()
+			actions:register("y", { title = "y", privilege = "p", run = function() end,
+				is_active = true })
+		end)
+	end)
+
+	it("arranges plain actions below each other and groups in two columns", function()
+		local list = {
+			{ id = "a" }, { id = "t1", group = "Time" }, { id = "b" },
+			{ id = "t2", group = "Time" }, { id = "t3", group = "Time" },
+		}
+		local items, bottom = desk.layout(list, 10, 1, 5)
+		assert.are.same({ kind = "button", index = 1, x = 10, y = 1, width = 5, height = 0.8 },
+			items[1])
+		assert.are.same({ kind = "button", index = 3, x = 10, y = 2, width = 5, height = 0.8 },
+			items[2])
+		assert.are.same({ kind = "heading", text = "Time", x = 10, y = 3.375 }, items[3])
+		assert.are.same({ kind = "button", index = 2, x = 10, y = 3.75, width = 2.4,
+			height = 0.7 }, items[4])
+		assert.are.equal(12.6, items[5].x)
+		assert.are.equal(3.75, items[5].y)
+		assert.are.equal(4, items[5].index)
+		assert.are.equal(10, items[6].x)
+		assert.is_true(math.abs(items[6].y - 4.6) < 1e-9)
+		assert.is_true(math.abs(bottom - 5.45) < 1e-9)
+		assert.are.equal(6, #items)
+	end)
+
+	it("arranges nothing for no actions", function()
+		local items, bottom = desk.layout({}, 10, 1, 5)
+		assert.are.same({}, items)
+		assert.are.equal(1, bottom)
+	end)
+
 	it("rejects incomplete definitions", function()
 		local actions = desk.new_actions()
 		actions:register("a", action("p"))
