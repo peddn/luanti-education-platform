@@ -303,6 +303,20 @@ Voraussetzung: Die Testwelt ist mit dem Backend verbunden (`scripts/dev-bridge.s
 
 Die Welt meldet dem Backend, welche Konten das Privileg haben, beim Start und bei jeder Änderung. Nur für diese Konten nimmt das Backend Meldungen zum Web-Zugang an. `scripts/backend-run.sh teacher list` zeigt, was das Backend weiß.
 
+### Anmelden im Browser
+
+Ohne Anmeldung zeigt die Oberfläche nur die Seiten „Anmelden“ und „Adresse bestätigen“. Anmelden kann sich, wer eine bestätigte Adresse hat und in mindestens einer Welt das Privileg `lep_web_access`.
+
+1. `http://127.0.0.1:8080/` öffnen und die bestätigte Adresse eintragen.
+2. Die Mail mit dem Link steht im Terminal des Backends. Die Seite antwortet immer gleich, auch bei unbekannter Adresse; dann steht keine Mail im Terminal.
+3. Den Link im selben Browser öffnen und „Anmelden“ klicken.
+
+Ein Link gilt 15 Minuten und einmal, eine neue Mail gibt es frühestens nach einer Minute. Die Anmeldung gilt 12 Stunden und verlängert sich nicht. Entzieht der Admin das Privileg (`/revoke <name> lep_web_access`), ist die Anmeldung beim nächsten Klick beendet.
+
+Die Sitzung ist ein Cookie für `/api/web`. Über den Entwicklungsserver auf Port 5173 funktioniert sie ebenso, dort gilt sie aber getrennt von Port 8080. Für Links, die auf den Entwicklungsserver zeigen sollen, das Backend mit `LEP_PUBLIC_URL=http://127.0.0.1:5173` starten.
+
+Der Weg `/api/health` bleibt ohne Anmeldung erreichbar, für Prüfungen von außen. Die Seite „Zustand“ in der Oberfläche braucht die Anmeldung.
+
 ### Oberfläche
 
 Die Oberfläche lässt sich auf zwei Arten starten.
