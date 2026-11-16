@@ -907,9 +907,11 @@ Bei der Umsetzung des jeweiligen Teils:
 
 6. **Raumlicht:** Luanti 5.18 kann die Helligkeit pro Spieler einstellen (`set_lighting`, Feld `static.light_curve`). Das könnte die leuchtende Luft in den Lernräumen ersetzen. Zwei kurze Versuche blieben ohne klares Ergebnis. Erneut prüfen, sobald auch die Testumgebung des Nutzers 5.18 hat.
 
+7. **Tasten hervorheben:** Im Rechenraum könnte die Taste unter dem Fadenkreuz heller werden. Luanti meldet dem Server nicht, worauf ein Spieler zeigt. Der Server müsste die Blickrichtung etwa zehnmal pro Sekunde prüfen und die Taste austauschen. Zurückgestellt, weil der Client den anvisierten Block schon umrandet und der Aufwand den Nutzen vorerst nicht lohnt.
+
 Vor einem Einsatz an einer Schule:
 
-7. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
+8. **Datenschutz** mit der Schule klären, einschließlich der Aufbewahrung des Chatprotokolls.
 
 ## 17. Quellen
 
