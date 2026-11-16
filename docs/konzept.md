@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 32 · 16. November 2026 · Status: Konzept, noch kein Code
+Fassung 33 · 16. November 2026 · Status: Konzept, noch kein Code
 
 ## 1. Ziel
 
@@ -313,6 +313,8 @@ Bei jeder Anmeldung werden Rechte und Zustand passend zum aktuellen Ort neu gese
 **Rechte.** `lep_places` vergibt die Rechte eines Ortes selbst und merkt sich pro Spieler, welche es vergeben hat. Entzogen werden nur diese. Wer ein Recht ohnehin hat, etwa eine Lehrkraft das Flugrecht, behält es.
 
 Lern-Gegenstände lassen sich außerhalb der Lernräume nicht verwenden.
+
+**Eigene Wege.** Portale, Ausgänge und Befehle, mit denen ein Spieler sich selbst bewegt, fragen vorher bei `lep_places` nach, ob er dorthin darf. Andere Mods melden dafür Regeln an. So sperrt der Unterrichtsmodus die Wildnis, ohne dass die Portale ihn kennen.
 
 **Sichtweite.** Luanti zeigt in der Voreinstellung jeden Spieler jedem Client, egal wie weit entfernt. Dann stehen die Namensschilder von Leuten in der Lobby oder im Lernraum am Himmel über der Wildnis. `lep_places` begrenzt die Sichtweite deshalb auf 160 Blöcke (`player_transfer_distance = 10`), solange der Server nichts anderes einstellt. Wer in seiner `minetest.conf` selbst einen Wert setzt, behält ihn.
 
@@ -674,9 +676,20 @@ Grundsätze:
 
 ### 10.2 Unterrichtsmodi
 
-- **Unterricht:** nur zugewiesene Aufgaben, die Wildnis ist gesperrt.
-- **Freiarbeit:** Lobby und freiwillige Aufgaben.
-- **Freizeit:** alles offen.
+Ein Schalter im Pult mit drei Stellungen. Er gilt für die ganze Welt und regelt, wohin Schüler von sich aus gehen dürfen.
+
+| Modus | Wildnis | Lobby | Lernräume |
+|---|---|---|---|
+| Freizeit | offen | offen | freiwillig offen |
+| Freiarbeit | gesperrt | offen | freiwillig offen |
+| Unterricht | gesperrt | offen | nur, wenn die Lehrkraft schickt |
+
+- **Gesperrt wird dort, wo Schüler sich selbst bewegen:** an den Portalen, am Eingang und am Ausgang der Lernräume. Was die Lehrkraft auslöst, etwa Schicken, Zurückholen oder der Aufmerksamkeitsmodus, läuft daran vorbei.
+- **Unterricht:** Ein Schüler betritt und verlässt Lernräume nicht selbst, auch wenn er vorher freiwillig hineingegangen war.
+- **Wildnis räumen:** Schließt der Modus die Wildnis, holt der Server alle Schüler von dort in die Halle der Lobby. Die Stelle, an der sie standen, wird gemerkt. Ist die Wildnis wieder offen, bringt das Portal der Halle sie beim nächsten Durchgang dorthin zurück. Wer sich bei gesperrter Wildnis dort anmeldet oder nach dem Tod an seinem Bett erscheint, landet ebenfalls in der Halle.
+- **Lehrkräfte** sind vom Modus ausgenommen.
+- **Ohne Lehrkraft** gilt Freizeit: sobald niemand mehr angemeldet ist, der das Pult öffnen darf, und nach einem Neustart des Servers.
+- **Privileg:** `lep_set_mode`. Die Schüler lesen bei jedem Umschalten im Chat, was jetzt gilt.
 
 ### 10.3 Tageszeit
 
