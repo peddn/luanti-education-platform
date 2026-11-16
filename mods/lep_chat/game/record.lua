@@ -18,12 +18,63 @@ local function can_speak(player_name)
 	return core.check_player_privs(player_name, { shout = true })
 end
 
+-- Players who are deaf neither send nor receive: no chat, no private
+-- messages, no commands. The attention mode uses this. The list lives in
+-- memory; whoever makes a player deaf does it again after a restart.
+local deaf = {}
+
+--- Makes a player deaf or lifts it.
+function lep_chat.set_deaf(player_name, is_deaf)
+	deaf[player_name] = is_deaf and true or nil
+end
+
+--- Returns true if a player is deaf.
+function lep_chat.is_deaf(player_name)
+	return deaf[player_name] == true
+end
+
+-- Sends a line to everybody who is not deaf.
+local function send_to_hearing(line)
+	for _, player in ipairs(core.get_connected_players()) do
+		local name = player:get_player_name()
+		if not deaf[name] then
+			core.chat_send_player(name, line)
+		end
+	end
+end
+
 -- Messages to everybody. Commands never arrive here, the engine handles
 -- them first. A player without the shout privilege is turned away by the
 -- engine right after this, so their message is not written down.
 core.register_on_chat_message(function(player_name, message)
-	if message:sub(1, 1) ~= "/" and can_speak(player_name) then
-		chat_protocol:append({ account = player_name, kind = chat.KIND_CHAT, text = message })
+	if message:sub(1, 1) == "/" then
+		return false
+	end
+	if deaf[player_name] then
+		core.chat_send_player(player_name, S("You cannot write in the chat right now."))
+		return true
+	end
+	if not can_speak(player_name) then
+		return false
+	end
+	chat_protocol:append({ account = player_name, kind = chat.KIND_CHAT, text = message })
+	if next(deaf) == nil then
+		-- Nobody is deaf: the engine sends the message to everybody.
+		return false
+	end
+	-- The engine cannot leave out single players, so the message is sent
+	-- here, to everybody who may hear it.
+	core.log("action", "CHAT: " .. core.format_chat_message(player_name, message))
+	send_to_hearing(core.format_chat_message(player_name, message))
+	return true
+end)
+
+-- A deaf player uses no commands either: /msg and /me would get around
+-- the lock, and nothing else is of use in that moment.
+core.register_on_chatcommand(function(player_name)
+	if deaf[player_name] then
+		core.chat_send_player(player_name, S("You cannot use commands right now."))
+		return true
 	end
 	return false
 end)
@@ -45,6 +96,32 @@ local function record_command(command, on_success)
 			return ok, text
 		end,
 	})
+end
+
+-- A private message to a deaf player is turned away, and /me reaches
+-- only those who may hear.
+do
+	local msg = core.registered_chatcommands.msg
+	if msg then
+		local old_func = msg.func
+		core.override_chatcommand("msg", {
+			func = function(player_name, param)
+				local recipient = chat.parse_private(param)
+				if recipient and deaf[recipient] then
+					return false, S("@1 cannot be reached right now.", recipient)
+				end
+				return old_func(player_name, param)
+			end,
+		})
+	end
+	if core.registered_chatcommands.me then
+		core.override_chatcommand("me", {
+			func = function(player_name, param)
+				send_to_hearing("* " .. player_name .. " " .. param)
+				return true
+			end,
+		})
+	end
 end
 
 record_command("msg", function(player_name, param)
