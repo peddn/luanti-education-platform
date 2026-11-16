@@ -134,4 +134,35 @@ function desk.targets(selection, students)
 	return list
 end
 
+--------------------------------------------------------------------------
+-- Rows of the list
+
+-- The list shows one row for "all students" and one per student. A row is
+-- named by what it stands for: desk.ALL or the name of a student.
+
+desk.ALL = true
+
+--- Returns what a row of the list stands for: desk.ALL for the first
+-- row, the name of a student for the others, nil if there is no such row.
+function desk.row_target(row, students)
+	if row == 1 then
+		return desk.ALL
+	end
+	return students[row - 1]
+end
+
+--- Returns the row that stands for a target, or nil if it is not in the
+-- list, for example because the student left.
+function desk.target_row(target, students)
+	if target == desk.ALL then
+		return 1
+	end
+	for index, student in ipairs(students) do
+		if student == target then
+			return index + 1
+		end
+	end
+	return nil
+end
+
 return desk

@@ -1,7 +1,7 @@
 # textdomain: lep_desk
 @1 level @2=@1 Niveau @2
 All students (@1)=Alle Schüler (@1)
-Students: click to mark=Schüler: zum Markieren anklicken
+Students: click a box to mark=Schüler: zum Markieren das Kästchen anklicken
 Marked: @1=Markiert: @1
 Actions=Aktionen
 You may not use any actions.=Du darfst keine Aktionen ausführen.
