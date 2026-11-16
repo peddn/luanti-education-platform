@@ -24,6 +24,17 @@ describe("lep_portals links", function()
 		assert.are.equal(links.TO_HALL, links.destination(links.PLOT, "anna", "ben", true))
 	end)
 
+	it("connects the hall and the learning hall for everyone", function()
+		assert.are.equal(links.TO_LEARNING_HALL,
+			links.destination(links.HUB, nil, "anna", false))
+		assert.are.equal(links.TO_HUB, links.destination(links.EXIT, nil, "anna", false))
+	end)
+
+	it("leads from a module portal into the module", function()
+		assert.are.equal(links.TO_MODULE,
+			links.destination(links.MODULE, "lep_math:math", "anna", false))
+	end)
+
 	it("knows nothing about other kinds", function()
 		assert.is_nil(links.destination("something", "anna", "anna", true))
 	end)

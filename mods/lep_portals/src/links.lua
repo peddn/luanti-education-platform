@@ -7,12 +7,18 @@ links.LOBBY = "lobby"         -- fixed portal in the hall
 links.WILDERNESS = "wilderness" -- fixed portal in the wilderness
 links.ROOM = "room"           -- portal in a personal room
 links.PLOT = "plot"           -- portal a player built on their plot
+links.HUB = "hub"             -- portal in the hall that leads to the learning hall
+links.EXIT = "exit"           -- portal in the learning hall back to the hall
+links.MODULE = "module"       -- portal of a learning module in the learning hall
 
 -- Results of links.destination.
 links.TO_WILDERNESS = "to_wilderness"
 links.TO_HALL = "to_hall"
 links.TO_ROOM = "to_room"
 links.TO_PLOT = "to_plot"
+links.TO_LEARNING_HALL = "to_learning_hall"
+links.TO_HUB = "to_hub"       -- into the hall, in front of the hub portal
+links.TO_MODULE = "to_module" -- into the learning room of a module
 links.HINT_BUILD = "hint_build"
 links.HINT_FOREIGN = "hint_foreign"
 
@@ -33,6 +39,12 @@ function links.destination(kind, owner, player_name, owner_has_plot)
 			return links.TO_PLOT
 		end
 		return links.HINT_BUILD
+	elseif kind == links.HUB then
+		return links.TO_LEARNING_HALL
+	elseif kind == links.EXIT then
+		return links.TO_HUB
+	elseif kind == links.MODULE then
+		return links.TO_MODULE
 	elseif kind == links.PLOT then
 		if player_name == owner then
 			return links.TO_ROOM

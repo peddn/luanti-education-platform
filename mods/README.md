@@ -16,7 +16,7 @@ Bisher vorhanden:
 - `lep_chat`: Chat. Schreibt Chat, Privatnachrichten und Schildtexte mit und lässt Lehrkräfte einzelne Schüler am Pult stummschalten.
 - `lep_attention`: Aufmerksamkeitsmodus. Versetzt Schüler in eine dunkle Zelle, zeigt den Text der Lehrkraft und sperrt den Chat.
 - `lep_survival`: Regeln der Survival-Welt. Entfernt Rezepte aus Minetest Game, die ein fremder Mod ersetzt, und macht Erfolge des Awards-Mods zu Trophäen.
-- `lep_portals`: Portale. Das feste Paar zwischen Halle und Wildnis und das persönliche Paar zwischen Raum und Grundstück.
+- `lep_portals`: Portale. Das feste Paar zwischen Halle und Wildnis und das persönliche Paar zwischen Raum und Grundstück. Dazu die Lernhalle, in der jedes Lernmodul sein Portal anmeldet.
 - `lep_lobby`: Lobby. Baut die Glashalle, in der neue Spieler ankommen, und regelt Erscheinen, Tod und Schutz.
 
 ## Ebenen der Raumtypen

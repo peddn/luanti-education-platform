@@ -57,3 +57,44 @@ core.register_node("lep_portals:field_inactive", field({
 	description = "LEP portal field (inactive)",
 	tiles = { "lep_portals_field_inactive.png" },
 }))
+
+-- Portals of learning modules have a field in the colour of the module.
+-- @param id Text that makes the node name unique.
+-- @param colour "#rrggbb"
+-- @return the name of the field node
+function lep_portals._register_field(id, colour)
+	local name = "lep_portals:field_" .. id:gsub("[^%w]", "_")
+	-- The colon in front allows other mods to call this while they load.
+	core.register_node(":" .. name, field({
+		description = "LEP portal field (" .. id .. ")",
+		tiles = { {
+			name = "lep_portals_field.png^[colorize:" .. colour .. ":190",
+			animation = { type = "vertical_frames", aspect_w = 16, aspect_h = 16, length = 1.6 },
+		} },
+		light_source = 11,
+	}))
+	return name
+end
+
+-- Sign above a portal that says where it leads. The third-party mod
+-- signs_lib draws the text. Players cannot edit, dig or light up the sign.
+signs_lib.register_sign("lep_portals:sign", {
+	description = "LEP portal sign",
+	inventory_image = "signs_lib_sign_wall_wooden_inv.png",
+	tiles = {
+		"signs_lib_sign_wall_wooden.png",
+		"signs_lib_sign_wall_wooden_edges.png",
+	},
+	entity_info = "standard",
+	use_texture_alpha = "clip",
+	allow_glow = false,
+	number_of_lines = 2,
+	chars_per_line = 14,
+	groups = { not_in_creative_inventory = 1 },
+	drop = "",
+	diggable = false,
+	can_dig = function() return false end,
+	on_blast = function() end,
+	on_rightclick = function() end,
+	on_rotate = function() return false end,
+})
