@@ -102,8 +102,7 @@
     "title": "Access slips",
     "once": "The start passwords are shown here only now. The backend does not keep them. Print the slips before you leave the page.",
     "print": "Print the slips",
-    "namesTitle": "Names of the children (optional)",
-    "namesHint": "One name per line, in the order of the slips. The names stay in this browser and are neither stored nor sent. They only appear on the printout.",
+    "namesHint": "On each slip you can enter the name of the child, but you do not have to. The names stay in this browser, are neither stored nor sent, and only appear on the printout. Empty fields are not printed.",
     "heading": "Your access to the learning world",
     "for": "For",
     "address": "Address",
@@ -112,7 +111,8 @@
     "password": "Password",
     "hint": "Type name and password exactly like this, capital and small letters too. You can change your password in the game.",
     "done": "Done, the slips are printed",
-    "confirmLeave": "The passwords cannot be shown again afterwards."
+    "confirmLeave": "The passwords cannot be shown again afterwards.",
+    "namePlaceholder": "Name of the child (optional)"
   },
   "health": {
     "title": "Status",

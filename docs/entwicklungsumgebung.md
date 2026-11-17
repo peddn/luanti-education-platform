@@ -354,7 +354,7 @@ Auf der Seite einer Gruppe führt „Schülerkonten“ zur Liste der Konten. Zug
 2. „Konten anlegen“ beauftragt die Welt und zeigt die Zugangszettel mit den Startpasswörtern. Sie stehen nur jetzt dort: Das Backend bewahrt sie nicht auf.
 3. Die Welt legt die Konten an, sobald sie verbunden ist. Der Stand wechselt von „wird in der Welt angelegt“ zu „angelegt“.
 
-Die Namen der Kinder lassen sich über den Zetteln eintragen, eine Zeile pro Kind. Sie bleiben im Browser und stehen nur auf dem Ausdruck.
+Auf jedem Zettel gibt es ein Feld für den Namen des Kindes. Die Namen bleiben im Browser und stehen nur auf dem Ausdruck, leere Felder werden nicht gedruckt.
 
 Die Adresse auf den Zetteln trägt die Schulverwaltung auf der Seite der Gruppe ein. Für die Testumgebung ist das `127.0.0.1, Port 30000`.
 

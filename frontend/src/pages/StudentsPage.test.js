@@ -142,14 +142,21 @@ describe('students page', () => {
     expect(slips[1].get('[data-test=account]').text()).toBe('klugeEule')
     expect(slips[1].get('[data-test=password]').text()).toBe('wolke-apfel-47')
     expect(slips[1].get('[data-test=address]').text()).toBe('spiel.schule.example, Port 30000')
-    expect(slips[0].find('[data-test=child]').exists()).toBe(false)
     expect(page.text()).toContain('Die Startpasswörter stehen nur jetzt hier.')
 
-    // The names of the children go onto the slips and nowhere else.
+    // Every slip has its own field. An empty one is left out of the printout.
+    const fields = page.findAll('input[name^=child-]')
+    expect(fields).toHaveLength(2)
+    expect(slips[0].get('[data-test=child]').text()).toBe('')
+    expect(slips[0].get('dt').classes()).toContain('print:hidden')
+
+    // The name of a child goes onto its slip and nowhere else.
     const before = send.mock.calls.length
-    await page.get('textarea[name=names]').setValue('Anna Muster\n\n')
+    await fields[0].setValue(' Anna Muster ')
     expect(slips[0].get('[data-test=child]').text()).toBe('Anna Muster')
-    expect(page.findAll('[data-test=slip]')[1].find('[data-test=child]').exists()).toBe(false)
+    expect(slips[0].get('dt').classes()).not.toContain('print:hidden')
+    expect(slips[1].get('[data-test=child]').text()).toBe('')
+    expect(slips[1].get('dt').classes()).toContain('print:hidden')
     await page.get('[data-test=print]').trigger('click')
     expect(print).toHaveBeenCalledTimes(1)
     expect(send.mock.calls.length).toBe(before)

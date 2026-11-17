@@ -449,7 +449,8 @@ pub mod web {
         pub state: StudentState,
     }
 
-    /// The accounts of the students of a group, by name.
+    /// The accounts of the students of a group, in the order they were
+    /// rolled. A name that is rolled again keeps its place.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct Students {
         pub students: Vec<Student>,

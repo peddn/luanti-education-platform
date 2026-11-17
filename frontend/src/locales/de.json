@@ -102,8 +102,7 @@
     "title": "Zugangszettel",
     "once": "Die Startpasswörter stehen nur jetzt hier. Das Backend bewahrt sie nicht auf. Drucke die Zettel, bevor du die Seite verlässt.",
     "print": "Zettel drucken",
-    "namesTitle": "Namen der Kinder (freiwillig)",
-    "namesHint": "Ein Name pro Zeile, in der Reihenfolge der Zettel. Die Namen bleiben in diesem Browser und werden nicht gespeichert oder gesendet. Sie stehen nur auf dem Ausdruck.",
+    "namesHint": "Auf jedem Zettel kannst du den Namen des Kindes eintragen, musst es aber nicht. Die Namen bleiben in diesem Browser, werden nicht gespeichert oder gesendet und stehen nur auf dem Ausdruck. Leere Felder werden nicht gedruckt.",
     "heading": "Dein Zugang zur Lernwelt",
     "for": "Für",
     "address": "Adresse",
@@ -112,7 +111,8 @@
     "password": "Passwort",
     "hint": "Tippe Name und Passwort genau so ab, auch die Groß- und Kleinschreibung. Dein Passwort kannst du im Spiel ändern.",
     "done": "Fertig, Zettel sind gedruckt",
-    "confirmLeave": "Die Passwörter lassen sich danach nicht mehr anzeigen."
+    "confirmLeave": "Die Passwörter lassen sich danach nicht mehr anzeigen.",
+    "namePlaceholder": "Name des Kindes (freiwillig)"
   },
   "health": {
     "title": "Zustand",

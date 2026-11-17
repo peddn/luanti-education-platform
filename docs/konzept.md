@@ -178,7 +178,7 @@ Das Backend würfelt aus zwei gepflegten Wortlisten eine Kombination aus Adjekti
 - Jedes Nomen trägt sein Geschlecht, damit die Endung des Adjektivs stimmt.
 - Nur freundliche Wörter, bei denen keine Kombination spöttisch klingt.
 - Ein Name ist an der ganzen Schule einmalig, unabhängig von Groß- und Kleinschreibung, und gleicht keinem Konto einer Lehrkraft.
-- Die Lehrkraft kann einzelne Namen neu würfeln, solange das Konto nicht angelegt ist.
+- Die Lehrkraft kann einzelne Namen neu würfeln, solange das Konto nicht angelegt ist. Der neue Name steht an derselben Stelle der Liste.
 
 Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke hängen an ihm.
 
@@ -198,7 +198,7 @@ Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke 
 **Echte Namen**
 
 - Das Backend erfährt nie, welches Kind hinter einem Konto steht. Es kennt nur die Anzahl.
-- Für die Zugangszettel kann die Lehrkraft die Namen der Kinder im Browser eintragen. Sie stehen dann auf dem Ausdruck. Die Liste verlässt den Browser nicht und wird nicht gespeichert.
+- Auf jedem Zugangszettel kann die Lehrkraft im Browser den Namen des Kindes eintragen. Er steht dann auf dem Ausdruck. Die Namen verlassen den Browser nicht und werden nicht gespeichert.
 - Die Zuordnung von Kontoname zu Kind führt die Lehrkraft selbst, zum Beispiel mit dem Ausdruck.
 
 **Adresse der Welt**

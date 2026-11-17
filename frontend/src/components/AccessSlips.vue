@@ -12,10 +12,9 @@ const props = defineProps({
 
 defineEmits(['done'])
 
-// The names of the children. They are typed or pasted here, shown on
-// the printout and nowhere else: this text never leaves the browser.
-const names = ref('')
-const nameList = computed(() => names.value.split('\n').map((line) => line.trim()))
+// The names of the children, one per slip. They are typed here, shown
+// on the printout and nowhere else: they never leave the browser.
+const names = ref(/** @type {string[]} */ ([]))
 const list = computed(() => /** @type {AccessSlip[]} */ (props.slips))
 
 function print() {
@@ -30,17 +29,7 @@ function print() {
       <p role="alert" class="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
         {{ $t('slips.once') }}
       </p>
-      <label class="block space-y-1">
-        <span class="font-semibold">{{ $t('slips.namesTitle') }}</span>
-        <textarea
-          v-model="names"
-          name="names"
-          rows="5"
-          autocomplete="off"
-          class="block w-full rounded border border-slate-300 bg-white px-3 py-2 font-mono text-sm"
-        ></textarea>
-        <span class="block text-sm text-slate-500">{{ $t('slips.namesHint') }}</span>
-      </label>
+      <p class="text-sm text-slate-600">{{ $t('slips.namesHint') }}</p>
       <div class="flex flex-wrap items-center gap-4">
         <button
           type="button"
@@ -71,10 +60,19 @@ function print() {
       >
         <h3 class="font-bold">{{ $t('slips.heading') }}</h3>
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-          <template v-if="nameList[index]">
-            <dt class="text-slate-500">{{ $t('slips.for') }}</dt>
-            <dd data-test="child">{{ nameList[index] }}</dd>
-          </template>
+          <dt class="text-slate-500" :class="{ 'print:hidden': !names[index]?.trim() }">{{ $t('slips.for') }}</dt>
+          <dd :class="{ 'print:hidden': !names[index]?.trim() }">
+            <input
+              v-model="names[index]"
+              type="text"
+              :name="`child-${index}`"
+              autocomplete="off"
+              :placeholder="$t('slips.namePlaceholder')"
+              :aria-label="$t('slips.for')"
+              class="w-full rounded border border-slate-300 bg-white px-2 py-1 print:hidden"
+            />
+            <span data-test="child" class="hidden print:inline">{{ names[index]?.trim() }}</span>
+          </dd>
           <dt class="text-slate-500">{{ $t('slips.address') }}</dt>
           <dd data-test="address">{{ address || $t('slips.noAddress') }}</dd>
           <dt class="text-slate-500">{{ $t('slips.account') }}</dt>

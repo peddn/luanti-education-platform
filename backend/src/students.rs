@@ -38,14 +38,14 @@ fn state_of(text: &str) -> StudentState {
     }
 }
 
-/// Lists the accounts of the students of a group, by name.
+/// Lists the accounts of the students of a group, in the order they
+/// were rolled. The order never changes: a name that is rolled again
+/// keeps its place, so a list on a screen does not jump.
 pub async fn list(pool: &SqlitePool, world_id: &str) -> Result<Vec<Student>> {
-    let rows = sqlx::query(
-        "SELECT account, state FROM students WHERE world_id = ? ORDER BY account COLLATE NOCASE",
-    )
-    .bind(world_id)
-    .fetch_all(pool)
-    .await?;
+    let rows = sqlx::query("SELECT account, state FROM students WHERE world_id = ? ORDER BY rowid")
+        .bind(world_id)
+        .fetch_all(pool)
+        .await?;
     Ok(rows
         .iter()
         .map(|row| Student {
@@ -71,25 +71,32 @@ async fn is_taken(tx: &mut Transaction<'_, Sqlite>, name: &str) -> Result<bool> 
     Ok(taken.is_some())
 }
 
-/// Rolls a name nobody has and stores it as a draft. Returns `None` if
-/// no free name turned up.
-async fn add_draft(tx: &mut Transaction<'_, Sqlite>, world_id: &str) -> Result<Option<String>> {
+/// Rolls a name nobody has. Returns `None` if no free name turned up.
+async fn roll_free(tx: &mut Transaction<'_, Sqlite>) -> Result<Option<String>> {
     for _ in 0..ROLLS {
         let name = names::roll_account_name();
-        if is_taken(tx, &name).await? {
-            continue;
+        if !is_taken(tx, &name).await? {
+            return Ok(Some(name));
         }
-        sqlx::query(
-            "INSERT INTO students (account, world_id, state, created_at) VALUES (?, ?, 'draft', ?)",
-        )
-        .bind(&name)
-        .bind(world_id)
-        .bind(clock::now())
-        .execute(&mut **tx)
-        .await?;
-        return Ok(Some(name));
     }
     Ok(None)
+}
+
+/// Rolls a name nobody has and stores it as a draft at the end of the
+/// group. Returns `None` if no free name turned up.
+async fn add_draft(tx: &mut Transaction<'_, Sqlite>, world_id: &str) -> Result<Option<String>> {
+    let Some(name) = roll_free(tx).await? else {
+        return Ok(None);
+    };
+    sqlx::query(
+        "INSERT INTO students (account, world_id, state, created_at) VALUES (?, ?, 'draft', ?)",
+    )
+    .bind(&name)
+    .bind(world_id)
+    .bind(clock::now())
+    .execute(&mut **tx)
+    .await?;
+    Ok(Some(name))
 }
 
 /// Why names could not be rolled or changed.
@@ -155,27 +162,36 @@ pub async fn remove(
 }
 
 /// Replaces a draft, or a name the world refused, by a newly rolled
-/// name. Returns the new name.
+/// name, in the same place of the list. Returns the new name.
 pub async fn reroll(
     pool: &SqlitePool,
     world_id: &str,
     account: &str,
 ) -> Result<Result<String, DraftError>> {
     let mut tx = pool.begin().await?;
-    let removed = sqlx::query(
-        "DELETE FROM students WHERE account = ? AND world_id = ? AND state IN ('draft', 'refused')",
+    let changeable: Option<i64> = sqlx::query_scalar(
+        "SELECT 1 FROM students
+         WHERE account = ? AND world_id = ? AND state IN ('draft', 'refused')",
     )
     .bind(account)
     .bind(world_id)
-    .execute(&mut *tx)
-    .await?
-    .rows_affected();
-    if removed == 0 {
+    .fetch_optional(&mut *tx)
+    .await?;
+    if changeable.is_none() {
         return Ok(Err(DraftError::NotADraft));
     }
-    let Some(name) = add_draft(&mut tx, world_id).await? else {
+    let Some(name) = roll_free(&mut tx).await? else {
         return Ok(Err(DraftError::NoNames));
     };
+    // The row stays, only its name changes: that keeps its place.
+    sqlx::query(
+        "UPDATE students SET account = ?, state = 'draft' WHERE account = ? AND world_id = ?",
+    )
+    .bind(&name)
+    .bind(account)
+    .bind(world_id)
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(Ok(name))
 }
@@ -191,8 +207,7 @@ pub async fn create(
 ) -> Result<Option<(String, Vec<AccessSlip>)>> {
     let mut tx = pool.begin().await?;
     let rows = sqlx::query(
-        "SELECT account FROM students WHERE world_id = ? AND state = 'draft'
-         ORDER BY account COLLATE NOCASE",
+        "SELECT account FROM students WHERE world_id = ? AND state = 'draft' ORDER BY rowid",
     )
     .bind(world_id)
     .fetch_all(&mut *tx)
@@ -352,12 +367,13 @@ mod tests {
         draft(&pool, &first, 2).await.unwrap().unwrap();
         let before = names_in(&pool, &first).await;
 
+        // The new name takes the place of the old one.
         let new = reroll(&pool, &first, &before[0]).await.unwrap().unwrap();
-        let after = names_in(&pool, &first).await;
-        assert_eq!(after.len(), 2);
-        assert!(after.contains(&new));
-        assert!(after.contains(&before[1]));
-        assert!(!after.contains(&before[0]));
+        assert_ne!(new, before[0]);
+        assert_eq!(
+            names_in(&pool, &first).await,
+            vec![new.clone(), before[1].clone()]
+        );
 
         remove(&pool, &first, &before[1]).await.unwrap().unwrap();
         assert_eq!(names_in(&pool, &first).await, vec![new.clone()]);
@@ -375,6 +391,27 @@ mod tests {
             remove(&pool, &first, &before[1]).await.unwrap(),
             Err(DraftError::NotADraft)
         );
+    }
+
+    #[tokio::test]
+    async fn rolling_one_name_again_leaves_all_others_where_they_are() {
+        let (pool, first, _) = setup().await;
+        draft(&pool, &first, 6).await.unwrap().unwrap();
+        for round in 0..120 {
+            let before = names_in(&pool, &first).await;
+            let place = round % before.len();
+            let new = reroll(&pool, &first, &before[place])
+                .await
+                .unwrap()
+                .unwrap();
+            let mut expected = before.clone();
+            expected[place] = new;
+            assert_eq!(names_in(&pool, &first).await, expected, "round {round}");
+        }
+        // New names go to the end.
+        let before = names_in(&pool, &first).await;
+        draft(&pool, &first, 2).await.unwrap().unwrap();
+        assert_eq!(names_in(&pool, &first).await[..6], before[..]);
     }
 
     #[tokio::test]

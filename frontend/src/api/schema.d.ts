@@ -647,7 +647,10 @@ export interface components {
          * @enum {string}
          */
         StudentState: "draft" | "creating" | "active" | "refused";
-        /** @description The accounts of the students of a group, by name. */
+        /**
+         * @description The accounts of the students of a group, in the order they were
+         *     rolled. A name that is rolled again keeps its place.
+         */
         Students: {
             students: components["schemas"]["Student"][];
         };
@@ -964,7 +967,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The accounts, by name */
+            /** @description The accounts, in the order they were rolled */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -449,7 +449,7 @@ fn draft_failure(error: DraftError) -> Failure {
     path = "/api/web/v1/groups/{id}/students",
     params(("id" = String, Path, description = "Identifier of the group")),
     responses(
-        (status = 200, description = "The accounts, by name", body = Students),
+        (status = 200, description = "The accounts, in the order they were rolled", body = Students),
         (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
         (status = 404, description = "No such group for this teacher (not_found)", body = ApiError),
     ),
