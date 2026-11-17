@@ -44,14 +44,16 @@
     "loading": "Zustand wird abgefragt …",
     "reload": "Neu abfragen",
     "backend": "Backend",
-    "database": "Datenbank",
     "version": "Version",
     "status": {
       "ok": "Alles in Ordnung",
       "degraded": "Eingeschränkt"
     },
-    "databaseOk": "antwortet",
-    "databaseDown": "antwortet nicht"
+    "mailTitle": "Mailversand",
+    "mail": {
+      "smtp": "über den Mailserver",
+      "terminal": "nicht eingerichtet, Mails stehen im Terminal des Backends"
+    }
   },
   "confirm": {
     "title": "E-Mail-Adresse bestätigen",

@@ -56,6 +56,9 @@ impl AppState {
 #[openapi(
     info(
         title = "Luanti Education Platform",
+        // The version of the interface, not of the program: this
+        // description is open to everybody.
+        version = "1",
         description = "Interface of the LEP backend for the web frontend and the worlds."
     ),
     paths(
@@ -67,7 +70,8 @@ impl AppState {
         web_api::request_login_link,
         web_api::log_in,
         web_api::log_out,
-        web_api::me
+        web_api::me,
+        web_api::status
     ),
     components(schemas(
         Health,
@@ -88,6 +92,8 @@ impl AppState {
         lep_protocol::web::LoginLinkRequest,
         lep_protocol::web::LoginRequest,
         lep_protocol::web::Me,
+        lep_protocol::web::Status,
+        lep_protocol::web::MailTransport,
         lep_protocol::world::Done
     )),
     modifiers(&WorldKey)
@@ -164,7 +170,8 @@ fn api(state: AppState) -> Router {
         .with_state(state)
 }
 
-/// Says whether the backend can do its work.
+/// Says whether the backend can do its work, and nothing else: everybody
+/// may ask. The details are for teachers, under `/api/web/v1/status`.
 #[utoipa::path(
     get,
     path = "/api/health",
@@ -172,7 +179,7 @@ fn api(state: AppState) -> Router {
 )]
 async fn health(State(state): State<AppState>) -> Json<Health> {
     let database = db::is_alive(&state.db).await;
-    Json(Health::new(env!("CARGO_PKG_VERSION"), database))
+    Json(Health::new(database))
 }
 
 /// Returns the OpenAPI description of the interface.

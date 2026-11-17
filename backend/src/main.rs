@@ -16,6 +16,11 @@ async fn main() -> Result<()> {
             print!("{}", cli::openapi());
             Ok(())
         }
+        Command::Mail { command } => {
+            let config = Config::from_env()?;
+            println!("{}", cli::run_mail(&config, command).await?);
+            Ok(())
+        }
         Command::Teacher { command } => {
             let config = Config::from_env()?;
             let pool = db::open(&config.database).await?;
@@ -47,11 +52,21 @@ async fn serve() -> Result<()> {
         .with_context(|| format!("cannot listen on {}", config.bind))?;
     tracing::info!("listening on http://{}", listener.local_addr()?);
 
-    let state = AppState::with(pool.clone(), Mailer::Terminal, &config.public_url);
-    tracing::info!(
-        "mail is not set up: mails are written to this terminal, links start with {}",
-        config.public_url
-    );
+    let mailer = Mailer::from_settings(config.smtp.as_ref())?;
+    match &config.smtp {
+        Some(smtp) => tracing::info!(
+            "mails are sent through {}:{} as {}, links start with {}",
+            smtp.host,
+            smtp.port,
+            smtp.from,
+            config.public_url
+        ),
+        None => tracing::info!(
+            "no mail server is set: mails are written to this terminal, links start with {}",
+            config.public_url
+        ),
+    }
+    let state = AppState::with(pool.clone(), mailer, &config.public_url);
     let router = if app::has_frontend(&config.frontend) {
         tracing::info!(folder = %config.frontend.display(), "serving the frontend");
         app::router_with_frontend(state, &config.frontend)

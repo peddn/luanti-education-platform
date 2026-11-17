@@ -7,13 +7,13 @@
       "name": "AGPL-3.0-or-later",
       "identifier": "AGPL-3.0-or-later"
     },
-    "version": "0.1.0"
+    "version": "1"
   },
   "paths": {
     "/api/health": {
       "get": {
         "tags": [],
-        "summary": "Says whether the backend can do its work.",
+        "summary": "Says whether the backend can do its work, and nothing else: everybody\nmay ask. The details are for teachers, under `/api/web/v1/status`.",
         "operationId": "health",
         "responses": {
           "200": {
@@ -197,6 +197,42 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/status": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Says how the backend is doing, with the details that are nobody\nelse's business.",
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "description": "State of the backend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
                 }
               }
             }
@@ -540,23 +576,13 @@
       },
       "Health": {
         "type": "object",
-        "description": "Answer of the health check.",
+        "description": "Answer of the health check. Everybody may ask, so it says nothing\nbut whether the backend can do its work.",
         "required": [
-          "status",
-          "version",
-          "database"
+          "status"
         ],
         "properties": {
-          "database": {
-            "type": "boolean",
-            "description": "True if the database answers."
-          },
           "status": {
             "$ref": "#/components/schemas/HealthStatus"
-          },
-          "version": {
-            "type": "string",
-            "description": "Version of the backend, as in its package."
           }
         }
       },
@@ -663,6 +689,14 @@
             "type": "string"
           }
         }
+      },
+      "MailTransport": {
+        "type": "string",
+        "description": "How mails leave the backend.",
+        "enum": [
+          "smtp",
+          "terminal"
+        ]
       },
       "Me": {
         "type": "object",
@@ -804,6 +838,27 @@
           "protocol": {
             "type": "string",
             "description": "Which protocol, one of `PROTOCOLS`."
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "description": "State of the backend with its details, for teachers who are\nlogged in.",
+        "required": [
+          "status",
+          "version",
+          "mail"
+        ],
+        "properties": {
+          "mail": {
+            "$ref": "#/components/schemas/MailTransport"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version of the backend, as in its package."
           }
         }
       },

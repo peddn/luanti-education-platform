@@ -226,7 +226,7 @@ Prüfen, in einem zweiten Terminal:
 curl http://127.0.0.1:8080/api/health
 ```
 
-Erwartete Antwort: `{"status":"ok","version":"0.1.0","database":true}`. Die Beschreibung der Schnittstelle liefert `http://127.0.0.1:8080/api/openapi.json`.
+Erwartete Antwort: `{"status":"ok"}`. Mehr sagt dieser Weg nicht, weil ihn jeder aufrufen kann. Version und Einzelheiten zeigt die Seite „Zustand“ nach der Anmeldung. Die Beschreibung der Schnittstelle liefert `http://127.0.0.1:8080/api/openapi.json`.
 
 ### Einstellungen
 
@@ -238,6 +238,13 @@ Das Backend liest seine Einstellungen aus Umgebungsvariablen.
 | `LEP_DATABASE` | Pfad der SQLite-Datei | `.dev/backend/lep.sqlite` |
 | `LEP_FRONTEND` | Ordner mit der gebauten Oberfläche | `frontend/dist` |
 | `LEP_PUBLIC_URL` | Adresse der Web-Anwendung, wie Browser sie erreichen. Damit beginnen die Links in Mails. | `http://127.0.0.1:8080` |
+| `LEP_SMTP_HOST` | Name des Mailservers. Ohne ihn stehen Mails nur im Terminal. | nicht gesetzt |
+| `LEP_SMTP_SECURITY` | Schutz der Verbindung: `starttls`, `tls` oder `none` | `starttls` |
+| `LEP_SMTP_PORT` | Port des Mailservers | 587 bei `starttls`, 465 bei `tls`, 25 bei `none` |
+| `LEP_SMTP_USER`, `LEP_SMTP_PASSWORD` | Anmeldung am Mailserver, beide oder keine | nicht gesetzt |
+| `LEP_MAIL_FROM` | Absender, etwa `LEP <lep@schule.example>`. Pflicht, sobald ein Mailserver gesetzt ist. | nicht gesetzt |
+
+Einstellungen, die nicht in der Befehlszeile stehen sollen, gehören in die Datei `.dev/backend.env`, eine Zeile `NAME=wert` je Einstellung. `scripts/backend-run.sh` liest sie bei jedem Start. Der Ordner `.dev/` wird nie eingecheckt.
 | `RUST_LOG` | Ausführlichkeit der Meldungen | `info` |
 
 Die Datenbank der Testumgebung liegt in `.dev/` und wird nicht eingecheckt. Wer sie löscht, bekommt beim nächsten Start eine leere. Tabellen entstehen und ändern sich über Migrationen in `backend/migrations/`, das Backend spielt sie beim Start von selbst ein.
@@ -284,6 +291,7 @@ Die Welt meldet den Fall einmal deutlich im Terminal (`THE BACKEND DOES NOT KNOW
 | `scripts/backend-run.sh world ping <name>` | stellt einen Ping-Auftrag ein, um den Weg zur Welt und zurück zu prüfen |
 | `scripts/backend-run.sh world state <name>` | zeigt, was das Backend von einer Welt weiß: Module, Fortschritt, Trophäen, Protokolle |
 | `scripts/backend-run.sh world sync <name>` | bittet die Welt, ihren ganzen Stand noch einmal zu senden |
+| `scripts/backend-run.sh mail test <adresse>` | schickt eine Probemail über den eingestellten Mailserver |
 | `scripts/backend-run.sh teacher list` | listet die Lehrkräfte: Adresse, ob sie bestätigt ist, und in wie vielen Welten das Privileg gilt |
 | `scripts/update-openapi.sh` | schreibt `api/openapi.json` und die Typen der Oberfläche neu, nach Änderungen an der Schnittstelle |
 
@@ -299,7 +307,7 @@ Eine Lehrkraft richtet ihren Web-Zugang im Lehrerpult ein, Reiter „Web-Zugang�
 
 Voraussetzung: Die Testwelt ist mit dem Backend verbunden (`scripts/dev-bridge.sh`), und die Oberfläche ist gebaut (`scripts/frontend-run.sh build`), denn der Link aus der Mail öffnet eine Seite der Oberfläche.
 
-**Mails stehen im Terminal.** Der Mailversand ist noch nicht eingerichtet. Das Backend schreibt jede Mail in sein Terminal, zwischen zwei Linien aus Strichen. Den Link darin im Browser öffnen und dort „Adresse bestätigen“ klicken. Ein Link gilt 15 Minuten und einmal.
+**Mails stehen im Terminal**, solange kein Mailserver eingestellt ist (siehe „Mailversand“). Das Backend schreibt dann jede Mail in sein Terminal, zwischen zwei Linien aus Strichen. Den Link darin im Browser öffnen und dort „Adresse bestätigen“ klicken. Ein Link gilt 15 Minuten und einmal.
 
 Die Welt meldet dem Backend, welche Konten das Privileg haben, beim Start und bei jeder Änderung. Nur für diese Konten nimmt das Backend Meldungen zum Web-Zugang an. `scripts/backend-run.sh teacher list` zeigt, was das Backend weiß.
 
@@ -315,7 +323,35 @@ Ein Link gilt 15 Minuten und einmal, eine neue Mail gibt es frühestens nach ein
 
 Die Sitzung ist ein Cookie für `/api/web`. Über den Entwicklungsserver auf Port 5173 funktioniert sie ebenso, dort gilt sie aber getrennt von Port 8080. Für Links, die auf den Entwicklungsserver zeigen sollen, das Backend mit `LEP_PUBLIC_URL=http://127.0.0.1:5173` starten.
 
-Der Weg `/api/health` bleibt ohne Anmeldung erreichbar, für Prüfungen von außen. Die Seite „Zustand“ in der Oberfläche braucht die Anmeldung.
+Der Weg `/api/health` bleibt ohne Anmeldung erreichbar, für Prüfungen von außen. Er sagt nur, ob das Backend arbeiten kann. Die Seite „Zustand“ in der Oberfläche braucht die Anmeldung und zeigt dazu die Version und wie Mails rausgehen.
+
+### Mailversand
+
+Ohne Mailserver schreibt das Backend jede Mail in sein Terminal. Für echten Versand die Einstellungen in `.dev/backend.env` eintragen, zum Beispiel:
+
+```sh
+LEP_SMTP_HOST=mail.schule.example
+LEP_SMTP_USER=lep@schule.example
+LEP_SMTP_PASSWORD=...
+LEP_MAIL_FROM=LEP <lep@schule.example>
+```
+
+Das Passwort steht nur in dieser Datei, nie im Repository und nie in einem Gespräch.
+
+Prüfen, ob es klappt:
+
+```sh
+scripts/backend-run.sh mail test <deine-adresse>
+```
+
+Der Befehl meldet sich am Mailserver an, schickt eine Probemail und sagt, ob der Mailserver sie angenommen hat. Ob sie ankommt, zeigt das Postfach. Schlägt etwas fehl, nennt die Meldung den Grund, etwa einen falschen Port oder ein abgelehntes Passwort.
+
+Beim Start meldet das Backend dann `mails are sent through ...`. Einstellungen, die nicht zusammenpassen, beenden es sofort mit einer Meldung, zum Beispiel ein Mailserver ohne Absender oder ein Name ohne Passwort.
+
+- Mails gehen im Hintergrund raus. Wer einen Link anfordert, bekommt die Antwort sofort, egal ob eine Mail rausgeht.
+- Scheitert der Versand, steht das im Protokoll des Backends mit dem Kontonamen, ohne Adresse und ohne Link. Die Lehrkraft fordert die Mail neu an.
+- `none` als Schutz ist mit Passwort nur für einen Mailserver auf demselben Rechner erlaubt.
+- Das Backend prüft das Zertifikat des Mailservers gegen die üblichen öffentlichen Stellen. Ein selbst ausgestelltes Zertifikat lehnt es ab.
 
 ### Oberfläche
 

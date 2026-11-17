@@ -7,6 +7,8 @@ use lep_protocol::world::{JOB_PING, JOB_SYNC_STATE};
 use serde_json::json;
 use sqlx::SqlitePool;
 
+use crate::config::Config;
+use crate::mail::{self, Mailer};
 use crate::{app, jobs, state, teachers, worlds};
 
 #[derive(Debug, Parser)]
@@ -29,6 +31,11 @@ pub enum Command {
         #[command(subcommand)]
         command: WorldCommand,
     },
+    /// Try out the mail server.
+    Mail {
+        #[command(subcommand)]
+        command: MailCommand,
+    },
     /// Look after the teachers and their web access.
     Teacher {
         #[command(subcommand)]
@@ -36,6 +43,41 @@ pub enum Command {
     },
     /// Print the description of the interface, as in api/openapi.json.
     Openapi,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum MailCommand {
+    /// Send a test mail to an address, to see that the settings work.
+    Test {
+        /// Address that gets the test mail.
+        address: String,
+    },
+}
+
+/// Runs a command about mail and returns what to print.
+pub async fn run_mail(config: &Config, command: MailCommand) -> Result<String> {
+    match command {
+        MailCommand::Test { address } => {
+            let Some(smtp) = &config.smtp else {
+                bail!(
+                    "No mail server is set. Set {} and {} first; without them mails are only written to the terminal of the backend.",
+                    crate::config::ENV_SMTP_HOST,
+                    crate::config::ENV_MAIL_FROM
+                );
+            };
+            let to = teachers::normalize_email(&address)
+                .with_context(|| format!("{address} is not an address"))?;
+            let mailer = Mailer::smtp(smtp)?;
+            mailer.check().await.with_context(|| {
+                format!("cannot talk to the mail server {}:{}", smtp.host, smtp.port)
+            })?;
+            mailer.send(mail::test(&to)).await?;
+            Ok(format!(
+                "The mail server {}:{} took a test mail for {to}, sent as {}.\nLook into the mailbox, also into the spam folder.",
+                smtp.host, smtp.port, smtp.from
+            ))
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]

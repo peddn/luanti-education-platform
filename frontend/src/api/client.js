@@ -3,6 +3,7 @@
 
 /** @typedef {import('./schema').components['schemas']} Schemas */
 /** @typedef {Schemas['Health']} Health */
+/** @typedef {Schemas['Status']} Status */
 /** @typedef {Schemas['Confirmed']} Confirmed */
 /** @typedef {Schemas['Me']} Me */
 /** @typedef {Schemas['ErrorCode']} BackendErrorCode */
@@ -138,6 +139,15 @@ export function createClient(options = {}) {
     /** @returns {Promise<Health>} */
     async health() {
       return /** @type {Health} */ (await request('/api/health'))
+    },
+
+    /**
+     * Returns the state of the backend with its details. Needs a login.
+     *
+     * @returns {Promise<Status>}
+     */
+    async status() {
+      return /** @type {Status} */ (await request('/api/web/v1/status'))
     },
 
     /**
