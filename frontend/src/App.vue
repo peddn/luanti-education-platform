@@ -18,8 +18,8 @@ async function logout() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-900">
-    <header class="border-b border-slate-200 bg-white">
+  <div class="min-h-screen bg-slate-50 text-slate-900 print:bg-white">
+    <header class="border-b border-slate-200 bg-white print:hidden">
       <div class="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
         <RouterLink :to="{ name: 'overview' }" class="flex items-baseline gap-2" :title="$t('app.title')">
           <span class="rounded bg-emerald-700 px-2 py-0.5 text-sm font-bold tracking-wide text-white">
@@ -55,7 +55,7 @@ async function logout() {
         <LanguageSwitch />
       </div>
     </header>
-    <main class="mx-auto max-w-5xl px-4 py-8">
+    <main class="mx-auto max-w-5xl px-4 py-8 print:p-0">
       <RouterView />
     </main>
   </div>
