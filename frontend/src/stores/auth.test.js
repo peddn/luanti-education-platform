@@ -8,7 +8,7 @@ import { createAuthStore } from './auth'
 /** @typedef {import('@/api/client').Me} Me */
 
 /** @type {Me} */
-const ANNA = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b'], expires_at: 1700043200 }
+const ANNA = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b'], expires_at: 1700043200, school_admin: false }
 
 /**
  * A backend for the store, with a counter of the questions for "me".

@@ -132,7 +132,7 @@ describe('api client', () => {
   it('asks for a login link and logs in and out with POSTs', async () => {
     /** @type {[string, string | undefined, string | undefined][]} */
     const asked = []
-    const me = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b'], expires_at: 1 }
+    const me = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b'], expires_at: 1, school_admin: false }
     const client = createClient({
       fetch: async (input, init) => {
         asked.push([String(input), init?.method, init?.body ? String(init.body) : undefined])

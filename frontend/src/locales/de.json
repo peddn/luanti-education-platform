@@ -11,6 +11,7 @@
   },
   "nav": {
     "overview": "Übersicht",
+    "groups": "Gruppen",
     "health": "Zustand"
   },
   "login": {
@@ -36,7 +37,35 @@
     "email": "E-Mail-Adresse",
     "worlds": "Welten",
     "until": "Angemeldet bis",
-    "soon": "Gruppen, Fortschritt und Protokolle folgen hier in den nächsten Schritten."
+    "soon": "Fortschritt und Protokolle folgen hier in den nächsten Schritten.",
+    "role": "Rolle",
+    "roleSchoolAdmin": "Schulverwaltung",
+    "roleTeacher": "Lehrkraft"
+  },
+  "groups": {
+    "title": "Gruppen",
+    "introAdmin": "Als Schulverwaltung siehst du alle Gruppen. Du benennst sie um und ordnest ihnen Lehrkräfte zu.",
+    "introTeacher": "Du siehst die Gruppen, denen dich die Schulverwaltung zugeordnet hat.",
+    "loading": "Gruppen werden geladen …",
+    "emptyTeacher": "Du bist noch keiner Gruppe zugeordnet. Das macht die Schulverwaltung.",
+    "emptyAdmin": "Es gibt noch keine Gruppe. Gruppen legt der Server-Admin zusammen mit ihrer Welt an.",
+    "name": "Name",
+    "teachers": "Lehrkräfte",
+    "noTeachers": "niemand zugeordnet",
+    "world": "Welt",
+    "lastSeen": "zuletzt verbunden {time}",
+    "neverSeen": "noch nie verbunden",
+    "open": "Öffnen",
+    "back": "Zu allen Gruppen",
+    "newName": "Neuer Name",
+    "save": "Speichern",
+    "saving": "Wird gespeichert …",
+    "saved": "Gespeichert.",
+    "assign": "Lehrkräfte zuordnen",
+    "assignHint": "Zur Auswahl stehen alle Konten mit Web-Zugang. Zugeordnete Lehrkräfte sehen diese Gruppe in der Web-Anwendung.",
+    "noCandidates": "Es gibt noch keine Lehrkraft mit Web-Zugang.",
+    "invalidName": "Der Name braucht 1 bis 60 Zeichen.",
+    "readOnly": "Ändern kann das nur die Schulverwaltung."
   },
   "health": {
     "title": "Zustand",
@@ -76,6 +105,8 @@
     "not_found": "Das gibt es nicht.",
     "too_large": "Die Anfrage ist zu groß.",
     "invalid_request": "Die Anfrage war fehlerhaft.",
+    "forbidden": "Das darfst du nicht.",
+    "name_taken": "Eine andere Gruppe heißt schon so.",
     "invalid_token": "Dieser Link gilt nicht mehr. Er ist abgelaufen oder wurde schon benutzt.",
     "address_taken": "Diese Adresse gehört schon zu einem anderen Konto.",
     "internal": "Im Backend ist ein Fehler aufgetreten.",

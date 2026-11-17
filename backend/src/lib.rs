@@ -7,6 +7,7 @@ pub mod config;
 pub mod db;
 pub mod events;
 pub mod failure;
+pub mod groups;
 pub mod jobs;
 pub mod keys;
 pub mod logins;

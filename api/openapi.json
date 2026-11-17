@@ -80,6 +80,194 @@
         }
       }
     },
+    "/api/web/v1/groups": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Lists the groups of the teacher: all of them for the school\nadministration, else the ones the teacher is assigned to.",
+        "operationId": "list_groups",
+        "responses": {
+          "200": {
+            "description": "The groups the teacher may see",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Groups"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Shows one group. A group the teacher may not see does not exist for\nthem.",
+        "operationId": "show_group",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group for this teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Renames a group, sets its teachers or both. Only the school\nadministration may do this.",
+        "operationId": "change_group",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The group as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The name cannot be used or an account is not a teacher (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another group has this name (name_taken)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/login": {
       "post": {
         "tags": [
@@ -239,6 +427,52 @@
           },
           "401": {
             "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/teachers": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Lists the accounts that can be assigned to groups. Only the school\nadministration may ask.",
+        "operationId": "list_teachers",
+        "responses": {
+          "200": {
+            "description": "Everybody who holds the privilege for web access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the school administration (forbidden)",
             "content": {
               "application/json": {
                 "schema": {
@@ -484,6 +718,8 @@
           "not_found",
           "too_large",
           "invalid_request",
+          "forbidden",
+          "name_taken",
           "invalid_token",
           "address_taken",
           "internal"
@@ -571,6 +807,78 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/EventOutcome"
+          }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "description": "A group. It is the home of one world, one to one.",
+        "required": [
+          "id",
+          "name",
+          "teachers"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Fixed identifier of the group and its world."
+          },
+          "last_seen_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "When the world of the group last called, in seconds since\n1970 (UTC). Missing if it never did."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name for people. It can be changed."
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Account names of the teachers who are assigned to the group,\nsorted."
+          }
+        }
+      },
+      "GroupChange": {
+        "type": "object",
+        "description": "Request to change a group.",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The new name, if it changes."
+          },
+          "teachers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The teachers of the group from now on, if they change. The\nlist replaces the old one."
+          }
+        }
+      },
+      "Groups": {
+        "type": "object",
+        "description": "The groups a teacher may see.",
+        "required": [
+          "groups"
+        ],
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Group"
+            }
           }
         }
       },
@@ -705,7 +1013,8 @@
           "account",
           "email",
           "worlds",
-          "expires_at"
+          "expires_at",
+          "school_admin"
         ],
         "properties": {
           "account": {
@@ -720,6 +1029,10 @@
             "type": "integer",
             "format": "int64",
             "description": "When the session ends, in seconds since 1970 (UTC)."
+          },
+          "school_admin": {
+            "type": "boolean",
+            "description": "True if the teacher belongs to the school administration:\nthey see every group and assign teachers to groups."
           },
           "worlds": {
             "type": "array",
@@ -909,6 +1222,21 @@
           }
         }
       },
+      "TeacherList": {
+        "type": "object",
+        "description": "The accounts that can be assigned to groups: everybody who holds\nthe privilege for web access in some world. Sorted.",
+        "required": [
+          "teachers"
+        ],
+        "properties": {
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "Teachers": {
         "type": "object",
         "description": "Payload of the event \"teachers\": the accounts that hold the\nprivilege for web access in this world. It replaces what the\nbackend knew before.",
@@ -918,6 +1246,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "school_admins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The accounts that hold the privilege of the school\nadministration in this world."
           }
         }
       },

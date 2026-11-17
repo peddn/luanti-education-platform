@@ -5,7 +5,7 @@
 //! need no session: there the token from the mail is the proof.
 
 use axum::extract::rejection::JsonRejection;
-use axum::extract::{FromRequestParts, State};
+use axum::extract::{FromRequestParts, Path, State};
 use axum::http::header::{COOKIE, SET_COOKIE};
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, StatusCode};
@@ -13,13 +13,15 @@ use axum::response::{AppendHeaders, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use lep_protocol::web::{
-    ConfirmRequest, Confirmed, LoginLinkRequest, LoginRequest, MailTransport, Me, Status,
+    ConfirmRequest, Confirmed, Group, GroupChange, Groups, LoginLinkRequest, LoginRequest,
+    MailTransport, Me, Status, TeacherList,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
 
 use crate::app::AppState;
 use crate::failure::Failure;
+use crate::groups::{self, ChangeError};
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
 use crate::teachers::{self, ConfirmError};
 use crate::{clock, mail, web_access};
@@ -35,6 +37,9 @@ pub fn router() -> Router<AppState> {
         .route("/v1/logout", post(log_out))
         .route("/v1/me", get(me))
         .route("/v1/status", get(status))
+        .route("/v1/groups", get(list_groups))
+        .route("/v1/groups/{id}", get(show_group).patch(change_group))
+        .route("/v1/teachers", get(list_teachers))
 }
 
 /// Reads a JSON body, with our own answer if it cannot be read.
@@ -93,7 +98,9 @@ impl FromRequestParts<AppState> for Teacher {
 
 async fn describe(state: &AppState, logged_in: LoggedIn) -> Result<Me, Failure> {
     let worlds = teachers::world_names_of(&state.db, &logged_in.account).await?;
+    let school_admin = groups::is_school_admin(&state.db, &logged_in.account).await?;
     Ok(Me {
+        school_admin,
         account: logged_in.account,
         email: logged_in.email,
         worlds,
@@ -254,6 +261,134 @@ pub async fn status(State(state): State<AppState>, _teacher: Teacher) -> Json<St
             MailTransport::Terminal
         },
     })
+}
+
+/// Lets only the school administration pass.
+async fn school_admin_only(state: &AppState, account: &str) -> Result<(), Failure> {
+    if groups::is_school_admin(&state.db, account).await? {
+        Ok(())
+    } else {
+        Err(Failure::forbidden(
+            "only the school administration may do this",
+        ))
+    }
+}
+
+/// Lists the groups of the teacher: all of them for the school
+/// administration, else the ones the teacher is assigned to.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups",
+    responses(
+        (status = 200, description = "The groups the teacher may see", body = Groups),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn list_groups(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+) -> Result<Json<Groups>, Failure> {
+    let groups = groups::visible_to(&state.db, &teacher.account).await?;
+    Ok(Json(Groups { groups }))
+}
+
+/// Shows one group. A group the teacher may not see does not exist for
+/// them.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The group", body = Group),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group for this teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn show_group(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Json<Group>, Failure> {
+    groups::find_visible(&state.db, &teacher.account, &id)
+        .await?
+        .map(Json)
+        .ok_or_else(|| Failure::not_found("no such group"))
+}
+
+/// Renames a group, sets its teachers or both. Only the school
+/// administration may do this.
+#[utoipa::path(
+    patch,
+    path = "/api/web/v1/groups/{id}",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    request_body = GroupChange,
+    responses(
+        (status = 200, description = "The group as it is now", body = Group),
+        (status = 400, description = "The name cannot be used or an account is not a teacher (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+        (status = 404, description = "No such group (not_found)", body = ApiError),
+        (status = 409, description = "Another group has this name (name_taken)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn change_group(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+    request: Result<Json<GroupChange>, JsonRejection>,
+) -> Result<Json<Group>, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    let change = body(request)?;
+    match groups::change(&state.db, &id, &change).await? {
+        Ok(()) => {}
+        Err(ChangeError::NotFound) => return Err(Failure::not_found("no such group")),
+        Err(ChangeError::InvalidName) => {
+            return Err(Failure::invalid_request(
+                "a group name needs 1 to 60 characters",
+            ))
+        }
+        Err(ChangeError::UnknownTeacher(account)) => {
+            return Err(Failure::invalid_request(format!(
+                "{account} is not a teacher"
+            )))
+        }
+        Err(ChangeError::NameTaken) => {
+            return Err(Failure::new(
+                StatusCode::CONFLICT,
+                ErrorCode::NameTaken,
+                "another group has this name",
+            ))
+        }
+    }
+    tracing::info!(account = %teacher.account, group = %id, "group changed");
+    groups::find_visible(&state.db, &teacher.account, &id)
+        .await?
+        .map(Json)
+        .ok_or_else(|| Failure::not_found("no such group"))
+}
+
+/// Lists the accounts that can be assigned to groups. Only the school
+/// administration may ask.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/teachers",
+    responses(
+        (status = 200, description = "Everybody who holds the privilege for web access", body = TeacherList),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn list_teachers(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+) -> Result<Json<TeacherList>, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    let teachers = groups::assignable(&state.db).await?;
+    Ok(Json(TeacherList { teachers }))
 }
 
 #[cfg(test)]

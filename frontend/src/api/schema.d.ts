@@ -44,6 +44,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists the groups of the teacher: all of them for the school
+         *     administration, else the ones the teacher is assigned to.
+         */
+        get: operations["list_groups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shows one group. A group the teacher may not see does not exist for
+         *     them.
+         */
+        get: operations["show_group"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Renames a group, sets its teachers or both. Only the school
+         *     administration may do this.
+         */
+        patch: operations["change_group"];
+        trace?: never;
+    };
     "/api/web/v1/login": {
         parameters: {
             query?: never;
@@ -142,6 +186,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/teachers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists the accounts that can be assigned to groups. Only the school
+         *     administration may ask.
+         */
+        get: operations["list_teachers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/world/v1/events": {
         parameters: {
             query?: never;
@@ -228,7 +292,7 @@ export interface components {
          *     the language of the user.
          * @enum {string}
          */
-        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "invalid_token" | "address_taken" | "internal";
+        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "forbidden" | "name_taken" | "invalid_token" | "address_taken" | "internal";
         /** @description One thing that happened in a world. */
         Event: {
             /**
@@ -267,6 +331,38 @@ export interface components {
         EventResult: {
             id: string;
             outcome: components["schemas"]["EventOutcome"];
+        };
+        /** @description A group. It is the home of one world, one to one. */
+        Group: {
+            /** @description Fixed identifier of the group and its world. */
+            id: string;
+            /**
+             * Format: int64
+             * @description When the world of the group last called, in seconds since
+             *     1970 (UTC). Missing if it never did.
+             */
+            last_seen_at?: number | null;
+            /** @description Name for people. It can be changed. */
+            name: string;
+            /**
+             * @description Account names of the teachers who are assigned to the group,
+             *     sorted.
+             */
+            teachers: string[];
+        };
+        /** @description Request to change a group. */
+        GroupChange: {
+            /** @description The new name, if it changes. */
+            name?: string | null;
+            /**
+             * @description The teachers of the group from now on, if they change. The
+             *     list replaces the old one.
+             */
+            teachers?: string[] | null;
+        };
+        /** @description The groups a teacher may see. */
+        Groups: {
+            groups: components["schemas"]["Group"][];
         };
         /**
          * @description Answer of the health check. Everybody may ask, so it says nothing
@@ -331,6 +427,11 @@ export interface components {
              * @description When the session ends, in seconds since 1970 (UTC).
              */
             expires_at: number;
+            /**
+             * @description True if the teacher belongs to the school administration:
+             *     they see every group and assign teachers to groups.
+             */
+            school_admin: boolean;
             /**
              * @description Names of the worlds in which the teacher holds the privilege
              *     for web access.
@@ -421,12 +522,24 @@ export interface components {
             title: string;
         };
         /**
+         * @description The accounts that can be assigned to groups: everybody who holds
+         *     the privilege for web access in some world. Sorted.
+         */
+        TeacherList: {
+            teachers: string[];
+        };
+        /**
          * @description Payload of the event "teachers": the accounts that hold the
          *     privilege for web access in this world. It replaces what the
          *     backend knew before.
          */
         Teachers: {
             accounts?: string[];
+            /**
+             * @description The accounts that hold the privilege of the school
+             *     administration in this world.
+             */
+            school_admins?: string[];
         };
         /**
          * @description Payload of the event "trophies": all trophies of one student. It
@@ -541,6 +654,148 @@ export interface operations {
                 };
             };
             /** @description The address belongs to another account (address_taken) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    list_groups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The groups the teacher may see */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Groups"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    show_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group for this teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    change_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupChange"];
+            };
+        };
+        responses: {
+            /** @description The group as it is now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description The name cannot be used or an account is not a teacher (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Another group has this name (name_taken) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -686,6 +941,44 @@ export interface operations {
             };
             /** @description Not logged in (unauthorized) */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    list_teachers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Everybody who holds the privilege for web access */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherList"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

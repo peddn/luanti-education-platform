@@ -31,6 +31,10 @@ const until = computed(() =>
       <dd data-test="email">{{ auth.me.email }}</dd>
       <dt class="text-slate-500">{{ $t('overview.worlds') }}</dt>
       <dd data-test="worlds">{{ auth.me.worlds.join(', ') }}</dd>
+      <dt class="text-slate-500">{{ $t('overview.role') }}</dt>
+      <dd data-test="role">
+        {{ auth.me.school_admin ? $t('overview.roleSchoolAdmin') : $t('overview.roleTeacher') }}
+      </dd>
       <dt class="text-slate-500">{{ $t('overview.until') }}</dt>
       <dd data-test="until">{{ until }}</dd>
     </dl>

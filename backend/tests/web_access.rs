@@ -205,6 +205,27 @@ async fn nothing_happens_for_accounts_the_world_did_not_name() {
 }
 
 #[tokio::test]
+async fn the_world_names_the_school_administration() {
+    let setup = Setup::new().await;
+    let list = json!({ "accounts": ["lehrer1", "leitung"], "school_admins": ["leitung"] });
+    assert_eq!(setup.event("teachers", list).await, "accepted");
+    let pool = &setup.state.db;
+    assert!(lep_backend::groups::is_school_admin(pool, "leitung")
+        .await
+        .unwrap());
+    assert!(!lep_backend::groups::is_school_admin(pool, "lehrer1")
+        .await
+        .unwrap());
+
+    // A world that does not know the privilege yet names nobody.
+    let old = json!({ "accounts": ["lehrer1", "leitung"] });
+    assert_eq!(setup.event("teachers", old).await, "accepted");
+    assert!(!lep_backend::groups::is_school_admin(pool, "leitung")
+        .await
+        .unwrap());
+}
+
+#[tokio::test]
 async fn requests_that_make_no_sense_are_invalid() {
     let setup = Setup::new().await;
     setup

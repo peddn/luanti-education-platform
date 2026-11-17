@@ -71,7 +71,11 @@ impl AppState {
         web_api::log_in,
         web_api::log_out,
         web_api::me,
-        web_api::status
+        web_api::status,
+        web_api::list_groups,
+        web_api::show_group,
+        web_api::change_group,
+        web_api::list_teachers
     ),
     components(schemas(
         Health,
@@ -93,6 +97,10 @@ impl AppState {
         lep_protocol::web::LoginRequest,
         lep_protocol::web::Me,
         lep_protocol::web::Status,
+        lep_protocol::web::Group,
+        lep_protocol::web::Groups,
+        lep_protocol::web::GroupChange,
+        lep_protocol::web::TeacherList,
         lep_protocol::web::MailTransport,
         lep_protocol::world::Done
     )),

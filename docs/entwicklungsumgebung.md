@@ -325,6 +325,27 @@ Die Sitzung ist ein Cookie für `/api/web`. Über den Entwicklungsserver auf Por
 
 Der Weg `/api/health` bleibt ohne Anmeldung erreichbar, für Prüfungen von außen. Er sagt nur, ob das Backend arbeiten kann. Die Seite „Zustand“ in der Oberfläche braucht die Anmeldung und zeigt dazu die Version und wie Mails rausgehen.
 
+### Gruppen
+
+Eine Gruppe ist eine Welt, eins zu eins. Angelegt wird sie vom Server-Admin mit `scripts/backend-run.sh world add <name>`, für die Testwelt erledigt das `scripts/dev-bridge.sh`. In der Oberfläche steht sie unter „Gruppen“.
+
+| Rolle | Privileg im Spiel | Sieht | Darf |
+|---|---|---|---|
+| Lehrkraft | `lep_web_access` | die Gruppen, denen sie zugeordnet ist | ansehen |
+| Schulverwaltung | zusätzlich `lep_manage_school` | alle Gruppen | umbenennen, Lehrkräfte zuordnen |
+
+Der Admin vergibt die Schulverwaltung im Spiel:
+
+```
+/grant <name> lep_manage_school
+```
+
+Die Welt meldet beide Privilegien ans Backend, beim Start und bei jeder Änderung. Wird eines entzogen, gilt das im Browser beim nächsten Klick.
+
+Zum Ausprobieren mit zwei Rollen braucht es zwei Konten mit bestätigter Adresse, also zwei Adressen. Ohne Mailserver in `.dev/backend.env` stehen die Mails im Terminal, dann genügen erfundene Adressen wie `leitung@schule.example`.
+
+Der Name einer Gruppe ist zugleich der Name, den die Befehle des Backends erwarten (`world ping`, `world state`). Nach dem Umbenennen der Testwelt in der Oberfläche `scripts/dev-bridge.sh` nicht erneut ausführen: Es würde eine zweite Welt namens `dev` anlegen. Stattdessen `scripts/backend-run.sh world rekey <neuer name>`, falls ein neuer Schlüssel nötig ist.
+
 ### Mailversand
 
 Ohne Mailserver schreibt das Backend jede Mail in sein Terminal. Für echten Versand die Einstellungen in `.dev/backend.env` eintragen, zum Beispiel:

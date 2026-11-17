@@ -90,10 +90,13 @@ describe("lep_bridge reports", function()
 	end)
 
 	it("builds the list of teachers as the backend expects it", function()
-		local payload = reports.teachers({ "lehrer1", "lehrer2" })
+		local payload = reports.teachers({ "lehrer1", "lehrer2" }, { "lehrer2" })
 		assert.is_true(fits("Teachers", payload))
-		assert.are.same({ accounts = { "lehrer1", "lehrer2" } }, payload)
-		assert.is_true(fits("Teachers", reports.teachers({})))
+		assert.are.same({ accounts = { "lehrer1", "lehrer2" },
+			school_admins = { "lehrer2" } }, payload)
+		assert.is_true(fits("Teachers", reports.teachers({}, {})))
+		assert.are.same({ accounts = { "lehrer1" }, school_admins = {} },
+			reports.teachers({ "lehrer1" }))
 	end)
 
 	it("builds requests about web access as the backend expects them", function()
