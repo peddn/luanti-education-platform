@@ -100,12 +100,17 @@ end
 
 --- Builds the payload of the event "teachers": the accounts that hold
 -- the privilege for web access in this world.
-function reports.teachers(accounts)
-	local list = {}
-	for index, account in ipairs(accounts) do
-		list[index] = tostring(account)
+-- @param school_admins The accounts that hold the privilege of the school
+--   administration.
+function reports.teachers(accounts, school_admins)
+	local function names(list)
+		local copy = {}
+		for index, account in ipairs(list or {}) do
+			copy[index] = tostring(account)
+		end
+		return copy
 	end
-	return { accounts = list }
+	return { accounts = names(accounts), school_admins = names(school_admins) }
 end
 
 --- Builds the payload of the event "web_access": what a teacher did with

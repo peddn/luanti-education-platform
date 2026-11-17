@@ -9,8 +9,8 @@ if not core.global_exists("lep_desk") then
 	return
 end
 
-local function send_holders(holders)
-	lep_bridge.send(reports.EVENT_TEACHERS, reports.teachers(holders))
+local function send_holders(holders, school_admins)
+	lep_bridge.send(reports.EVENT_TEACHERS, reports.teachers(holders, school_admins))
 end
 
 lep_desk.register_web_access_provider({
@@ -39,6 +39,6 @@ core.register_on_mods_loaded(function()
 	-- The whole list at every start. The backend answers with how each
 	-- web access stands, so the copy of this world is fresh.
 	core.after(0, function()
-		send_holders(lep_desk.get_web_access_holders())
+		send_holders(lep_desk.get_web_access_holders(), lep_desk.get_school_admins())
 	end)
 end)

@@ -23,6 +23,17 @@ core.register_privilege(lep_desk.PRIV_WEB, {
 	give_to_admin = true,
 })
 
+-- The school administration works in the web application: it sees every
+-- group and assigns teachers to groups. Until the desk can appoint
+-- people, the server admin grants this.
+lep_desk.PRIV_SCHOOL = "lep_manage_school"
+
+core.register_privilege(lep_desk.PRIV_SCHOOL, {
+	description = "Belongs to the school administration: manages groups in the web application",
+	give_to_singleplayer = false,
+	give_to_admin = false,
+})
+
 local mod_storage = core.get_mod_storage()
 
 --------------------------------------------------------------------------
@@ -85,12 +96,12 @@ local function is_available()
 	return provider ~= nil and provider.is_available() == true
 end
 
---- Returns the sorted names of all accounts of this world that hold the
--- privilege for web access, online or not.
-function lep_desk.get_web_access_holders()
+-- Returns the sorted names of all accounts of this world that hold a
+-- privilege, online or not.
+local function holders_of(privilege)
 	local holders = {}
 	for name in core.get_auth_handler().iterate() do
-		if core.get_player_privs(name)[lep_desk.PRIV_WEB] then
+		if core.get_player_privs(name)[privilege] then
 			holders[#holders + 1] = name
 		end
 	end
@@ -98,27 +109,42 @@ function lep_desk.get_web_access_holders()
 	return holders
 end
 
+--- Returns the sorted names of all accounts of this world that hold the
+-- privilege for web access, online or not.
+function lep_desk.get_web_access_holders()
+	return holders_of(lep_desk.PRIV_WEB)
+end
+
+--- Returns the sorted names of all accounts of this world that hold the
+-- privilege of the school administration, online or not.
+function lep_desk.get_school_admins()
+	return holders_of(lep_desk.PRIV_SCHOOL)
+end
+
 local dispatcher = lep_core.events.new(function(event_name, err)
 	core.log("error", "[lep_desk] callback for " .. event_name .. " failed: "
 		.. tostring(err))
 end)
 
---- Registers a function(holders) that is called when the list of
--- accounts that hold the privilege for web access has changed.
+--- Registers a function(holders, school_admins) that is called when the
+-- list of accounts that hold the privilege for web access or the one of
+-- the school administration has changed.
 lep_desk.register_on_web_access_holders_changed = dispatcher:registrar("holders_changed")
 
-local known_holders
+local known_holders, known_admins
 
--- Looks who holds the privilege and reports a change.
+-- Looks who holds the privileges and reports a change.
 local function check_holders()
 	local holders = lep_desk.get_web_access_holders()
-	if known_holders and web_access.same_names(known_holders, holders) then
+	local admins = lep_desk.get_school_admins()
+	if known_holders and web_access.same_names(known_holders, holders)
+			and web_access.same_names(known_admins, admins) then
 		return
 	end
 	local first_look = known_holders == nil
-	known_holders = holders
+	known_holders, known_admins = holders, admins
 	if not first_look then
-		dispatcher:emit("holders_changed", holders)
+		dispatcher:emit("holders_changed", holders, admins)
 	end
 end
 
@@ -127,7 +153,7 @@ core.register_on_mods_loaded(function()
 end)
 
 local function check_soon(_, _, privilege)
-	if privilege == lep_desk.PRIV_WEB then
+	if privilege == lep_desk.PRIV_WEB or privilege == lep_desk.PRIV_SCHOOL then
 		core.after(0, check_holders)
 	end
 end
