@@ -80,6 +80,145 @@
         }
       }
     },
+    "/api/web/v1/login": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Logs a teacher in with the token from a login mail and sets the\nsession cookie. A token works once.",
+        "operationId": "log_in",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Logged in, the session cookie is set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The token is unknown, used or too old (invalid_token), or the request cannot be read (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/web/v1/login/link": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Sends a mail with a login link to an address, if a teacher may log in\nwith it. The answer is the same in every case, so nobody learns here\nwhich addresses are known.",
+        "operationId": "request_login_link",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Taken note of, whether or not a mail goes out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request cannot be read (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/web/v1/logout": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Ends the session of the request and removes the cookie. Without a\nsession nothing happens.",
+        "operationId": "log_out",
+        "responses": {
+          "200": {
+            "description": "Logged out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/web/v1/me": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Says who is logged in.",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "The teacher of this session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/world/v1/events": {
       "post": {
         "tags": [
@@ -500,6 +639,63 @@
           }
         }
       },
+      "LoginLinkRequest": {
+        "type": "object",
+        "description": "Request for a mail with a link that logs in.",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The confirmed address of the teacher."
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "description": "Request to log in with the token from a mail.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "description": "The teacher who is logged in.",
+        "required": [
+          "account",
+          "email",
+          "worlds",
+          "expires_at"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the teacher."
+          },
+          "email": {
+            "type": "string",
+            "description": "The confirmed address of the teacher."
+          },
+          "expires_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "When the session ends, in seconds since 1970 (UTC)."
+          },
+          "worlds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of the worlds in which the teacher holds the privilege\nfor web access."
+          }
+        }
+      },
       "Module": {
         "type": "object",
         "description": "A learning module as a world knows it.",
@@ -793,6 +989,11 @@
       }
     },
     "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "lep_session"
+      },
       "world_key": {
         "type": "http",
         "scheme": "bearer"

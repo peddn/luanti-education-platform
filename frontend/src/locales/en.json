@@ -2,14 +2,41 @@
   "app": {
     "title": "Luanti Education Platform",
     "short": "LEP",
-    "language": "Language"
+    "language": "Language",
+    "logout": "Log out"
   },
   "languages": {
     "de": "Deutsch",
     "en": "English"
   },
   "nav": {
+    "overview": "Overview",
     "health": "Status"
+  },
+  "login": {
+    "title": "Log in",
+    "intro": "Enter the e-mail address you confirmed for your web access at the teacher's desk. You get a link, there is no password.",
+    "email": "E-mail address",
+    "send": "Ask for a link",
+    "sending": "Asking …",
+    "sent": "If this address belongs to a web access, a mail with a link is on its way now.",
+    "sentHint": "The link works for 15 minutes. If no mail arrives, check the address and the spam folder. A new mail is possible after one minute.",
+    "noAccess": "No web access yet? You set it up in the game at the teacher's desk, on the tab “Web access”.",
+    "invalidEmail": "That is not an e-mail address.",
+    "linkIntro": "With the button you log in in this browser.",
+    "button": "Log in",
+    "working": "Logging in …",
+    "newLink": "Ask for a new link",
+    "duration": "The login lasts 12 hours. On a computer that others use too, log out when you are done."
+  },
+  "overview": {
+    "title": "Overview",
+    "welcome": "You are logged in as {account}.",
+    "account": "Account",
+    "email": "E-mail address",
+    "worlds": "Worlds",
+    "until": "Logged in until",
+    "soon": "Groups, progress and protocols will follow here in the next steps."
   },
   "health": {
     "title": "Status",

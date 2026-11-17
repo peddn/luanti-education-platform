@@ -4,6 +4,7 @@
 /** @typedef {import('./schema').components['schemas']} Schemas */
 /** @typedef {Schemas['Health']} Health */
 /** @typedef {Schemas['Confirmed']} Confirmed */
+/** @typedef {Schemas['Me']} Me */
 /** @typedef {Schemas['ErrorCode']} BackendErrorCode */
 
 /**
@@ -88,7 +89,11 @@ function failureOf(response, body) {
 }
 
 /**
- * @param {{ fetch?: typeof fetch, base?: string }} [options]
+ * @param {object} [options]
+ * @param {typeof fetch} [options.fetch]
+ * @param {string} [options.base]
+ * @param {() => void} [options.onUnauthorized] called when the backend
+ *   says that nobody is logged in, although the page thought so
  */
 export function createClient(options = {}) {
   const send = options.fetch ?? ((input, init) => globalThis.fetch(input, init))
@@ -97,9 +102,10 @@ export function createClient(options = {}) {
   /**
    * @param {string} path
    * @param {unknown} [content] sent as JSON with POST; without it the request is a GET
+   * @param {boolean} [quiet] true for a request that only asks whether somebody is logged in
    * @returns {Promise<unknown>}
    */
-  async function request(path, content) {
+  async function request(path, content, quiet) {
     /** @type {RequestInit} */
     const init = { headers: { Accept: 'application/json' } }
     if (content !== undefined) {
@@ -116,7 +122,11 @@ export function createClient(options = {}) {
     }
     const body = await readJson(response)
     if (!response.ok) {
-      throw failureOf(response, body)
+      const failure = failureOf(response, body)
+      if (failure.code === 'unauthorized' && !quiet) {
+        options.onUnauthorized?.()
+      }
+      throw failure
     }
     if (body === undefined) {
       throw new ApiFailure('unexpected', 'the answer is not JSON', response.status)
@@ -141,10 +151,70 @@ export function createClient(options = {}) {
       const body = { token }
       return /** @type {Confirmed} */ (await request('/api/web/v1/confirm', body))
     },
+
+    /**
+     * Asks for a mail with a login link. The answer is the same whether
+     * or not the address is known.
+     *
+     * @param {string} email
+     * @returns {Promise<void>}
+     */
+    async requestLoginLink(email) {
+      /** @type {Schemas['LoginLinkRequest']} */
+      const body = { email }
+      await request('/api/web/v1/login/link', body)
+    },
+
+    /**
+     * Logs in with the token from a login mail. The backend sets the
+     * session cookie.
+     *
+     * @param {string} token
+     * @returns {Promise<Me>}
+     */
+    async login(token) {
+      /** @type {Schemas['LoginRequest']} */
+      const body = { token }
+      return /** @type {Me} */ (await request('/api/web/v1/login', body))
+    },
+
+    /** @returns {Promise<void>} */
+    async logout() {
+      await request('/api/web/v1/logout', {})
+    },
+
+    /**
+     * Returns who is logged in, or null if nobody is.
+     *
+     * @returns {Promise<Me | null>}
+     */
+    async me() {
+      try {
+        return /** @type {Me} */ (await request('/api/web/v1/me', undefined, true))
+      } catch (err) {
+        if (err instanceof ApiFailure && err.code === 'unauthorized') {
+          return null
+        }
+        throw err
+      }
+    },
   }
 }
 
 /** @typedef {ReturnType<typeof createClient>} Client */
 
+/** @type {(() => void) | null} */
+let unauthorizedHandler = null
+
+/**
+ * Sets what happens when the backend says that nobody is logged in any
+ * more, for example because the session is over.
+ *
+ * @param {(() => void) | null} handler
+ */
+export function setUnauthorizedHandler(handler) {
+  unauthorizedHandler = handler
+}
+
 /** The client the pages use. */
-export const api = createClient()
+export const api = createClient({ onUnauthorized: () => unauthorizedHandler?.() })

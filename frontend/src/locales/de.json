@@ -2,14 +2,41 @@
   "app": {
     "title": "Luanti Education Platform",
     "short": "LEP",
-    "language": "Sprache"
+    "language": "Sprache",
+    "logout": "Abmelden"
   },
   "languages": {
     "de": "Deutsch",
     "en": "English"
   },
   "nav": {
+    "overview": "Übersicht",
     "health": "Zustand"
+  },
+  "login": {
+    "title": "Anmelden",
+    "intro": "Trage die E-Mail-Adresse ein, die du am Lehrerpult für deinen Web-Zugang bestätigt hast. Du bekommst einen Link, ein Passwort gibt es nicht.",
+    "email": "E-Mail-Adresse",
+    "send": "Link anfordern",
+    "sending": "Wird angefordert …",
+    "sent": "Wenn diese Adresse zu einem Web-Zugang gehört, ist jetzt eine Mail mit einem Link unterwegs.",
+    "sentHint": "Der Link gilt 15 Minuten. Kommt keine Mail an, prüfe die Adresse und den Spam-Ordner. Eine neue Mail gibt es frühestens nach einer Minute.",
+    "noAccess": "Noch keinen Web-Zugang? Den richtest du im Spiel am Lehrerpult ein, im Reiter „Web-Zugang“.",
+    "invalidEmail": "Das ist keine E-Mail-Adresse.",
+    "linkIntro": "Mit dem Knopf meldest du dich in diesem Browser an.",
+    "button": "Anmelden",
+    "working": "Wird angemeldet …",
+    "newLink": "Neuen Link anfordern",
+    "duration": "Die Anmeldung gilt 12 Stunden. Auf einem Rechner, den auch andere nutzen, melde dich danach ab."
+  },
+  "overview": {
+    "title": "Übersicht",
+    "welcome": "Du bist als {account} angemeldet.",
+    "account": "Konto",
+    "email": "E-Mail-Adresse",
+    "worlds": "Welten",
+    "until": "Angemeldet bis",
+    "soon": "Gruppen, Fortschritt und Protokolle folgen hier in den nächsten Schritten."
   },
   "health": {
     "title": "Zustand",

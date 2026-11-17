@@ -98,6 +98,20 @@ pub async fn worlds_of(pool: &SqlitePool, account: &str) -> Result<Vec<String>> 
     Ok(rows.iter().map(|row| row.get("world_id")).collect())
 }
 
+/// Returns the names of the worlds in which an account holds the
+/// privilege, sorted.
+pub async fn world_names_of(pool: &SqlitePool, account: &str) -> Result<Vec<String>> {
+    let rows = sqlx::query(
+        "SELECT worlds.name AS name FROM teacher_worlds
+         JOIN worlds ON worlds.id = teacher_worlds.world_id
+         WHERE teacher_worlds.account = ? ORDER BY worlds.name",
+    )
+    .bind(account)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.iter().map(|row| row.get("name")).collect())
+}
+
 /// What a request at the desk led to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Change {
@@ -252,6 +266,11 @@ pub async fn confirm(
     .bind(&account)
     .execute(&mut *tx)
     .await?;
+    // A login link that is still open went to the old address.
+    sqlx::query("DELETE FROM login_tokens WHERE account = ?")
+        .bind(&account)
+        .execute(&mut *tx)
+        .await?;
     tx.commit().await?;
     Ok(Ok(account))
 }

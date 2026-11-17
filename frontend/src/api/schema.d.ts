@@ -41,6 +41,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logs a teacher in with the token from a login mail and sets the
+         *     session cookie. A token works once.
+         */
+        post: operations["log_in"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/login/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sends a mail with a login link to an address, if a teacher may log in
+         *     with it. The answer is the same in every case, so nobody learns here
+         *     which addresses are known.
+         */
+        post: operations["request_login_link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ends the session of the request and removes the cookie. Without a
+         *     session nothing happens.
+         */
+        post: operations["log_out"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Says who is logged in. */
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/world/v1/events": {
         parameters: {
             query?: never;
@@ -205,6 +283,32 @@ export interface components {
             /** @description True if completing this level ends a stage of the module. */
             stage: boolean;
             tasks?: components["schemas"]["TaskType"][];
+        };
+        /** @description Request for a mail with a link that logs in. */
+        LoginLinkRequest: {
+            /** @description The confirmed address of the teacher. */
+            email: string;
+        };
+        /** @description Request to log in with the token from a mail. */
+        LoginRequest: {
+            token: string;
+        };
+        /** @description The teacher who is logged in. */
+        Me: {
+            /** @description Account name of the teacher. */
+            account: string;
+            /** @description The confirmed address of the teacher. */
+            email: string;
+            /**
+             * Format: int64
+             * @description When the session ends, in seconds since 1970 (UTC).
+             */
+            expires_at: number;
+            /**
+             * @description Names of the worlds in which the teacher holds the privilege
+             *     for web access.
+             */
+            worlds: string[];
         };
         /** @description A learning module as a world knows it. */
         Module: {
@@ -401,6 +505,121 @@ export interface operations {
             };
             /** @description The address belongs to another account (address_taken) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    log_in: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Logged in, the session cookie is set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description The token is unknown, used or too old (invalid_token), or the request cannot be read (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    request_login_link: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Taken note of, whether or not a mail goes out */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Done"];
+                };
+            };
+            /** @description The request cannot be read (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    log_out: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logged out */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Done"];
+                };
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The teacher of this session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

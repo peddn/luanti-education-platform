@@ -57,6 +57,43 @@ pub fn confirmation_link(public_url: &str, token: &str) -> String {
     format!("{}/confirm?token={token}", public_url.trim_end_matches('/'))
 }
 
+/// Returns the address of the page that logs in.
+pub fn login_link(public_url: &str, token: &str) -> String {
+    format!("{}/login?token={token}", public_url.trim_end_matches('/'))
+}
+
+/// Builds the mail with the link that logs a teacher in, in German and
+/// English.
+pub fn login(public_url: &str, to: &str, account: &str, token: &str, minutes: i64) -> Mail {
+    let link = login_link(public_url, token);
+    let body = format!(
+        "Hallo {account},\n\
+         \n\
+         mit diesem Link meldest du dich bei der Luanti Education Platform an:\n\
+         \n\
+         {link}\n\
+         \n\
+         Der Link gilt {minutes} Minuten und nur einmal. Hast du ihn nicht \
+         angefordert, dann ignoriere diese Mail. Ohne den Link kommt niemand hinein.\n\
+         \n\
+         ----\n\
+         \n\
+         Hello {account},\n\
+         \n\
+         this link logs you in to the Luanti Education Platform:\n\
+         \n\
+         {link}\n\
+         \n\
+         The link works for {minutes} minutes and only once. If you did not ask \
+         for it, ignore this mail. Nobody gets in without the link."
+    );
+    Mail {
+        to: to.to_owned(),
+        subject: "Luanti Education Platform: Anmelden / Log in".to_owned(),
+        body,
+    }
+}
+
 /// Builds the mail that asks a teacher to confirm their address. The
 /// backend does not know the language of the teacher, so the mail speaks
 /// German and English.
@@ -130,6 +167,26 @@ mod tests {
         );
         assert!(mail.body.contains("15 Minuten"));
         assert!(mail.body.contains("15 minutes"));
+    }
+
+    #[test]
+    fn the_login_mail_speaks_both_languages_and_carries_the_link() {
+        let mail = login(
+            "https://lep.example/",
+            "t@schule.example",
+            "lehrer1",
+            "tok",
+            15,
+        );
+        assert_eq!(mail.to, "t@schule.example");
+        assert!(mail.body.contains("Hallo lehrer1"));
+        assert!(mail.body.contains("Hello lehrer1"));
+        assert_eq!(
+            mail.body
+                .matches("https://lep.example/login?token=tok")
+                .count(),
+            2
+        );
     }
 
     #[tokio::test]
