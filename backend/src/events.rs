@@ -2,14 +2,14 @@
 
 use anyhow::Result;
 use lep_protocol::world::{
-    Event, EventOutcome, Modules, Progress, ProtocolEntry, Teachers, Trophies, WebAccessRequest,
-    WorldStarted, EVENT_MODULES, EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_TEACHERS, EVENT_TROPHIES,
-    EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
+    AccountsCreated, Event, EventOutcome, Modules, Progress, ProtocolEntry, Teachers, Trophies,
+    WebAccessRequest, WorldStarted, EVENT_ACCOUNTS_CREATED, EVENT_MODULES, EVENT_PROGRESS,
+    EVENT_PROTOCOL, EVENT_TEACHERS, EVENT_TROPHIES, EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
 };
 use serde::de::DeserializeOwned;
 
 use crate::app::AppState;
-use crate::{clock, state, web_access, worlds};
+use crate::{clock, state, students, web_access, worlds};
 
 /// Reads the payload of an event as the type its kind asks for.
 ///
@@ -77,6 +77,13 @@ pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<Ev
         EVENT_TEACHERS => match payload::<Teachers>(event) {
             Some(teachers) => {
                 web_access::note_holders(app, world_id, &teachers).await?;
+                true
+            }
+            None => false,
+        },
+        EVENT_ACCOUNTS_CREATED => match payload::<AccountsCreated>(event) {
+            Some(report) => {
+                students::note_created(pool, world_id, &report).await?;
                 true
             }
             None => false,

@@ -97,8 +97,11 @@ pub async fn finish(
     if known.is_none() {
         return Ok(false);
     }
+    // A job that carried passwords forgets them here: once the world has
+    // answered, nobody needs them in the database any more.
     sqlx::query(
-        "UPDATE jobs SET finished_at = ?, ok = ?, message = ?
+        "UPDATE jobs SET finished_at = ?, ok = ?, message = ?,
+            payload = CASE WHEN kind = 'create_accounts' THEN '{}' ELSE payload END
          WHERE id = ? AND world_id = ? AND finished_at IS NULL",
     )
     .bind(clock::now())

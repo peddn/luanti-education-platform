@@ -140,6 +140,32 @@ describe('group page', () => {
     expect(page.get('[data-test=saved]').text()).toBe('Gespeichert.')
   })
 
+  it('sends the address of the world when it changed', async () => {
+    const send = backend({
+      'GET /api/web/v1/groups/id-7b': [200, { ...G7B, address: 'alt.schule.example' }],
+      'GET /api/web/v1/teachers': [200, { teachers: ['lehrer1'] }],
+      'PATCH /api/web/v1/groups/id-7b': [200, { ...G7B, address: 'spiel.schule.example, Port 30000' }],
+    })
+    const page = await show(GroupPage, true, { id: 'id-7b' })
+    const field = page.get('input[name=address]')
+    expect(/** @type {HTMLInputElement} */ (field.element).value).toBe('alt.schule.example')
+    await field.setValue(' spiel.schule.example, Port 30000 ')
+    await page.get('form').trigger('submit')
+    await flushPromises()
+    expect(JSON.parse(String(send.mock.calls[2][1]?.body))).toEqual({
+      teachers: ['lehrer1'],
+      address: 'spiel.schule.example, Port 30000',
+    })
+    expect(page.get('[data-test=students]').attributes('href')).toBe('/groups/id-7b/students')
+  })
+
+  it('shows a teacher the address without a field', async () => {
+    backend({ 'GET /api/web/v1/groups/id-7b': [200, { ...G7B, address: 'spiel.schule.example' }] })
+    const page = await show(GroupPage, false, { id: 'id-7b' })
+    expect(page.get('[data-test=address]').text()).toBe('spiel.schule.example')
+    expect(page.find('input[name=address]').exists()).toBe(false)
+  })
+
   it('sends no name that did not change', async () => {
     const send = backend({
       'GET /api/web/v1/groups/id-7b': [200, G7B],

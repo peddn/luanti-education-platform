@@ -75,7 +75,12 @@ impl AppState {
         web_api::list_groups,
         web_api::show_group,
         web_api::change_group,
-        web_api::list_teachers
+        web_api::list_teachers,
+        web_api::list_students,
+        web_api::draft_students,
+        web_api::reroll_student,
+        web_api::remove_student,
+        web_api::create_students
     ),
     components(schemas(
         Health,
@@ -101,6 +106,15 @@ impl AppState {
         lep_protocol::web::Groups,
         lep_protocol::web::GroupChange,
         lep_protocol::web::TeacherList,
+        lep_protocol::web::Student,
+        lep_protocol::web::StudentState,
+        lep_protocol::web::Students,
+        lep_protocol::web::DraftRequest,
+        lep_protocol::web::AccessSlip,
+        lep_protocol::web::AccessSlips,
+        lep_protocol::world::NewAccount,
+        lep_protocol::world::CreateAccounts,
+        lep_protocol::world::AccountsCreated,
         lep_protocol::web::MailTransport,
         lep_protocol::world::Done
     )),

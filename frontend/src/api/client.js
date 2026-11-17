@@ -8,6 +8,8 @@
 /** @typedef {Schemas['Me']} Me */
 /** @typedef {Schemas['Group']} Group */
 /** @typedef {Schemas['GroupChange']} GroupChange */
+/** @typedef {Schemas['Student']} Student */
+/** @typedef {Schemas['AccessSlip']} AccessSlip */
 /** @typedef {Schemas['ErrorCode']} BackendErrorCode */
 
 /**
@@ -25,6 +27,7 @@ const BACKEND_CODES = [
   'invalid_request',
   'forbidden',
   'name_taken',
+  'no_names',
   'invalid_token',
   'address_taken',
   'internal',
@@ -93,6 +96,19 @@ function failureOf(response, body) {
   return new ApiFailure('unexpected', `status ${response.status} without a known code`, response.status)
 }
 
+/** @param {string} id identifier of a group */
+function studentsPath(id) {
+  return `/api/web/v1/groups/${encodeURIComponent(id)}/students`
+}
+
+/**
+ * @param {unknown} answer
+ * @returns {Student[]}
+ */
+function studentsOf(answer) {
+  return /** @type {Schemas['Students']} */ (answer).students
+}
+
 /**
  * @param {object} [options]
  * @param {typeof fetch} [options.fetch]
@@ -108,14 +124,17 @@ export function createClient(options = {}) {
    * @param {string} path
    * @param {unknown} [content] sent as JSON; without it the request is a GET
    * @param {boolean} [quiet] true for a request that only asks whether somebody is logged in
-   * @param {'POST' | 'PATCH'} [method] how content is sent
+   * @param {'POST' | 'PATCH' | 'DELETE'} [method] how the request is sent, if not as GET or with content as POST
    * @returns {Promise<unknown>}
    */
-  async function request(path, content, quiet, method = 'POST') {
+  async function request(path, content, quiet, method) {
     /** @type {RequestInit} */
     const init = { headers: { Accept: 'application/json' } }
-    if (content !== undefined) {
+    if (method) {
       init.method = method
+    }
+    if (content !== undefined) {
+      init.method = method ?? 'POST'
       init.headers = { Accept: 'application/json', 'Content-Type': 'application/json' }
       init.body = JSON.stringify(content)
     }
@@ -222,6 +241,66 @@ export function createClient(options = {}) {
     async changeGroup(id, change) {
       const path = `/api/web/v1/groups/${encodeURIComponent(id)}`
       return /** @type {Group} */ (await request(path, change, false, 'PATCH'))
+    },
+
+    /**
+     * Returns the accounts of the students of a group.
+     *
+     * @param {string} id identifier of the group
+     * @returns {Promise<Student[]>}
+     */
+    async students(id) {
+      return studentsOf(await request(studentsPath(id)))
+    },
+
+    /**
+     * Rolls names for new accounts. Nothing happens in the world yet.
+     *
+     * @param {string} id
+     * @param {number} count
+     * @returns {Promise<Student[]>} all accounts of the group
+     */
+    async draftStudents(id, count) {
+      /** @type {Schemas['DraftRequest']} */
+      const body = { count }
+      return studentsOf(await request(studentsPath(id), body))
+    },
+
+    /**
+     * Replaces a name that is not an account yet by a newly rolled one.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @returns {Promise<Student[]>}
+     */
+    async rerollStudent(id, account) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}/reroll`
+      return studentsOf(await request(path, undefined, false, 'POST'))
+    },
+
+    /**
+     * Removes a name that is not an account in the world.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @returns {Promise<Student[]>}
+     */
+    async removeStudent(id, account) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}`
+      return studentsOf(await request(path, undefined, false, 'DELETE'))
+    },
+
+    /**
+     * Has the world create an account for every draft. The passwords in
+     * the answer are shown once; the backend does not keep them.
+     *
+     * @param {string} id
+     * @returns {Promise<AccessSlip[]>}
+     */
+    async createStudents(id) {
+      const path = `${studentsPath(id)}/create`
+      const answer = /** @type {Schemas['AccessSlips']} */ (await request(path, undefined, false, 'POST'))
+      return answer.slips
     },
 
     /**

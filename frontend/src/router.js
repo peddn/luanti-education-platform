@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ConfirmPage from './pages/ConfirmPage.vue'
 import GroupPage from './pages/GroupPage.vue'
 import GroupsPage from './pages/GroupsPage.vue'
+import StudentsPage from './pages/StudentsPage.vue'
 import HealthPage from './pages/HealthPage.vue'
 import LoginPage from './pages/LoginPage.vue'
 import NotFoundPage from './pages/NotFoundPage.vue'
@@ -17,6 +18,7 @@ export const routes = [
   { path: '/', name: 'overview', component: OverviewPage },
   { path: '/groups', name: 'groups', component: GroupsPage },
   { path: '/groups/:id', name: 'group', component: GroupPage, props: true },
+  { path: '/groups/:id/students', name: 'students', component: StudentsPage, props: true },
   { path: '/status', name: 'health', component: HealthPage },
   { path: '/login', name: 'login', component: LoginPage, meta: { public: true } },
   { path: '/confirm', name: 'confirm', component: ConfirmPage, meta: { public: true } },

@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 46 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 47 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -172,13 +172,38 @@ In jeder Welt gibt es drei Orte: **Wildnis**, **Lobby** und **Lernräume**.
 
 Das Backend würfelt aus zwei gepflegten Wortlisten eine Kombination aus Adjektiv und Nomen und prüft, ob sie an der Schule frei ist.
 
-- Nur Buchstaben, Ziffern, Bindestrich und Unterstrich, keine Umlaute.
-- Höchstens 19 Zeichen. Luantis genaue Grenze liegt vermutlich bei 20 und wird bei der Umsetzung geprüft.
+- Form: das Adjektiv klein, das Nomen groß, ohne Trennzeichen, etwa `klugeEule` oder `mutigerDachs`.
+- Nur Buchstaben ohne Umlaute.
+- Höchstens 19 Zeichen. Luanti 5.18 nimmt 20 an, ein Zeichen bleibt als Reserve.
 - Jedes Nomen trägt sein Geschlecht, damit die Endung des Adjektivs stimmt.
 - Nur freundliche Wörter, bei denen keine Kombination spöttisch klingt.
-- Die Lehrkraft kann einzelne Namen vor dem Ausdrucken der Zugangszettel neu würfeln.
+- Ein Name ist an der ganzen Schule einmalig, unabhängig von Groß- und Kleinschreibung, und gleicht keinem Konto einer Lehrkraft.
+- Die Lehrkraft kann einzelne Namen neu würfeln, solange das Konto nicht angelegt ist. Der neue Name steht an derselben Stelle der Liste.
 
 Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke hängen an ihm.
+
+**Anlegen**
+
+1. Die Lehrkraft der Gruppe lässt in der Web-Anwendung Namen würfeln. Sie sind zuerst ein Entwurf.
+2. Mit „Konten anlegen“ erzeugt das Backend für jeden Entwurf ein Startpasswort und beauftragt die Welt.
+3. Die Welt legt die Konten an und meldet, welche es gibt und welche Namen sie abgelehnt hat. Ein Konto, das es in der Welt schon gibt, fasst sie nie an.
+4. Die Web-Anwendung zeigt die Zugangszettel zum Drucken: Adresse der Welt, Kontoname, Startpasswort.
+
+**Startpasswort**
+
+- Zwei Wörter und zwei Ziffern, etwa `wolke-apfel-47`. Kinder müssen es abtippen, deshalb ist es leicht statt stark. Sie können es im Spiel ändern. Erzwingen lässt sich das in Luanti nicht.
+- Das Backend zeigt es genau einmal, auf den Zugangszetteln, und bewahrt es nicht auf. Im Auftrag an die Welt steht es, bis die Welt geantwortet hat, dann wird es dort gelöscht. Die Welt speichert nur den Hash.
+- Geht ein Zettel verloren, setzt die Lehrkraft das Passwort zurück.
+
+**Echte Namen**
+
+- Das Backend erfährt nie, welches Kind hinter einem Konto steht. Es kennt nur die Anzahl.
+- Auf jedem Zugangszettel kann die Lehrkraft im Browser den Namen des Kindes eintragen. Er steht dann auf dem Ausdruck. Die Namen verlassen den Browser nicht und werden nicht gespeichert.
+- Die Zuordnung von Kontoname zu Kind führt die Lehrkraft selbst, zum Beispiel mit dem Ausdruck.
+
+**Adresse der Welt**
+
+- Auf dem Zettel steht, wie die Kinder die Welt erreichen. Bis der Agent das meldet, trägt die Schulverwaltung die Adresse bei der Gruppe ein.
 
 ### 6.2 Wunschname
 
@@ -994,7 +1019,7 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 
 ### 11.5 Funktionen
 
-- Gruppen anlegen, Schülerlisten hochladen, Namen neu würfeln, Zugangszettel drucken.
+- Konten für Schüler anlegen, Namen neu würfeln, Zugangszettel drucken. Die Namen der Kinder bleiben dabei im Browser (Abschnitt 6.1).
 - Wunschnamen freigeben.
 - Passwörter zurücksetzen.
 - Schüler in eine andere Gruppe verschieben.

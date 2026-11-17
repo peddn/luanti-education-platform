@@ -134,4 +134,17 @@ describe("lep_bridge reports", function()
 		assert.is_nil(reports.parse_web_access_status({ address = "x" }))
 		assert.is_nil(reports.parse_web_access_status({ account = "" }))
 	end)
+
+	it("reports created accounts as the backend expects it", function()
+		local payload = reports.accounts_created({ "klugeEule" }, { "frohesReh" })
+		assert.is_true(fits("AccountsCreated", payload))
+		assert.are.same({ created = { "klugeEule" }, refused = { "frohesReh" } }, payload)
+		assert.is_true(fits("AccountsCreated", reports.accounts_created({}, {})))
+
+		-- What the backend orders is what the core reads.
+		local accounts = dofile("mods/lep_bridge/src/accounts.lua")
+		local order = { accounts = { { name = "klugeEule", password = "wolke-apfel-47" } } }
+		assert.is_true(fits("CreateAccounts", order))
+		assert.are.same(order.accounts, accounts.parse(order))
+	end)
 end)

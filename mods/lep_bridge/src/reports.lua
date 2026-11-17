@@ -13,6 +13,8 @@ reports.EVENT_TROPHIES = "trophies"
 reports.EVENT_PROTOCOL = "protocol"
 reports.EVENT_TEACHERS = "teachers"
 reports.EVENT_WEB_ACCESS = "web_access"
+reports.EVENT_ACCOUNTS_CREATED = "accounts_created"
+reports.JOB_CREATE_ACCOUNTS = "create_accounts"
 reports.JOB_SYNC_STATE = "sync_state"
 reports.JOB_WEB_ACCESS_STATUS = "web_access_status"
 
@@ -111,6 +113,19 @@ function reports.teachers(accounts, school_admins)
 		return copy
 	end
 	return { accounts = names(accounts), school_admins = names(school_admins) }
+end
+
+--- Builds the payload of the event "accounts_created": the names of the
+-- accounts that exist now, and of those that were refused.
+function reports.accounts_created(created, refused)
+	local function names(list)
+		local copy = {}
+		for index, name in ipairs(list or {}) do
+			copy[index] = tostring(name)
+		end
+		return copy
+	end
+	return { created = names(created), refused = names(refused) }
 end
 
 --- Builds the payload of the event "web_access": what a teacher did with

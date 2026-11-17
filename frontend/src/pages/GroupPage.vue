@@ -26,6 +26,7 @@ const candidates = ref(/** @type {string[]} */ ([]))
 const loadError = ref(/** @type {ErrorCode | null} */ (null))
 
 const name = ref('')
+const address = ref('')
 const chosen = ref(/** @type {string[]} */ ([]))
 const saving = ref(false)
 const saved = ref(false)
@@ -36,6 +37,7 @@ const saveError = ref(/** @type {ErrorCode | null} */ (null))
 function show(fresh) {
   group.value = fresh
   name.value = fresh.name
+  address.value = fresh.address ?? ''
   chosen.value = [...fresh.teachers]
 }
 
@@ -67,6 +69,9 @@ async function save() {
   if (wanted !== group.value.name) {
     change.name = wanted
   }
+  if (address.value.trim() !== (group.value.address ?? '')) {
+    change.address = address.value.trim()
+  }
   saving.value = true
   try {
     show(await api.changeGroup(props.id, change))
@@ -92,12 +97,23 @@ async function save() {
         <p class="mt-1 text-sm text-slate-600"><LastSeen :at="group.last_seen_at ?? undefined" /></p>
       </div>
 
+      <RouterLink
+        :to="{ name: 'students', params: { id } }"
+        data-test="students"
+        class="inline-block rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+      >
+        {{ $t('groups.students') }}
+      </RouterLink>
+
       <div v-if="!mayChange" class="space-y-3 rounded border border-slate-200 bg-white p-5">
         <h2 class="font-semibold">{{ $t('groups.teachers') }}</h2>
         <ul v-if="group.teachers.length" data-test="teachers" class="list-inside list-disc">
           <li v-for="teacher in group.teachers" :key="teacher">{{ teacher }}</li>
         </ul>
         <p v-else class="text-slate-400">{{ $t('groups.noTeachers') }}</p>
+        <h2 class="font-semibold">{{ $t('groups.address') }}</h2>
+        <p v-if="group.address" data-test="address">{{ group.address }}</p>
+        <p v-else class="text-slate-400">{{ $t('groups.noAddress') }}</p>
         <p class="text-sm text-slate-500">{{ $t('groups.readOnly') }}</p>
       </div>
 
@@ -114,6 +130,18 @@ async function save() {
           />
         </label>
         <p v-if="invalidName" data-test="invalid" class="text-sm text-red-800">{{ $t('groups.invalidName') }}</p>
+
+        <label class="block space-y-1">
+          <span class="font-semibold">{{ $t('groups.address') }}</span>
+          <input
+            v-model="address"
+            type="text"
+            name="address"
+            maxlength="100"
+            class="block w-full rounded border border-slate-300 bg-white px-3 py-2"
+          />
+          <span class="block text-sm text-slate-500">{{ $t('groups.addressHint') }}</span>
+        </label>
 
         <fieldset class="space-y-2">
           <legend class="font-semibold">{{ $t('groups.assign') }}</legend>

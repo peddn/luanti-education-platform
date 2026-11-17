@@ -88,6 +88,82 @@ export interface paths {
         patch: operations["change_group"];
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists the accounts of the students of a group. */
+        get: operations["list_students"];
+        put?: never;
+        /**
+         * Rolls names for new accounts. Nothing happens in the world yet: the
+         *     names are drafts that can be rolled again or removed.
+         */
+        post: operations["draft_students"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/students/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Has the world create an account for every draft of the group and
+         *     returns the access slips with the start passwords. The passwords are
+         *     shown this once: the backend does not keep them.
+         */
+        post: operations["create_students"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/students/{account}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Removes a name that is not an account in the world. */
+        delete: operations["remove_student"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/students/{account}/reroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replaces a name that is not an account yet by a newly rolled one. */
+        post: operations["reroll_student"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/login": {
         parameters: {
             query?: never;
@@ -267,6 +343,32 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description What a student needs to log in for the first time. */
+        AccessSlip: {
+            account: string;
+            /**
+             * @description The start password. The backend shows it this once and does
+             *     not keep it.
+             */
+            password: string;
+        };
+        /** @description Answer to creating accounts: the slips to print. */
+        AccessSlips: {
+            slips: components["schemas"]["AccessSlip"][];
+        };
+        /**
+         * @description Payload of the event "accounts_created": what became of the
+         *     accounts a world was asked to create.
+         */
+        AccountsCreated: {
+            /** @description Names of the accounts that exist now, with the start password. */
+            created?: string[];
+            /**
+             * @description Names that were refused: taken by somebody else in this world,
+             *     or not a name the engine accepts. Nothing was changed for them.
+             */
+            refused?: string[];
+        };
         /** @description Answer to a request that failed. */
         ApiError: {
             code: components["schemas"]["ErrorCode"];
@@ -285,14 +387,26 @@ export interface components {
             /** @description Account name of the teacher the address now belongs to. */
             account: string;
         };
+        /** @description Payload of the job "create_accounts". */
+        CreateAccounts: {
+            accounts: components["schemas"]["NewAccount"][];
+        };
         /** @description Answer to a request that needs nothing said. */
         Done: Record<string, never>;
+        /** @description Request to roll names for new accounts. */
+        DraftRequest: {
+            /**
+             * Format: int32
+             * @description How many names to roll.
+             */
+            count: number;
+        };
         /**
          * @description Why a request failed, as a fixed word. The frontend translates it into
          *     the language of the user.
          * @enum {string}
          */
-        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "forbidden" | "name_taken" | "invalid_token" | "address_taken" | "internal";
+        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "forbidden" | "name_taken" | "no_names" | "invalid_token" | "address_taken" | "internal";
         /** @description One thing that happened in a world. */
         Event: {
             /**
@@ -334,6 +448,12 @@ export interface components {
         };
         /** @description A group. It is the home of one world, one to one. */
         Group: {
+            /**
+             * @description Where players reach the world, for example
+             *     `spiel.schule.example, Port 30000`. It is printed on the
+             *     access slips. Missing until somebody entered it.
+             */
+            address?: string | null;
             /** @description Fixed identifier of the group and its world. */
             id: string;
             /**
@@ -352,6 +472,11 @@ export interface components {
         };
         /** @description Request to change a group. */
         GroupChange: {
+            /**
+             * @description Where players reach the world, if it changes. An empty text
+             *     removes it.
+             */
+            address?: string | null;
             /** @description The new name, if it changes. */
             name?: string | null;
             /**
@@ -452,6 +577,12 @@ export interface components {
         Modules: {
             modules?: components["schemas"]["Module"][];
         };
+        /** @description An account a world shall create. */
+        NewAccount: {
+            name: string;
+            /** @description The start password. The world stores only its hash. */
+            password: string;
+        };
         /**
          * @description Payload of the event "progress": where one student stands in one
          *     module. It is the whole state, not a change, and replaces what the
@@ -504,6 +635,24 @@ export interface components {
             status: components["schemas"]["HealthStatus"];
             /** @description Version of the backend, as in its package. */
             version: string;
+        };
+        /** @description The account of a student. */
+        Student: {
+            /** @description Account name. It says nothing about the person. */
+            account: string;
+            state: components["schemas"]["StudentState"];
+        };
+        /**
+         * @description How far the account of a student is.
+         * @enum {string}
+         */
+        StudentState: "draft" | "creating" | "active" | "refused";
+        /**
+         * @description The accounts of the students of a group, in the order they were
+         *     rolled. A name that is rolled again keeps its place.
+         */
+        Students: {
+            students: components["schemas"]["Student"][];
         };
         /** @description How far a student is with one kind of task of their level. */
         TaskProgress: {
@@ -796,6 +945,255 @@ export interface operations {
                 };
             };
             /** @description Another group has this name (name_taken) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    list_students: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The accounts, in the order they were rolled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group for this teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    draft_students: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftRequest"];
+            };
+        };
+        responses: {
+            /** @description All accounts of the group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description The count is not allowed or the group would get too large (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group for this teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No free name turned up (no_names) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_students: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The access slips, shown once */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessSlips"];
+                };
+            };
+            /** @description There is no draft to create (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group for this teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    remove_student: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description The name to remove */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All accounts of the group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no such name that could still be changed (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    reroll_student: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description The name to replace */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All accounts of the group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no such name that could still be changed (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No free name turned up (no_names) */
             409: {
                 headers: {
                     [name: string]: unknown;
