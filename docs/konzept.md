@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 45 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 46 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -900,7 +900,7 @@ Einmalig als root einzurichten sind also: der Benutzer, die Dienstvorlage, die P
 | Sichern | Kopie des Weltordners mit Datum nach `backups/` |
 | Archivieren | stoppen, sichern, nach `archive/` verschieben |
 | Wiederherstellen | eine archivierte Welt zurück in den Betrieb holen |
-| Endgültig löschen | Archiv und Sicherungen einer Welt entfernen. Diesen Auftrag schickt nur der Jahresabschluss |
+| Endgültig löschen | Archiv und Sicherungen einer Welt entfernen. Diesen Auftrag schicken nur der Jahresabschluss und das Löschen auf Verlangen (Abschnitt 12) |
 | Logdatei leeren | Luantis eigene Logdatei einer Welt leeren, in der Chatnachrichten stehen (Abschnitt 12) |
 
 Ohne Auftrag meldet der Agent regelmäßig den Zustand: welche Welten laufen, auf welchem Port, mit welcher Version, und wie viel Platz auf der Platte frei ist. Die Web-Anwendung zeigt das bei der Gruppe.
@@ -917,7 +917,7 @@ Es gibt einen einzigen Zeitpunkt, zu dem Welten endgültig verschwinden: den Jah
 
 - Eine Gruppe, die nicht mehr gebraucht wird, wird in der Web-Anwendung archiviert. Ihre Welt ist damit aus dem Betrieb, aber nicht verloren, und lässt sich wiederherstellen.
 - „Gruppe löschen“ gibt es nicht, und keine Frist, die von selbst abläuft.
-- Der Jahresabschluss für die ganze Schule schickt „Endgültig löschen“ für jede archivierte Welt und entfernt alle Sicherungen. Laufende Welten werden danach frisch gesichert.
+- Der Jahresabschluss schickt „Endgültig löschen“ für jede archivierte Welt und entfernt alle Sicherungen. Laufende Welten werden danach frisch gesichert.
 - Archive und Sicherungen enthalten die Protokolle ihrer Welt. Weil sie mit dem Jahresabschluss verschwinden, bleibt auch dort nichts länger als ein Jahr.
 
 **Schlüssel**
@@ -1068,10 +1068,10 @@ Viele Kinder wählen ihren Vornamen. Lehrkräfte sollen Nachnamen und volle Name
 
 **Jahresabschluss**
 
-Der Jahresabschluss ist der einzige Zeitpunkt, zu dem Daten in großem Umfang gelöscht werden. Es gibt daneben keine Fristen, die von selbst ablaufen.
+Der Jahresabschluss ist ein einziger Schalter für die ganze Schule. Er ist der einzige Zeitpunkt, zu dem Daten in großem Umfang gelöscht werden. Es gibt daneben keine Fristen, die von selbst ablaufen, und keinen Abschluss für einzelne Gruppen: Eine Regel ohne Ausnahmen lässt sich erklären, und niemand muss sich merken, welche Gruppe schon abgeschlossen ist.
 
-- Löscht alle Jahresdaten, für die ganze Schule oder einzelne Gruppen.
-- Für die ganze Schule löscht er zusätzlich alle archivierten Welten und alle Sicherungen, für einzelne Gruppen deren Sicherungen (Abschnitt 11.3).
+- Löscht alle Jahresdaten aller Gruppen.
+- Löscht alle archivierten Welten und alle Sicherungen (Abschnitt 11.3).
 - Zeigt vorher an, was gelöscht wird, auch die archivierten Gruppen, und bietet einen Export an. Eine versehentlich archivierte Gruppe lässt sich an dieser Stelle noch wiederherstellen.
 - Das Backend schickt den Welten den Auftrag, ihre lokalen Kopien zu löschen.
 - Die Löschung wird ohne Inhalte vermerkt: wer, wann, welcher Umfang.
@@ -1082,7 +1082,9 @@ Verlangen Eltern oder ein Schüler die Löschung, wartet die Schule nicht auf de
 
 - Die Schulverwaltung löscht ein einzelnes Konto sofort: Kontodaten, Stand und die Einträge des Kontos in den Protokollen, im Backend und in der Welt.
 - Die Löschung wird ohne Inhalte vermerkt: wer, wann, welches Konto.
-- Kopien in Sicherungen und archivierten Welten bleiben bis zum Jahresabschluss. Ob das genügt oder die Sicherungen der betroffenen Welt sofort zu entfernen sind, klärt die Schule mit ihrem Datenschutzbeauftragten.
+- Aus einer Sicherung lässt sich ein einzelnes Konto nicht entfernen. Deshalb werden alle Sicherungen der betroffenen Welt sofort gelöscht. Die Welt wird danach frisch gesichert.
+- Dasselbe gilt für eine archivierte Welt, in der das Konto liegt: Sie wird endgültig gelöscht.
+- Die Web-Anwendung zeigt vorher an, welche Sicherungen und welche archivierten Welten dabei verschwinden.
 - Das ist die Ausnahme. Der gewöhnliche Weg bleibt der Jahresabschluss.
 
 **Außerhalb des Backends**
