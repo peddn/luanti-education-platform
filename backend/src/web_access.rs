@@ -7,7 +7,7 @@ use lep_protocol::world::{Teachers, WebAccessRequest, JOB_WEB_ACCESS_STATUS};
 
 use crate::app::AppState;
 use crate::teachers::{self, Change, ConfirmError};
-use crate::{clock, jobs, mail};
+use crate::{clock, groups, jobs, mail};
 
 /// Tells one world how the web access of an account stands.
 async fn tell_world(app: &AppState, world_id: &str, account: &str) -> Result<()> {
@@ -37,6 +37,7 @@ async fn tell_worlds(app: &AppState, account: &str) -> Result<()> {
 /// every start, so its copy is fresh from then on.
 pub async fn note_holders(app: &AppState, world_id: &str, list: &Teachers) -> Result<()> {
     teachers::set_holders(&app.db, world_id, &list.accounts).await?;
+    groups::set_school_admins(&app.db, world_id, &list.school_admins).await?;
     for account in list
         .accounts
         .iter()

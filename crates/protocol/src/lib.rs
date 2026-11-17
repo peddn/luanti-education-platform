@@ -254,6 +254,10 @@ pub mod world {
     pub struct Teachers {
         #[serde(default, deserialize_with = "null_as_default")]
         pub accounts: Vec<String>,
+        /// The accounts that hold the privilege of the school
+        /// administration in this world.
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub school_admins: Vec<String>,
     }
 
     /// What a teacher can do with their web access at the desk.
@@ -363,6 +367,50 @@ pub mod web {
         pub worlds: Vec<String>,
         /// When the session ends, in seconds since 1970 (UTC).
         pub expires_at: i64,
+        /// True if the teacher belongs to the school administration:
+        /// they see every group and assign teachers to groups.
+        pub school_admin: bool,
+    }
+
+    /// A group. It is the home of one world, one to one.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Group {
+        /// Fixed identifier of the group and its world.
+        pub id: String,
+        /// Name for people. It can be changed.
+        pub name: String,
+        /// Account names of the teachers who are assigned to the group,
+        /// sorted.
+        pub teachers: Vec<String>,
+        /// When the world of the group last called, in seconds since
+        /// 1970 (UTC). Missing if it never did.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub last_seen_at: Option<i64>,
+    }
+
+    /// The groups a teacher may see.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Groups {
+        pub groups: Vec<Group>,
+    }
+
+    /// Request to change a group.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct GroupChange {
+        /// The new name, if it changes.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub name: Option<String>,
+        /// The teachers of the group from now on, if they change. The
+        /// list replaces the old one.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub teachers: Option<Vec<String>>,
+    }
+
+    /// The accounts that can be assigned to groups: everybody who holds
+    /// the privilege for web access in some world. Sorted.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct TeacherList {
+        pub teachers: Vec<String>,
     }
 
     /// How mails leave the backend.
@@ -406,6 +454,10 @@ pub enum ErrorCode {
     TooLarge,
     /// The request cannot be understood.
     InvalidRequest,
+    /// The teacher is logged in, but may not do this.
+    Forbidden,
+    /// Another group already has this name.
+    NameTaken,
     /// The link from a mail is unknown, used or too old.
     InvalidToken,
     /// The address already belongs to another account.

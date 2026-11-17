@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 42 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 43 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -49,7 +49,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 |---|---|
 | Gruppe | Klasse, Kurs oder freie Gruppe, technisch dasselbe. Meist eine Klasse |
 | Zugehörigkeit | Ein Schüler gehört zu genau einer Gruppe |
-| Gruppen anlegen | Nur die Schulverwaltung |
+| Gruppen anlegen | Die Schulverwaltung entscheidet. Solange Welten von Hand entstehen, legt der Server-Admin Gruppe und Welt zusammen an (Abschnitt 5) |
 | Quelle für Konten | Das Backend. Welten legen Konten auf Auftrag an |
 | Kontoname | Zufällige Kombination aus Adjektiv und Nomen, z. B. `lustiger_loewe` |
 | Wunschname | Vom Schüler beantragt, von der Lehrkraft freigegeben, nur Anzeige |
@@ -155,6 +155,12 @@ In jeder Welt gibt es drei Orte: **Wildnis**, **Lobby** und **Lernräume**.
 - Jede Welt hat eigene Einstellungen (PvP, Monster, Chat).
 - Lobby und Lernräume erzeugt der Mod in jeder Welt.
 - Im Spiel gibt es keinen Wechsel zwischen Welten. Lehrkräfte verbinden sich mit der Adresse der jeweiligen Welt.
+
+**Anlegen einer Gruppe:** Eine Gruppe braucht ihren Eintrag im Backend und ihre Luanti-Welt, verbunden über den Schlüssel der Welt.
+
+- Vorerst legt der Server-Admin beides an: den Eintrag mit einem Befehl des Backends, die Welt von Hand. So bleibt der Schlüssel bei dem, der ihn braucht.
+- Die Schulverwaltung benennt Gruppen in der Web-Anwendung um und ordnet ihnen Lehrkräfte zu.
+- Das Anlegen im Browser kommt mit dem Agenten, der die Welt auf Knopfdruck einrichtet. Dann muss auch niemand mehr den Schlüssel sehen.
 
 **Gruppenwechsel eines Schülers:** Das Konto wandert in die neue Welt. Lernniveau und Trophäen gehen mit, der übrige Besitz bleibt in der alten Welt. Die Web-Anwendung weist beim Verschieben darauf hin.
 
@@ -757,6 +763,8 @@ Zwei Ebenen:
 
 - **Was jemand darf** regeln Privilegien im Spiel. Sie gelten in jeder Welt.
 - **Bei wem** regelt die Zuordnung von Lehrkraft zu Gruppe im Backend. Verwalten, Fortschritt sehen und Belohnungen festlegen geht nur für eigene Gruppen.
+
+Wer zur Schulverwaltung gehört, sagt das Privileg `lep_manage_school`. Die Welten melden seine Träger ans Backend wie die Träger von `lep_web_access`. Wer es in mindestens einer Welt hat, gilt in der Web-Anwendung als Schulverwaltung und sieht alle Gruppen. Alle anderen Lehrkräfte sehen nur die Gruppen, denen sie zugeordnet sind. Bis es das Ernennen im Pult gibt, vergibt der Server-Admin das Privileg.
 
 Regeln für das Ernennen:
 
