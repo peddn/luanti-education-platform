@@ -19,24 +19,24 @@ describe('health page', () => {
 
   it('shows the state of the backend in German', async () => {
     vi.stubGlobal('fetch', async () =>
-      new Response(JSON.stringify({ status: 'ok', version: '0.1.0', database: true })),
+      new Response(JSON.stringify({ status: 'ok', version: '0.1.0', mail: 'smtp' })),
     )
     const page = show('de')
     await flushPromises()
     expect(page.get('[data-test=status]').text()).toBe('Alles in Ordnung')
-    expect(page.get('[data-test=database]').text()).toBe('antwortet')
+    expect(page.get('[data-test=mail]').text()).toBe('über den Mailserver')
     expect(page.get('[data-test=version]').text()).toBe('0.1.0')
     expect(page.find('[role=alert]').exists()).toBe(false)
   })
 
   it('shows the same in English', async () => {
     vi.stubGlobal('fetch', async () =>
-      new Response(JSON.stringify({ status: 'degraded', version: '0.1.0', database: false })),
+      new Response(JSON.stringify({ status: 'degraded', version: '0.1.0', mail: 'terminal' })),
     )
     const page = show('en')
     await flushPromises()
     expect(page.get('[data-test=status]').text()).toBe('Limited')
-    expect(page.get('[data-test=database]').text()).toBe('does not answer')
+    expect(page.get('[data-test=mail]').text()).toContain('not set up')
   })
 
   it('translates the code of a failure', async () => {

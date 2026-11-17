@@ -11,7 +11,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Says whether the backend can do its work. */
+        /**
+         * Says whether the backend can do its work, and nothing else: everybody
+         *     may ask. The details are for teachers, under `/api/web/v1/status`.
+         */
         get: operations["health"];
         put?: never;
         post?: never;
@@ -111,6 +114,26 @@ export interface paths {
         };
         /** Says who is logged in. */
         get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Says how the backend is doing, with the details that are nobody
+         *     else's business.
+         */
+        get: operations["status"];
         put?: never;
         post?: never;
         delete?: never;
@@ -245,13 +268,12 @@ export interface components {
             id: string;
             outcome: components["schemas"]["EventOutcome"];
         };
-        /** @description Answer of the health check. */
+        /**
+         * @description Answer of the health check. Everybody may ask, so it says nothing
+         *     but whether the backend can do its work.
+         */
         Health: {
-            /** @description True if the database answers. */
-            database: boolean;
             status: components["schemas"]["HealthStatus"];
-            /** @description Version of the backend, as in its package. */
-            version: string;
         };
         /**
          * @description Whether the backend can do its work.
@@ -293,6 +315,11 @@ export interface components {
         LoginRequest: {
             token: string;
         };
+        /**
+         * @description How mails leave the backend.
+         * @enum {string}
+         */
+        MailTransport: "smtp" | "terminal";
         /** @description The teacher who is logged in. */
         Me: {
             /** @description Account name of the teacher. */
@@ -366,6 +393,16 @@ export interface components {
             };
             /** @description Which protocol, one of `PROTOCOLS`. */
             protocol: string;
+        };
+        /**
+         * @description State of the backend with its details, for teachers who are
+         *     logged in.
+         */
+        Status: {
+            mail: components["schemas"]["MailTransport"];
+            status: components["schemas"]["HealthStatus"];
+            /** @description Version of the backend, as in its package. */
+            version: string;
         };
         /** @description How far a student is with one kind of task of their level. */
         TaskProgress: {
@@ -616,6 +653,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description State of the backend */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
                 };
             };
             /** @description Not logged in (unauthorized) */

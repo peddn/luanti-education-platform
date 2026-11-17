@@ -25,9 +25,8 @@ async fn health_reports_ok() {
     let (status, json) = get(app::router(AppState::new(pool)), "/api/health").await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(json["status"], "ok");
-    assert_eq!(json["database"], true);
-    assert_eq!(json["version"], env!("CARGO_PKG_VERSION"));
+    // Nothing but the state: everybody may ask.
+    assert_eq!(json, serde_json::json!({ "status": "ok" }));
 }
 
 #[tokio::test]
@@ -37,8 +36,7 @@ async fn health_reports_a_missing_database() {
     let (status, json) = get(app::router(AppState::new(pool)), "/api/health").await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(json["status"], "degraded");
-    assert_eq!(json["database"], false);
+    assert_eq!(json, serde_json::json!({ "status": "degraded" }));
 }
 
 #[tokio::test]

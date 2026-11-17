@@ -1,11 +1,22 @@
 //! Mails of the backend: what they say and how they leave.
 //!
-//! Sending by SMTP is not built yet. Until then every mail is written to
-//! the terminal, which is also what the test environment wants.
+//! With a mail server in the settings they are sent by SMTP. Without one
+//! every mail is written to the terminal, which is what the test
+//! environment wants.
 
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
+use lettre::message::header::ContentType;
+use lettre::message::Mailbox;
+use lettre::transport::smtp::authentication::Credentials;
+use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
+
+use crate::config::{Smtp, SmtpSecurity};
+
+/// Longest time a step of the talk with the mail server may take.
+const SMTP_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// A mail, ready to send.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,6 +26,21 @@ pub struct Mail {
     pub body: String,
 }
 
+/// A connection to a mail server and the sender of the mails.
+pub struct SmtpSender {
+    transport: AsyncSmtpTransport<Tokio1Executor>,
+    from: Mailbox,
+}
+
+// Written by hand: the transport holds the password.
+impl std::fmt::Debug for SmtpSender {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SmtpSender")
+            .field("from", &self.from.to_string())
+            .finish_non_exhaustive()
+    }
+}
+
 /// The way mails leave the backend.
 #[derive(Debug, Clone)]
 pub enum Mailer {
@@ -22,6 +48,8 @@ pub enum Mailer {
     Terminal,
     /// Keeps every mail, for the tests.
     Memory(Arc<Mutex<Vec<Mail>>>),
+    /// Sends every mail through a mail server.
+    Smtp(Arc<SmtpSender>),
 }
 
 impl Mailer {
@@ -30,8 +58,85 @@ impl Mailer {
         Self::Memory(Arc::default())
     }
 
+    /// Returns the mailer the settings ask for: through the mail server,
+    /// or to the terminal without one.
+    pub fn from_settings(smtp: Option<&Smtp>) -> Result<Self> {
+        smtp.map_or(Ok(Self::Terminal), Self::smtp)
+    }
+
+    /// Returns a mailer that sends through a mail server. Nothing is
+    /// connected yet; that happens with the first mail.
+    pub fn smtp(settings: &Smtp) -> Result<Self> {
+        let from: Mailbox = settings.from.parse().with_context(|| {
+            format!(
+                "{} is not a sender like LEP <lep@schule.example>: {}",
+                crate::config::ENV_MAIL_FROM,
+                settings.from
+            )
+        })?;
+        let host = settings.host.as_str();
+        let mut builder = match settings.security {
+            SmtpSecurity::StartTls => AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(host),
+            SmtpSecurity::Tls => AsyncSmtpTransport::<Tokio1Executor>::relay(host),
+            SmtpSecurity::None => Ok(AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(
+                host,
+            )),
+        }
+        .with_context(|| format!("cannot prepare the connection to the mail server {host}"))?
+        .port(settings.port)
+        .timeout(Some(SMTP_TIMEOUT));
+        if let Some((user, password)) = &settings.login {
+            builder = builder.credentials(Credentials::new(user.clone(), password.clone()));
+        }
+        Ok(Self::Smtp(Arc::new(SmtpSender {
+            transport: builder.build(),
+            from,
+        })))
+    }
+
+    /// Returns true if mails really leave, through a mail server.
+    pub fn is_smtp(&self) -> bool {
+        matches!(self, Self::Smtp(_))
+    }
+
+    /// Checks that the mail server answers and accepts the login.
+    /// Without a mail server there is nothing to check.
+    pub async fn check(&self) -> Result<()> {
+        if let Self::Smtp(sender) = self {
+            let alive = sender
+                .transport
+                .test_connection()
+                .await
+                .context("the mail server does not accept the connection")?;
+            anyhow::ensure!(alive, "the mail server does not answer as a mail server");
+        }
+        Ok(())
+    }
+
+    /// Sends a mail and waits until the mail server has taken it.
     pub async fn send(&self, mail: Mail) -> Result<()> {
         match self {
+            Self::Smtp(sender) => {
+                let to: Mailbox = mail
+                    .to
+                    .parse()
+                    .context("the address of the receiver cannot be used")?;
+                let message = Message::builder()
+                    .from(sender.from.clone())
+                    .to(to)
+                    .subject(mail.subject)
+                    // An id of its own: spam filters distrust mails
+                    // without one.
+                    .message_id(None)
+                    .header(ContentType::TEXT_PLAIN)
+                    .body(mail.body)
+                    .context("cannot build the mail")?;
+                sender
+                    .transport
+                    .send(message)
+                    .await
+                    .context("the mail server did not take the mail")?;
+            }
             Self::Terminal => {
                 println!(
                     "\n----- mail (not sent, mail is not set up) -----\nTo: {}\nSubject: {}\n\n{}\n-----------------------------------------------\n",
@@ -43,12 +148,59 @@ impl Mailer {
         Ok(())
     }
 
+    /// Sends a mail without making the caller wait for the mail server.
+    /// Whoever asked for the mail gets the same answer at the same speed,
+    /// whether or not a mail goes out. A failure is written to the log
+    /// with the account, without the address.
+    pub async fn send_later(&self, mail: Mail, account: &str) {
+        let to = mail.to.clone();
+        let account = account.to_owned();
+        let mailer = self.clone();
+        let work = async move {
+            if let Err(err) = mailer.send(mail).await {
+                let reason = hide_address(&format!("{err:#}"), &to);
+                tracing::error!(%account, "cannot send a mail: {reason}");
+            }
+        };
+        if self.is_smtp() {
+            tokio::spawn(work);
+        } else {
+            // Terminal and tests: at once, so the mail is there when the
+            // answer is.
+            work.await;
+        }
+    }
+
     /// Returns the mails a memory mailer has kept, oldest first.
     pub fn kept(&self) -> Vec<Mail> {
         match self {
-            Self::Terminal => Vec::new(),
             Self::Memory(kept) => kept.lock().expect("the kept mails are broken").clone(),
+            Self::Terminal | Self::Smtp(_) => Vec::new(),
         }
+    }
+}
+
+/// Removes an address from a text for the log. Mail servers like to
+/// repeat the receiver in their answers.
+fn hide_address(text: &str, address: &str) -> String {
+    if address.is_empty() {
+        return text.to_owned();
+    }
+    text.replace(address, "(address)")
+}
+
+/// Builds the mail of the command that tries out the mail server.
+pub fn test(to: &str) -> Mail {
+    Mail {
+        to: to.to_owned(),
+        subject: "Luanti Education Platform: Probemail / Test mail".to_owned(),
+        body: "Diese Mail zeigt, dass der Mailversand der Luanti Education Platform \
+               eingerichtet ist. Umlaute kommen an: ä ö ü ß.\n\
+               \n\
+               ----\n\
+               \n\
+               This mail shows that the Luanti Education Platform can send mail."
+            .to_owned(),
     }
 }
 
@@ -187,6 +339,40 @@ mod tests {
                 .count(),
             2
         );
+    }
+
+    #[test]
+    fn hides_the_address_in_what_a_mail_server_says() {
+        assert_eq!(
+            hide_address(
+                "550 5.1.1 <anna@schule.example>: unknown",
+                "anna@schule.example"
+            ),
+            "550 5.1.1 <(address)>: unknown"
+        );
+        assert_eq!(hide_address("timed out", ""), "timed out");
+    }
+
+    // The connection pool of the mailer needs the runtime.
+    #[tokio::test]
+    async fn refuses_a_sender_that_is_none() {
+        let settings = |from: &str| Smtp {
+            host: "mail.schule.example".to_owned(),
+            port: 587,
+            security: SmtpSecurity::StartTls,
+            login: Some(("lep".to_owned(), "made-up-secret".to_owned())),
+            from: from.to_owned(),
+        };
+        let err = Mailer::smtp(&settings("not a sender"))
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("LEP_MAIL_FROM"), "{err}");
+
+        let mailer = Mailer::smtp(&settings("LEP <lep@schule.example>")).unwrap();
+        assert!(mailer.is_smtp());
+        // The password is not part of what a log would show.
+        assert!(!format!("{mailer:?}").contains("made-up-secret"));
+        assert!(!Mailer::from_settings(None).unwrap().is_smtp());
     }
 
     #[tokio::test]

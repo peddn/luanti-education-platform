@@ -19,23 +19,21 @@ onMounted(() => store.load())
     <ErrorNote v-if="store.error" :code="store.error" />
 
     <dl
-      v-if="store.health"
+      v-if="store.status"
       class="grid max-w-xl grid-cols-[auto_1fr] gap-x-8 gap-y-3 rounded border border-slate-200 bg-white p-5"
     >
       <dt class="text-slate-500">{{ $t('health.backend') }}</dt>
       <dd
         data-test="status"
         class="font-semibold"
-        :class="store.health.status === 'ok' ? 'text-emerald-700' : 'text-amber-700'"
+        :class="store.status.status === 'ok' ? 'text-emerald-700' : 'text-amber-700'"
       >
-        {{ $t(`health.status.${store.health.status}`) }}
+        {{ $t(`health.status.${store.status.status}`) }}
       </dd>
-      <dt class="text-slate-500">{{ $t('health.database') }}</dt>
-      <dd data-test="database">
-        {{ store.health.database ? $t('health.databaseOk') : $t('health.databaseDown') }}
-      </dd>
+      <dt class="text-slate-500">{{ $t('health.mailTitle') }}</dt>
+      <dd data-test="mail">{{ $t(`health.mail.${store.status.mail}`) }}</dd>
       <dt class="text-slate-500">{{ $t('health.version') }}</dt>
-      <dd data-test="version" class="font-mono">{{ store.health.version }}</dd>
+      <dd data-test="version" class="font-mono">{{ store.status.version }}</dd>
     </dl>
 
     <p v-else-if="store.loading" class="text-slate-500">{{ $t('health.loading') }}</p>

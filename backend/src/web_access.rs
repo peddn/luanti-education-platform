@@ -68,10 +68,8 @@ pub async fn handle(app: &AppState, world_id: &str, request: &WebAccessRequest) 
     if let Change::Mail { to, token } = &change {
         let minutes = teachers::TOKEN_SECONDS / 60;
         let mail = mail::confirmation(&app.public_url, to, &request.account, token, minutes);
-        if let Err(err) = app.mailer.send(mail).await {
-            // The teacher can ask for the mail again at the desk.
-            tracing::error!("cannot send the confirmation mail: {err:#}");
-        }
+        // If it fails, the teacher can ask for the mail again at the desk.
+        app.mailer.send_later(mail, &request.account).await;
     }
     // Also when nothing changed: the desk shows what the backend knows.
     tell_worlds(app, &request.account).await?;

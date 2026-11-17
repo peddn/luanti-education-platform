@@ -12,9 +12,11 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{AppendHeaders, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use lep_protocol::web::{ConfirmRequest, Confirmed, LoginLinkRequest, LoginRequest, Me};
+use lep_protocol::web::{
+    ConfirmRequest, Confirmed, LoginLinkRequest, LoginRequest, MailTransport, Me, Status,
+};
 use lep_protocol::world::Done;
-use lep_protocol::{ApiError, ErrorCode};
+use lep_protocol::{ApiError, ErrorCode, Health};
 
 use crate::app::AppState;
 use crate::failure::Failure;
@@ -32,6 +34,7 @@ pub fn router() -> Router<AppState> {
         .route("/v1/login", post(log_in))
         .route("/v1/logout", post(log_out))
         .route("/v1/me", get(me))
+        .route("/v1/status", get(status))
 }
 
 /// Reads a JSON body, with our own answer if it cannot be read.
@@ -160,9 +163,7 @@ pub async fn request_login_link(
             &link.token,
             minutes,
         );
-        if let Err(err) = state.mailer.send(mail).await {
-            tracing::error!("cannot send the login mail: {err:#}");
-        }
+        state.mailer.send_later(mail, &link.account).await;
     }
     Ok(Json(Done {}))
 }
@@ -229,6 +230,30 @@ pub async fn me(
     Teacher(logged_in): Teacher,
 ) -> Result<Json<Me>, Failure> {
     Ok(Json(describe(&state, logged_in).await?))
+}
+
+/// Says how the backend is doing, with the details that are nobody
+/// else's business.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/status",
+    responses(
+        (status = 200, description = "State of the backend", body = Status),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn status(State(state): State<AppState>, _teacher: Teacher) -> Json<Status> {
+    // Who got this far was found in the database.
+    Json(Status {
+        status: Health::new(true).status,
+        version: env!("CARGO_PKG_VERSION").to_owned(),
+        mail: if state.mailer.is_smtp() {
+            MailTransport::Smtp
+        } else {
+            MailTransport::Terminal
+        },
+    })
 }
 
 #[cfg(test)]

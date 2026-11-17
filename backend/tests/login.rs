@@ -193,6 +193,25 @@ async fn a_teacher_logs_in_with_a_link_and_out_again() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(json["account"], "lehrer1");
 
+    // The details of the backend are for teachers only.
+    let (status, json, _) = setup
+        .call(
+            Method::GET,
+            "/api/web/v1/status",
+            None,
+            &[(header::COOKIE, format!("lep_session={session}"))],
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["status"], "ok");
+    assert_eq!(json["version"], env!("CARGO_PKG_VERSION"));
+    assert_eq!(json["mail"], "terminal");
+    let (status, json, _) = setup
+        .call(Method::GET, "/api/web/v1/status", None, &[])
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(json["code"], "unauthorized");
+
     // The link is used up.
     let (status, json, _) = setup
         .post("/api/web/v1/login", json!({ "token": token }), None)

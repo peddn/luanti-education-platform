@@ -44,14 +44,16 @@
     "loading": "Asking for the status …",
     "reload": "Ask again",
     "backend": "Backend",
-    "database": "Database",
     "version": "Version",
     "status": {
       "ok": "Everything is fine",
       "degraded": "Limited"
     },
-    "databaseOk": "answers",
-    "databaseDown": "does not answer"
+    "mailTitle": "Mail",
+    "mail": {
+      "smtp": "through the mail server",
+      "terminal": "not set up, mails are written to the terminal of the backend"
+    }
   },
   "confirm": {
     "title": "Confirm your e-mail address",

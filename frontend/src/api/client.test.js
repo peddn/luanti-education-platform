@@ -34,11 +34,11 @@ describe('api client', () => {
     const client = createClient({
       fetch: async (input) => {
         asked.push(String(input))
-        return new Response(JSON.stringify({ status: 'ok', version: '1.2.3', database: true }))
+        return new Response(JSON.stringify({ status: 'ok' }))
       },
     })
     const health = await client.health()
-    expect(health).toEqual({ status: 'ok', version: '1.2.3', database: true })
+    expect(health).toEqual({ status: 'ok' })
     expect(asked).toEqual(['/api/health'])
   })
 

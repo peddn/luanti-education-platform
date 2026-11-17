@@ -44,6 +44,10 @@ describe('languages', () => {
       for (const state of schemas.HealthStatus.enum) {
         expect(states[state], state).toBeTypeOf('string')
       }
+      const mails = /** @type {Record<string, string>} */ (messages.health.mail)
+      for (const mail of schemas.MailTransport.enum) {
+        expect(mails[mail], mail).toBeTypeOf('string')
+      }
       for (const locale of LOCALES) {
         expect(/** @type {Record<string, string>} */ (messages.languages)[locale]).toBeTypeOf('string')
       }

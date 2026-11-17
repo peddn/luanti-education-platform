@@ -19,27 +19,22 @@ pub enum HealthStatus {
     Degraded,
 }
 
-/// Answer of the health check.
+/// Answer of the health check. Everybody may ask, so it says nothing
+/// but whether the backend can do its work.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Health {
     pub status: HealthStatus,
-    /// Version of the backend, as in its package.
-    pub version: String,
-    /// True if the database answers.
-    pub database: bool,
 }
 
 impl Health {
     /// Builds the answer from the one thing that can be missing so far.
-    pub fn new(version: impl Into<String>, database: bool) -> Self {
+    pub fn new(database: bool) -> Self {
         Self {
             status: if database {
                 HealthStatus::Ok
             } else {
                 HealthStatus::Degraded
             },
-            version: version.into(),
-            database,
         }
     }
 }
@@ -370,6 +365,26 @@ pub mod web {
         pub expires_at: i64,
     }
 
+    /// How mails leave the backend.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum MailTransport {
+        /// Through a mail server.
+        Smtp,
+        /// Not at all: they are written to the terminal of the backend.
+        Terminal,
+    }
+
+    /// State of the backend with its details, for teachers who are
+    /// logged in.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Status {
+        pub status: crate::HealthStatus,
+        /// Version of the backend, as in its package.
+        pub version: String,
+        pub mail: MailTransport,
+    }
+
     /// Answer to a confirmed address.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct Confirmed {
@@ -443,14 +458,12 @@ mod tests {
     }
 
     #[test]
-    fn health_is_ok_with_a_database() {
-        let health = Health::new("1.2.3", true);
-        assert_eq!(health.status, HealthStatus::Ok);
-        assert_eq!(health.version, "1.2.3");
-    }
-
-    #[test]
-    fn health_is_degraded_without_a_database() {
-        assert_eq!(Health::new("1.2.3", false).status, HealthStatus::Degraded);
+    fn health_says_only_whether_the_backend_can_work() {
+        assert_eq!(Health::new(true).status, HealthStatus::Ok);
+        assert_eq!(Health::new(false).status, HealthStatus::Degraded);
+        assert_eq!(
+            serde_json::to_string(&Health::new(true)).unwrap(),
+            r#"{"status":"ok"}"#
+        );
     }
 }
