@@ -50,6 +50,23 @@ describe("lep_rooms types", function()
 		assert.are.same({}, def.privileges)
 	end)
 
+	it("builds a type ahead unless it says no", function()
+		local types = rooms.new_types()
+		types:register("b:always", { layer = 1, size = { x = 3, y = 3, z = 3 } })
+		types:register("a:never", { layer = 2, size = { x = 3, y = 3, z = 3 },
+			prebuild = false })
+		types:register("c:explicit", { layer = 3, size = { x = 3, y = 3, z = 3 },
+			prebuild = true })
+		assert.is_true(types:get("b:always").prebuild)
+		assert.is_false(types:get("a:never").prebuild)
+		assert.are.same({ "b:always", "c:explicit" }, types:prebuild_ids())
+		assert.are.same({ "a:never", "b:always", "c:explicit" }, types:ids())
+		assert.has_error(function()
+			types:register("d:wrong", { layer = 4, size = { x = 3, y = 3, z = 3 },
+				prebuild = "yes" })
+		end)
+	end)
+
 	it("finds a type by its layer", function()
 		local types = new_types()
 		assert.are.equal(TYPE, types:id_on_layer(1))

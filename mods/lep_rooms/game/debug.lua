@@ -14,6 +14,8 @@ lep_rooms.register_type(TEST_TYPE, {
 	layer = 38,
 	size = { x = 15, y = 9, z = 15 },
 	version = 1,
+	-- Only for trying things out: no student needs this room.
+	prebuild = false,
 	privileges = { fly = true },
 	on_build = function(_, geometry)
 		-- A small pillar in the middle shows that furnishing works.

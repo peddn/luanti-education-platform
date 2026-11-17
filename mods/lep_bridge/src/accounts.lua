@@ -68,4 +68,31 @@ function accounts.plan(list, world)
 	return to_create, created, refused
 end
 
+--- Runs jobs one after the other. A job is a function(done) that calls
+-- done() when it is finished, at once or later.
+-- @param defer Function(next) that calls next() after a pause, so that
+--   long work does not happen in one go.
+-- @param callback Called without arguments after the last job.
+function accounts.run_in_order(jobs, defer, callback)
+	local function step(index)
+		local job = jobs[index]
+		if not job then
+			callback()
+			return
+		end
+		local finished = false
+		job(function()
+			-- A job that reports twice must not start the next one twice.
+			if finished then
+				return
+			end
+			finished = true
+			defer(function()
+				step(index + 1)
+			end)
+		end)
+	end
+	step(1)
+end
+
 return accounts
