@@ -30,10 +30,11 @@ async function logout() {
         <nav class="flex flex-1 gap-1 text-sm">
           <template v-if="auth.loggedIn">
             <RouterLink
-              v-for="page in ['overview', 'health']"
+              v-for="page in ['overview', 'groups', 'health']"
               :key="page"
               :to="{ name: page }"
               class="rounded px-3 py-1.5 text-slate-600 hover:bg-slate-100"
+              :active-class="page === 'groups' ? 'bg-slate-100 font-semibold text-slate-900' : ''"
               exact-active-class="bg-slate-100 font-semibold text-slate-900"
             >
               {{ $t(`nav.${page}`) }}

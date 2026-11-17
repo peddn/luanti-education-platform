@@ -8,7 +8,7 @@ import { createLepRouter } from '@/router'
 
 import LoginPage from './LoginPage.vue'
 
-const ANNA = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b'], expires_at: 1700043200 }
+const ANNA = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b'], expires_at: 1700043200, school_admin: false }
 
 /**
  * @param {string} address

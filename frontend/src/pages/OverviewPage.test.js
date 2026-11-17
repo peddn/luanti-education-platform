@@ -12,7 +12,7 @@ describe('overview page', () => {
 
   it('shows who is logged in', () => {
     const auth = useAuthStore()
-    auth.me = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b', '8a'], expires_at: 1700043200 }
+    auth.me = { account: 'lehrer1', email: 'anna@schule.example', worlds: ['7b', '8a'], expires_at: 1700043200, school_admin: false }
     const page = mount(OverviewPage, { global: { plugins: [createLepI18n('de')] } })
     expect(page.text()).toContain('Du bist als lehrer1 angemeldet.')
     expect(page.get('[data-test=email]').text()).toBe('anna@schule.example')

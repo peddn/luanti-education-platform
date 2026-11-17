@@ -11,6 +11,7 @@
   },
   "nav": {
     "overview": "Overview",
+    "groups": "Groups",
     "health": "Status"
   },
   "login": {
@@ -36,7 +37,35 @@
     "email": "E-mail address",
     "worlds": "Worlds",
     "until": "Logged in until",
-    "soon": "Groups, progress and protocols will follow here in the next steps."
+    "soon": "Progress and protocols will follow here in the next steps.",
+    "role": "Role",
+    "roleSchoolAdmin": "School administration",
+    "roleTeacher": "Teacher"
+  },
+  "groups": {
+    "title": "Groups",
+    "introAdmin": "As school administration you see every group. You rename groups and assign teachers to them.",
+    "introTeacher": "You see the groups the school administration assigned you to.",
+    "loading": "Loading the groups …",
+    "emptyTeacher": "You are not assigned to a group yet. The school administration does that.",
+    "emptyAdmin": "There is no group yet. The server admin creates groups together with their world.",
+    "name": "Name",
+    "teachers": "Teachers",
+    "noTeachers": "nobody assigned",
+    "world": "World",
+    "lastSeen": "last connected {time}",
+    "neverSeen": "never connected",
+    "open": "Open",
+    "back": "To all groups",
+    "newName": "New name",
+    "save": "Save",
+    "saving": "Saving …",
+    "saved": "Saved.",
+    "assign": "Assign teachers",
+    "assignHint": "You can choose from all accounts with web access. Assigned teachers see this group in the web application.",
+    "noCandidates": "There is no teacher with web access yet.",
+    "invalidName": "The name needs 1 to 60 characters.",
+    "readOnly": "Only the school administration can change this."
   },
   "health": {
     "title": "Status",
@@ -76,6 +105,8 @@
     "not_found": "This does not exist.",
     "too_large": "The request is too large.",
     "invalid_request": "The request was faulty.",
+    "forbidden": "You may not do this.",
+    "name_taken": "Another group already has this name.",
     "invalid_token": "This link no longer works. It is too old or was used already.",
     "address_taken": "This address already belongs to another account.",
     "internal": "The backend ran into an error.",

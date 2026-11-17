@@ -6,6 +6,8 @@
 /** @typedef {Schemas['Status']} Status */
 /** @typedef {Schemas['Confirmed']} Confirmed */
 /** @typedef {Schemas['Me']} Me */
+/** @typedef {Schemas['Group']} Group */
+/** @typedef {Schemas['GroupChange']} GroupChange */
 /** @typedef {Schemas['ErrorCode']} BackendErrorCode */
 
 /**
@@ -21,6 +23,8 @@ const BACKEND_CODES = [
   'not_found',
   'too_large',
   'invalid_request',
+  'forbidden',
+  'name_taken',
   'invalid_token',
   'address_taken',
   'internal',
@@ -102,15 +106,16 @@ export function createClient(options = {}) {
 
   /**
    * @param {string} path
-   * @param {unknown} [content] sent as JSON with POST; without it the request is a GET
+   * @param {unknown} [content] sent as JSON; without it the request is a GET
    * @param {boolean} [quiet] true for a request that only asks whether somebody is logged in
+   * @param {'POST' | 'PATCH'} [method] how content is sent
    * @returns {Promise<unknown>}
    */
-  async function request(path, content, quiet) {
+  async function request(path, content, quiet, method = 'POST') {
     /** @type {RequestInit} */
     const init = { headers: { Accept: 'application/json' } }
     if (content !== undefined) {
-      init.method = 'POST'
+      init.method = method
       init.headers = { Accept: 'application/json', 'Content-Type': 'application/json' }
       init.body = JSON.stringify(content)
     }
@@ -186,6 +191,48 @@ export function createClient(options = {}) {
       /** @type {Schemas['LoginRequest']} */
       const body = { token }
       return /** @type {Me} */ (await request('/api/web/v1/login', body))
+    },
+
+    /**
+     * Returns the groups the teacher may see.
+     *
+     * @returns {Promise<Group[]>}
+     */
+    async groups() {
+      const answer = /** @type {Schemas['Groups']} */ (await request('/api/web/v1/groups'))
+      return answer.groups
+    },
+
+    /**
+     * @param {string} id
+     * @returns {Promise<Group>}
+     */
+    async group(id) {
+      return /** @type {Group} */ (await request(`/api/web/v1/groups/${encodeURIComponent(id)}`))
+    },
+
+    /**
+     * Renames a group, sets its teachers or both. Only for the school
+     * administration.
+     *
+     * @param {string} id
+     * @param {GroupChange} change
+     * @returns {Promise<Group>} the group as it is now
+     */
+    async changeGroup(id, change) {
+      const path = `/api/web/v1/groups/${encodeURIComponent(id)}`
+      return /** @type {Group} */ (await request(path, change, false, 'PATCH'))
+    },
+
+    /**
+     * Returns the accounts that can be assigned to groups. Only for the
+     * school administration.
+     *
+     * @returns {Promise<string[]>}
+     */
+    async teachers() {
+      const answer = /** @type {Schemas['TeacherList']} */ (await request('/api/web/v1/teachers'))
+      return answer.teachers
     },
 
     /** @returns {Promise<void>} */
