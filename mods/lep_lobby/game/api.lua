@@ -173,8 +173,11 @@ function lep_lobby.ensure_room(player_name, callback)
 
 	mod_storage:set_string(BOOK_KEY, core.serialize(book:export()))
 	local function finish()
-		core.log("action", "[lep_lobby] built room " .. slot .. " for " .. player_name)
-		callback(lep_lobby.get_room(player_name))
+		-- Worded like the message of lep_rooms, so a log reads as one list.
+		local room = lep_lobby.get_room(player_name)
+		core.log("action", "[lep_lobby] built room 'lep_lobby:room' for " .. player_name
+			.. " at " .. core.pos_to_string(room.entrance) .. ", slot " .. slot)
+		callback(room)
 	end
 	if ready then
 		local direction = corridors.slot_position(slot)

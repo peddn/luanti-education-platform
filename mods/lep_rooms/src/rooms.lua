@@ -86,6 +86,9 @@ end
 --   version     integer, default 1. Raise it to have existing rooms
 --               rebuilt when they are entered the next time.
 --   privileges  set of privileges granted inside the room
+--   prebuild    boolean, default true. Whether rooms of this type are
+--               built ahead when accounts are created. False for types
+--               that not every student gets.
 function Types:register(id, def)
 	assert(type(id) == "string" and id ~= "", "register: id must be a non-empty string")
 	assert(type(def) == "table", "register: def must be a table")
@@ -106,6 +109,8 @@ function Types:register(id, def)
 
 	local version = def.version or 1
 	assert(is_int(version) and version >= 1, "register: version must be an integer >= 1")
+	assert(def.prebuild == nil or type(def.prebuild) == "boolean",
+		"register: prebuild must be true or false")
 
 	self._defs[id] = {
 		id = id,
@@ -113,6 +118,7 @@ function Types:register(id, def)
 		size = { x = size.x, y = size.y, z = size.z },
 		version = version,
 		privileges = copy_set(def.privileges),
+		prebuild = def.prebuild ~= false,
 	}
 	self._by_layer[def.layer] = id
 end
@@ -133,6 +139,18 @@ function Types:ids()
 		ids[#ids + 1] = id
 	end
 	table.sort(ids)
+	return ids
+end
+
+--- Returns the sorted ids of the room types that are built ahead when
+-- accounts are created.
+function Types:prebuild_ids()
+	local ids = {}
+	for _, id in ipairs(self:ids()) do
+		if self._defs[id].prebuild then
+			ids[#ids + 1] = id
+		end
+	end
 	return ids
 end
 

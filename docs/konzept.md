@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 47 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 48 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -254,7 +254,7 @@ Der Mod `lep_rooms` baut und verwaltet die Lernräume. Er kennt keine Aufgaben, 
 - **Hülle.** Boden, Wände und Decke sind unzerstörbar. Die Blöcke sind eigene Blöcke von `lep_rooms`, nutzen aber Texturen aus Minetest Game: dunkles Holz für den Boden, Silbersandstein für Wände und Decke. Die Fugen ergeben ein Raster von einem Block.
 - **Licht.** Der Innenraum ist mit unsichtbarer, leuchtender Luft gefüllt (`lep_rooms:air`). Damit ist jede Stelle gleich hell, auch die Unterseite eines Körpers in der Raummitte. Lernmodule müssen diesen Block wie Luft behandeln.
 - **Schutz.** Im Innenraum darf nur der Besitzer bauen und abbauen. Hüllen und der Raum zwischen den Räumen sind für alle gesperrt.
-- **Bau.** Ein Raum entsteht spätestens beim ersten Betreten. Für eine ganze Klasse lassen sich Räume vorab bauen. Die Brücke nutzt das später beim Anlegen von Konten.
+- **Bau.** Ein Raum entsteht spätestens beim ersten Betreten. Legt die Welt Konten an, baut sie für jedes neue Konto gleich den Raum in der Lobby und die Räume aller Raumtypen, einen nach dem anderen im Hintergrund. So muss nichts gebaut werden, wenn sich am ersten Tag eine ganze Klasse gleichzeitig anmeldet. Ein Raumtyp kann sich davon ausnehmen, wenn ihn nicht jeder Schüler braucht.
 - **Neubau.** Ein Raum lässt sich von Grund auf neu bauen: neue Hülle, leerer Innenraum, neu eingerichtet. Was darin gebaut war, geht verloren. Das Lernmodul erfährt es über ein Ereignis. Jeder Raumtyp hat eine Versionsnummer. Erhöht ein Modul sie, werden alte Räume beim nächsten Betreten von selbst neu gebaut.
 - **Verlassen.** Führt vorerst in die Wildnis. Mit der Lobby führt es dorthin zurück, woher der Schüler kam.
 

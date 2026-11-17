@@ -248,6 +248,13 @@ describe("lep_lobby corridors rooms", function()
 	end)
 
 	it("splits names on the sign at the first underscore", function()
+		assert.are.equal("kluge\nEule", corridors.sign_text("klugeEule"))
+		assert.are.equal("neugieriger\nKristall", corridors.sign_text("neugierigerKristall"))
+		-- Only the first such place splits, and a capital at the start does not.
+		assert.are.equal("kluge\nEuleZwei", corridors.sign_text("klugeEuleZwei"))
+		assert.are.equal("Lehrer", corridors.sign_text("Lehrer"))
+		assert.are.equal("lehrer1", corridors.sign_text("lehrer1"))
+		assert.are.equal("ABC", corridors.sign_text("ABC"))
 		assert.are.equal("lustiger\nloewe", corridors.sign_text("lustiger_loewe"))
 		assert.are.equal("anna", corridors.sign_text("anna"))
 		assert.are.equal("a\nb_c", corridors.sign_text("a_b_c"))

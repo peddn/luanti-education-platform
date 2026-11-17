@@ -26,4 +26,8 @@ lep_core.formspec = load("src/formspec")
 -- game/protocols.lua.
 lep_core.protocols = load("game/protocols")
 
+-- Text for signs the server sets up itself. Needs the mod signs_lib when
+-- it is used.
+lep_core.signs = load("game/signs")
+
 core.log("action", "[lep_core] loaded")

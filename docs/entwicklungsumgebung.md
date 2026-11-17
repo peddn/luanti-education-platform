@@ -352,7 +352,7 @@ Auf der Seite einer Gruppe führt „Schülerkonten“ zur Liste der Konten. Zug
 
 1. Anzahl eintragen und „Namen würfeln“. Die Namen sind zuerst ein Entwurf und lassen sich einzeln neu würfeln oder entfernen.
 2. „Konten anlegen“ beauftragt die Welt und zeigt die Zugangszettel mit den Startpasswörtern. Sie stehen nur jetzt dort: Das Backend bewahrt sie nicht auf.
-3. Die Welt legt die Konten an, sobald sie verbunden ist. Der Stand wechselt von „wird in der Welt angelegt“ zu „angelegt“.
+3. Die Welt legt die Konten an, sobald sie verbunden ist. Der Stand wechselt von „wird in der Welt angelegt“ zu „angelegt“. Danach baut sie im Hintergrund für jedes neue Konto den Raum in der Lobby, den Rechenraum und die Zelle für den Aufmerksamkeitsmodus. Im Log steht am Ende `rooms for … new account(s) built in … s`. Für 25 Konten dauert das etwa eine halbe Minute.
 
 Auf jedem Zettel gibt es ein Feld für den Namen des Kindes. Die Namen bleiben im Browser und stehen nur auf dem Ausdruck, leere Felder werden nicht gedruckt.
 

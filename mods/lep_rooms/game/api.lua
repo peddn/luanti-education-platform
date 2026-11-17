@@ -52,6 +52,8 @@ lep_rooms._rooms = rooms
 --   on_build    optional function(owner, geometry) called after a room was
 --               built or rebuilt, to furnish it
 --   title       optional name of the room for people, see lep_places
+--   prebuild    optional, false if rooms of this type are not built ahead
+--               when accounts are created
 function lep_rooms.register_type(type_id, def)
 	types:register(type_id, def)
 	on_build_callbacks[type_id] = def.on_build
@@ -327,6 +329,26 @@ function lep_rooms.prebuild(owners, type_id, callback)
 	for _, owner in ipairs(owners) do
 		jobs[#jobs + 1] = function(job_done)
 			lep_rooms.ensure(owner, type_id, job_done)
+		end
+	end
+	run_queue(jobs, callback)
+end
+
+--- Builds the rooms of all types that are built ahead, for a list of
+-- owners: everything a new student needs, so that a whole class can
+-- start at once. Rooms that exist are left alone. The rooms are built
+-- one after the other, with a pause in between, so the server stays
+-- playable.
+-- @param owners List of player names. They do not have to be online.
+-- callback(done, failed) is optional.
+function lep_rooms.prebuild_all(owners, callback)
+	callback = callback or function() end
+	local jobs = {}
+	for _, type_id in ipairs(types:prebuild_ids()) do
+		for _, owner in ipairs(owners) do
+			jobs[#jobs + 1] = function(job_done)
+				lep_rooms.ensure(owner, type_id, job_done)
+			end
 		end
 	end
 	run_queue(jobs, callback)
