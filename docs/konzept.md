@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 41 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 42 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -882,7 +882,9 @@ Wo die Adresse liegt:
 - Im Pult steht eine gekürzte Form, etwa `m…@schule.example`.
 - Das Protokoll des Pults hält fest, dass eine Lehrkraft ihren Web-Zugang geändert hat, nicht die Adresse.
 
-Solange der Mailversand nicht eingerichtet ist, schreibt das Backend jede Mail in sein Terminal. Die Adresse in den Links kommt aus der Einstellung `LEP_PUBLIC_URL`.
+Mails verschickt das Backend über einen Mailserver per SMTP, im Hintergrund: Wer einen Link anfordert, bekommt die Antwort sofort, egal ob eine Mail rausgeht. Ohne eingestellten Mailserver schreibt es jede Mail in sein Terminal, das ist der Weg der Testumgebung. Die Adresse in den Links kommt aus der Einstellung `LEP_PUBLIC_URL`.
+
+Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und Einzelheiten sieht, wer angemeldet ist.
 
 ### 11.5 Funktionen
 
