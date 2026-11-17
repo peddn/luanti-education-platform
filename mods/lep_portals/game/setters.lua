@@ -71,7 +71,7 @@ end
 --   server, so a translatable text is put into German here.
 function setters.set_sign(pos, wall, text)
 	core.set_node(pos, { name = "lep_portals:sign", param2 = core.dir_to_wallmounted(wall) })
-	signs_lib.update_sign(pos, { text = core.get_translated_string("de", text) })
+	lep_core.signs.write(pos, core.get_translated_string("de", text))
 end
 
 --- Sets a whole portal: frame, field and signs. This is the one way a
