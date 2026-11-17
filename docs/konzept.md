@@ -833,7 +833,7 @@ Die Brücke braucht einen Eintrag in `secure.http_mods`. Sie ist kein vertrauens
 
 - Die OpenAPI-Beschreibung ist als `api/openapi.json` eingecheckt. Ein Test des Backends schlägt fehl, wenn sie nicht zum Code passt. Die Lua-Tests der Brücke prüfen ihre Nachrichten gegen diese Datei.
 
-### 11.3 Agent (später)
+### 11.3 Agent (Schritt 7)
 
 Ein kleines Programm in Rust, einmal pro Spielserver.
 
@@ -1055,12 +1055,12 @@ Die Verzeichnisstruktur des Repositorys steht in der `README.md`.
 4. **Rechnen und Aufgabentruhe.** Prüft, ob die Schnittstellen tragen.
 5. **Lehrerpult, Aufmerksamkeitsmodus, Chat.**
 6. **Backend und Brücke:** Konten, Gruppen, E-Mail-Anmeldung, Wunschnamen, Fortschritt, Protokolle, Jahresabschluss.
-7. **Mehrere Welten:** Verteilung der Konten, Gruppenwechsel.
+7. **Agent und mehrere Welten:** zuerst der Agent, der Welten anlegt, startet und stoppt, dann Verteilung der Konten und Gruppenwechsel. Weitere Welten entstehen so von Anfang an über ihn.
 8. **Textfragen** mit GIFT-Import.
 9. **TZ-Modul.**
 10. **Logikrätsel.**
 
-Später: Agent, Monster.
+Später: Monster.
 
 Bis Schritt 5 läuft alles in einer einzigen Welt ohne Web-Anwendung, mit lokal angelegten Konten. Die Schnittstellen werden von Anfang an so gebaut, dass Schritt 6 und 7 nur andocken.
 
