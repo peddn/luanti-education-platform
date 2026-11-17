@@ -6,8 +6,8 @@
 //! All words are plain ASCII, because the engine allows nothing else in
 //! a name and children have to type them.
 
-/// Longest account name. The engine refuses names of 20 characters and
-/// more.
+/// Longest account name. The engine takes 20 characters (tried with
+/// Luanti 5.18); one is left as a margin.
 pub const MAX_NAME: usize = 19;
 
 /// Grammatical gender of a noun. The ending of the adjective follows it.

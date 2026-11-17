@@ -346,6 +346,20 @@ Zum Ausprobieren mit zwei Rollen braucht es zwei Konten mit bestätigter Adresse
 
 Der Name einer Gruppe ist zugleich der Name, den die Befehle des Backends erwarten (`world ping`, `world state`). Nach dem Umbenennen der Testwelt in der Oberfläche `scripts/dev-bridge.sh` nicht erneut ausführen: Es würde eine zweite Welt namens `dev` anlegen. Stattdessen `scripts/backend-run.sh world rekey <neuer name>`, falls ein neuer Schlüssel nötig ist.
 
+### Schülerkonten
+
+Auf der Seite einer Gruppe führt „Schülerkonten“ zur Liste der Konten. Zugang haben die Lehrkräfte der Gruppe und die Schulverwaltung.
+
+1. Anzahl eintragen und „Namen würfeln“. Die Namen sind zuerst ein Entwurf und lassen sich einzeln neu würfeln oder entfernen.
+2. „Konten anlegen“ beauftragt die Welt und zeigt die Zugangszettel mit den Startpasswörtern. Sie stehen nur jetzt dort: Das Backend bewahrt sie nicht auf.
+3. Die Welt legt die Konten an, sobald sie verbunden ist. Der Stand wechselt von „wird in der Welt angelegt“ zu „angelegt“.
+
+Die Namen der Kinder lassen sich über den Zetteln eintragen, eine Zeile pro Kind. Sie bleiben im Browser und stehen nur auf dem Ausdruck.
+
+Die Adresse auf den Zetteln trägt die Schulverwaltung auf der Seite der Gruppe ein. Für die Testumgebung ist das `127.0.0.1, Port 30000`.
+
+Gibt es einen gewürfelten Namen in der Welt schon, etwa weil sich dort jemand von Hand so registriert hat, lehnt die Welt ihn ab und fasst das vorhandene Konto nicht an. Der Name steht dann als „von der Welt abgelehnt“ in der Liste.
+
 ### Mailversand
 
 Ohne Mailserver schreibt das Backend jede Mail in sein Terminal. Für echten Versand die Einstellungen in `.dev/backend.env` eintragen, zum Beispiel:
