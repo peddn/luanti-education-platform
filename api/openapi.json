@@ -268,6 +268,357 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/students": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Lists the accounts of the students of a group.",
+        "operationId": "list_students",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The accounts, by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Students"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group for this teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Rolls names for new accounts. Nothing happens in the world yet: the\nnames are drafts that can be rolled again or removed.",
+        "operationId": "draft_students",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "All accounts of the group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Students"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The count is not allowed or the group would get too large (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group for this teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No free name turned up (no_names)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/students/create": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Has the world create an account for every draft of the group and\nreturns the access slips with the start passwords. The passwords are\nshown this once: the backend does not keep them.",
+        "operationId": "create_students",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The access slips, shown once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessSlips"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "There is no draft to create (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group for this teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/students/{account}": {
+      "delete": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Removes a name that is not an account in the world.",
+        "operationId": "remove_student",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "description": "The name to remove",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All accounts of the group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Students"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or no such name that could still be changed (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/students/{account}/reroll": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Replaces a name that is not an account yet by a newly rolled one.",
+        "operationId": "reroll_student",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "description": "The name to replace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All accounts of the group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Students"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or no such name that could still be changed (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No free name turned up (no_names)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/login": {
       "post": {
         "tags": [
@@ -664,6 +1015,58 @@
   },
   "components": {
     "schemas": {
+      "AccessSlip": {
+        "type": "object",
+        "description": "What a student needs to log in for the first time.",
+        "required": [
+          "account",
+          "password"
+        ],
+        "properties": {
+          "account": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "description": "The start password. The backend shows it this once and does\nnot keep it."
+          }
+        }
+      },
+      "AccessSlips": {
+        "type": "object",
+        "description": "Answer to creating accounts: the slips to print.",
+        "required": [
+          "slips"
+        ],
+        "properties": {
+          "slips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessSlip"
+            }
+          }
+        }
+      },
+      "AccountsCreated": {
+        "type": "object",
+        "description": "Payload of the event \"accounts_created\": what became of the\naccounts a world was asked to create.",
+        "properties": {
+          "created": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of the accounts that exist now, with the start password."
+          },
+          "refused": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names that were refused: taken by somebody else in this world,\nor not a name the engine accepts. Nothing was changed for them."
+          }
+        }
+      },
       "ApiError": {
         "type": "object",
         "description": "Answer to a request that failed.",
@@ -706,9 +1109,39 @@
           }
         }
       },
+      "CreateAccounts": {
+        "type": "object",
+        "description": "Payload of the job \"create_accounts\".",
+        "required": [
+          "accounts"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewAccount"
+            }
+          }
+        }
+      },
       "Done": {
         "type": "object",
         "description": "Answer to a request that needs nothing said."
+      },
+      "DraftRequest": {
+        "type": "object",
+        "description": "Request to roll names for new accounts.",
+        "required": [
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many names to roll.",
+            "minimum": 0
+          }
+        }
       },
       "ErrorCode": {
         "type": "string",
@@ -720,6 +1153,7 @@
           "invalid_request",
           "forbidden",
           "name_taken",
+          "no_names",
           "invalid_token",
           "address_taken",
           "internal"
@@ -819,6 +1253,13 @@
           "teachers"
         ],
         "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where players reach the world, for example\n`spiel.schule.example, Port 30000`. It is printed on the\naccess slips. Missing until somebody entered it."
+          },
           "id": {
             "type": "string",
             "description": "Fixed identifier of the group and its world."
@@ -848,6 +1289,13 @@
         "type": "object",
         "description": "Request to change a group.",
         "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where players reach the world, if it changes. An empty text\nremoves it."
+          },
           "name": {
             "type": [
               "string",
@@ -1078,6 +1526,23 @@
           }
         }
       },
+      "NewAccount": {
+        "type": "object",
+        "description": "An account a world shall create.",
+        "required": [
+          "name",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "description": "The start password. The world stores only its hash."
+          }
+        }
+      },
       "Progress": {
         "type": "object",
         "description": "Payload of the event \"progress\": where one student stands in one\nmodule. It is the whole state, not a change, and replaces what the\nbackend knew before.",
@@ -1172,6 +1637,48 @@
           "version": {
             "type": "string",
             "description": "Version of the backend, as in its package."
+          }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "description": "The account of a student.",
+        "required": [
+          "account",
+          "state"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name. It says nothing about the person."
+          },
+          "state": {
+            "$ref": "#/components/schemas/StudentState"
+          }
+        }
+      },
+      "StudentState": {
+        "type": "string",
+        "description": "How far the account of a student is.",
+        "enum": [
+          "draft",
+          "creating",
+          "active",
+          "refused"
+        ]
+      },
+      "Students": {
+        "type": "object",
+        "description": "The accounts of the students of a group, by name.",
+        "required": [
+          "students"
+        ],
+        "properties": {
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Student"
+            }
           }
         }
       },

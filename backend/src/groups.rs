@@ -62,7 +62,7 @@ async fn teachers_of(pool: &SqlitePool, world_id: &str) -> Result<Vec<String>> {
 pub async fn visible_to(pool: &SqlitePool, account: &str) -> Result<Vec<Group>> {
     let everything = is_school_admin(pool, account).await?;
     let rows = sqlx::query(
-        "SELECT id, name, last_seen_at FROM worlds
+        "SELECT id, name, last_seen_at, address FROM worlds
          WHERE ? OR EXISTS (SELECT 1 FROM group_teachers
                             WHERE group_teachers.world_id = worlds.id
                               AND group_teachers.account = ?)
@@ -80,6 +80,7 @@ pub async fn visible_to(pool: &SqlitePool, account: &str) -> Result<Vec<Group>> 
             id,
             name: row.get("name"),
             last_seen_at: row.get("last_seen_at"),
+            address: row.get("address"),
         });
     }
     Ok(groups)
@@ -113,7 +114,13 @@ pub enum ChangeError {
     NameTaken,
     /// This account is not a teacher and cannot be assigned.
     UnknownTeacher(String),
+    /// The address is too long or holds characters that do not belong
+    /// on a printed slip.
+    InvalidAddress,
 }
+
+/// Longest address of a world.
+const MAX_ADDRESS: usize = 100;
 
 /// Returns a name as it is stored, or `None` if it cannot be one.
 pub fn check_name(name: &str) -> Option<&str> {
@@ -162,6 +169,19 @@ pub async fn change(
             .await?;
     }
 
+    if let Some(address) = &change.address {
+        let address = address.trim();
+        if address.chars().count() > MAX_ADDRESS || address.chars().any(char::is_control) {
+            return Ok(Err(ChangeError::InvalidAddress));
+        }
+        // An empty text removes the address.
+        sqlx::query("UPDATE worlds SET address = ? WHERE id = ?")
+            .bind((!address.is_empty()).then_some(address))
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+    }
+
     if let Some(accounts) = &change.teachers {
         sqlx::query("DELETE FROM group_teachers WHERE world_id = ?")
             .bind(id)
@@ -200,6 +220,7 @@ mod tests {
         GroupChange {
             name: Some(name.to_owned()),
             teachers: None,
+            address: None,
         }
     }
 
@@ -207,7 +228,55 @@ mod tests {
         GroupChange {
             name: None,
             teachers: Some(names(list)),
+            address: None,
         }
+    }
+
+    fn address(text: &str) -> GroupChange {
+        GroupChange {
+            name: None,
+            teachers: None,
+            address: Some(text.to_owned()),
+        }
+    }
+
+    #[tokio::test]
+    async fn a_group_can_get_the_address_of_its_world() {
+        let (pool, first, _) = setup().await;
+        let shown = |pool: SqlitePool, id: String| async move {
+            find_visible(&pool, "leitung", &id)
+                .await
+                .unwrap()
+                .unwrap()
+                .address
+        };
+        assert_eq!(shown(pool.clone(), first.clone()).await, None);
+
+        change(
+            &pool,
+            &first,
+            &address("  spiel.schule.example, Port 30000 "),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(
+            shown(pool.clone(), first.clone()).await.as_deref(),
+            Some("spiel.schule.example, Port 30000")
+        );
+
+        for bad in ["zeile\nzwei".to_owned(), "x".repeat(MAX_ADDRESS + 1)] {
+            assert_eq!(
+                change(&pool, &first, &address(&bad)).await.unwrap(),
+                Err(ChangeError::InvalidAddress)
+            );
+        }
+        // An empty text removes it.
+        change(&pool, &first, &address("  "))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(shown(pool.clone(), first.clone()).await, None);
     }
 
     /// Two worlds. "leitung" is school administration and teacher,
@@ -314,6 +383,7 @@ mod tests {
         let both = GroupChange {
             name: Some("7c".to_owned()),
             teachers: Some(names(&["lehrer2", "schueler1"])),
+            address: Some("spiel.schule.example".to_owned()),
         };
         assert_eq!(
             change(&pool, &first, &both).await.unwrap(),

@@ -67,6 +67,8 @@ pub mod world {
     /// Kind of the event that carries what a teacher did with their web
     /// access at the desk.
     pub const EVENT_WEB_ACCESS: &str = "web_access";
+    /// Kind of the event that says which accounts a world has created.
+    pub const EVENT_ACCOUNTS_CREATED: &str = "accounts_created";
     /// Kind of the job that only checks the way to the world and back.
     pub const JOB_PING: &str = "ping";
     /// Kind of the job that makes a world send its whole state again.
@@ -75,6 +77,9 @@ pub mod world {
     /// Kind of the job that tells a world how the web access of a teacher
     /// stands.
     pub const JOB_WEB_ACCESS_STATUS: &str = "web_access_status";
+
+    /// Kind of the job that makes a world create accounts for students.
+    pub const JOB_CREATE_ACCOUNTS: &str = "create_accounts";
 
     /// The protocols a world keeps. Their entries are deleted with the end
     /// of the school year.
@@ -299,6 +304,33 @@ pub mod world {
         pub pending: Option<String>,
     }
 
+    /// An account a world shall create.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct NewAccount {
+        pub name: String,
+        /// The start password. The world stores only its hash.
+        pub password: String,
+    }
+
+    /// Payload of the job "create_accounts".
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct CreateAccounts {
+        pub accounts: Vec<NewAccount>,
+    }
+
+    /// Payload of the event "accounts_created": what became of the
+    /// accounts a world was asked to create.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct AccountsCreated {
+        /// Names of the accounts that exist now, with the start password.
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub created: Vec<String>,
+        /// Names that were refused: taken by somebody else in this world,
+        /// or not a name the engine accepts. Nothing was changed for them.
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub refused: Vec<String>,
+    }
+
     /// Something the backend wants a world to do.
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
     pub struct Job {
@@ -386,6 +418,63 @@ pub mod web {
         /// 1970 (UTC). Missing if it never did.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub last_seen_at: Option<i64>,
+        /// Where players reach the world, for example
+        /// `spiel.schule.example, Port 30000`. It is printed on the
+        /// access slips. Missing until somebody entered it.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub address: Option<String>,
+    }
+
+    /// How far the account of a student is.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum StudentState {
+        /// A name that was rolled. Nothing exists in the world yet, and
+        /// the name can still be rolled again.
+        Draft,
+        /// The world was asked to create the account and has not
+        /// answered yet.
+        Creating,
+        /// The account exists in the world.
+        Active,
+        /// The world refused the name. The account does not exist.
+        Refused,
+    }
+
+    /// The account of a student.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Student {
+        /// Account name. It says nothing about the person.
+        pub account: String,
+        pub state: StudentState,
+    }
+
+    /// The accounts of the students of a group, by name.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Students {
+        pub students: Vec<Student>,
+    }
+
+    /// Request to roll names for new accounts.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct DraftRequest {
+        /// How many names to roll.
+        pub count: u32,
+    }
+
+    /// What a student needs to log in for the first time.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct AccessSlip {
+        pub account: String,
+        /// The start password. The backend shows it this once and does
+        /// not keep it.
+        pub password: String,
+    }
+
+    /// Answer to creating accounts: the slips to print.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct AccessSlips {
+        pub slips: Vec<AccessSlip>,
     }
 
     /// The groups a teacher may see.
@@ -404,6 +493,10 @@ pub mod web {
         /// list replaces the old one.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub teachers: Option<Vec<String>>,
+        /// Where players reach the world, if it changes. An empty text
+        /// removes it.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub address: Option<String>,
     }
 
     /// The accounts that can be assigned to groups: everybody who holds
@@ -458,6 +551,8 @@ pub enum ErrorCode {
     Forbidden,
     /// Another group already has this name.
     NameTaken,
+    /// No free account name turned up.
+    NoNames,
     /// The link from a mail is unknown, used or too old.
     InvalidToken,
     /// The address already belongs to another account.

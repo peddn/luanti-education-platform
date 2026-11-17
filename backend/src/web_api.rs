@@ -13,8 +13,8 @@ use axum::response::{AppendHeaders, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use lep_protocol::web::{
-    ConfirmRequest, Confirmed, Group, GroupChange, Groups, LoginLinkRequest, LoginRequest,
-    MailTransport, Me, Status, TeacherList,
+    AccessSlips, ConfirmRequest, Confirmed, DraftRequest, Group, GroupChange, Groups,
+    LoginLinkRequest, LoginRequest, MailTransport, Me, Status, Students, TeacherList,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -23,6 +23,7 @@ use crate::app::AppState;
 use crate::failure::Failure;
 use crate::groups::{self, ChangeError};
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
+use crate::students::{self, DraftError};
 use crate::teachers::{self, ConfirmError};
 use crate::{clock, mail, web_access};
 
@@ -40,6 +41,19 @@ pub fn router() -> Router<AppState> {
         .route("/v1/groups", get(list_groups))
         .route("/v1/groups/{id}", get(show_group).patch(change_group))
         .route("/v1/teachers", get(list_teachers))
+        .route(
+            "/v1/groups/{id}/students",
+            get(list_students).post(draft_students),
+        )
+        .route("/v1/groups/{id}/students/create", post(create_students))
+        .route(
+            "/v1/groups/{id}/students/{account}",
+            axum::routing::delete(remove_student),
+        )
+        .route(
+            "/v1/groups/{id}/students/{account}/reroll",
+            post(reroll_student),
+        )
 }
 
 /// Reads a JSON body, with our own answer if it cannot be read.
@@ -350,6 +364,11 @@ pub async fn change_group(
                 "a group name needs 1 to 60 characters",
             ))
         }
+        Err(ChangeError::InvalidAddress) => {
+            return Err(Failure::invalid_request(
+                "the address is too long or cannot be printed",
+            ))
+        }
         Err(ChangeError::UnknownTeacher(account)) => {
             return Err(Failure::invalid_request(format!(
                 "{account} is not a teacher"
@@ -389,6 +408,178 @@ pub async fn list_teachers(
     school_admin_only(&state, &teacher.account).await?;
     let teachers = groups::assignable(&state.db).await?;
     Ok(Json(TeacherList { teachers }))
+}
+
+/// Finds a group for a teacher who wants to work with its students: the
+/// teachers of the group and the school administration may. For everybody
+/// else the group does not exist.
+async fn group_of(state: &AppState, account: &str, id: &str) -> Result<Group, Failure> {
+    groups::find_visible(&state.db, account, id)
+        .await?
+        .ok_or_else(|| Failure::not_found("no such group"))
+}
+
+async fn students_of(state: &AppState, id: &str) -> Result<Json<Students>, Failure> {
+    let students = students::list(&state.db, id).await?;
+    Ok(Json(Students { students }))
+}
+
+fn draft_failure(error: DraftError) -> Failure {
+    match error {
+        DraftError::BadCount => Failure::invalid_request(format!(
+            "between 1 and {} names can be rolled at once",
+            students::MAX_DRAFT
+        )),
+        DraftError::GroupFull => Failure::invalid_request(format!(
+            "a group has at most {} accounts",
+            students::MAX_GROUP
+        )),
+        DraftError::NoNames => Failure::new(
+            StatusCode::CONFLICT,
+            ErrorCode::NoNames,
+            "no free name turned up",
+        ),
+        DraftError::NotADraft => Failure::not_found("no such account that could still be changed"),
+    }
+}
+
+/// Lists the accounts of the students of a group.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/students",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The accounts, by name", body = Students),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group for this teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn list_students(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Json<Students>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    students_of(&state, &id).await
+}
+
+/// Rolls names for new accounts. Nothing happens in the world yet: the
+/// names are drafts that can be rolled again or removed.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/students",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    request_body = DraftRequest,
+    responses(
+        (status = 200, description = "All accounts of the group", body = Students),
+        (status = 400, description = "The count is not allowed or the group would get too large (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group for this teacher (not_found)", body = ApiError),
+        (status = 409, description = "No free name turned up (no_names)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn draft_students(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+    request: Result<Json<DraftRequest>, JsonRejection>,
+) -> Result<Json<Students>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    let request = body(request)?;
+    students::draft(&state.db, &id, request.count)
+        .await?
+        .map_err(draft_failure)?;
+    students_of(&state, &id).await
+}
+
+/// Replaces a name that is not an account yet by a newly rolled one.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/students/{account}/reroll",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "The name to replace"),
+    ),
+    responses(
+        (status = 200, description = "All accounts of the group", body = Students),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or no such name that could still be changed (not_found)", body = ApiError),
+        (status = 409, description = "No free name turned up (no_names)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn reroll_student(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+) -> Result<Json<Students>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    students::reroll(&state.db, &id, &account)
+        .await?
+        .map_err(draft_failure)?;
+    students_of(&state, &id).await
+}
+
+/// Removes a name that is not an account in the world.
+#[utoipa::path(
+    delete,
+    path = "/api/web/v1/groups/{id}/students/{account}",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "The name to remove"),
+    ),
+    responses(
+        (status = 200, description = "All accounts of the group", body = Students),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or no such name that could still be changed (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn remove_student(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+) -> Result<Json<Students>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    students::remove(&state.db, &id, &account)
+        .await?
+        .map_err(draft_failure)?;
+    students_of(&state, &id).await
+}
+
+/// Has the world create an account for every draft of the group and
+/// returns the access slips with the start passwords. The passwords are
+/// shown this once: the backend does not keep them.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/students/create",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The access slips, shown once", body = AccessSlips),
+        (status = 400, description = "There is no draft to create (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group for this teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn create_students(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    let Some((_, slips)) = students::create(&state.db, &id).await? else {
+        return Err(Failure::invalid_request(
+            "there are no names to create accounts for",
+        ));
+    };
+    state.waiters.wake(&id);
+    tracing::info!(account = %teacher.account, group = %id, count = slips.len(), "accounts ordered");
+    // Passwords must not stay in a cache of the browser or of a proxy.
+    let no_store = AppendHeaders([(axum::http::header::CACHE_CONTROL, "no-store")]);
+    Ok((no_store, Json(AccessSlips { slips })))
 }
 
 #[cfg(test)]
