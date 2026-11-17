@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 44 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 45 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -164,7 +164,7 @@ In jeder Welt gibt es drei Orte: **Wildnis**, **Lobby** und **Lernräume**.
 
 **Gruppenwechsel eines Schülers:** Das Konto wandert in die neue Welt. Lernniveau und Trophäen gehen mit, der übrige Besitz bleibt in der alten Welt. Die Web-Anwendung weist beim Verschieben darauf hin.
 
-**Schuljahreswechsel:** Pro Gruppe weiterführen (bei Bedarf umbenennen), archivieren oder löschen. Dazu kommt der Jahresabschluss (Abschnitt 12).
+**Schuljahreswechsel:** Pro Gruppe weiterführen (bei Bedarf umbenennen) oder archivieren. Eine Gruppe lässt sich nicht einzeln löschen: Endgültig gelöscht wird einmal im Jahr, mit dem Jahresabschluss (Abschnitt 12). Bis dahin lässt sich eine archivierte Gruppe wiederherstellen.
 
 ## 6. Konten und Namen
 
@@ -202,7 +202,7 @@ Regeln:
 | | Bleibt mit dem Konto | Wird jährlich gelöscht |
 |---|---|---|
 | Was | Lernniveau pro Modul, Meilensteine, Trophäen, Wunschname | Chatprotokolle, Belohnungsprotokoll, einzelne Aufgabenversuche, Pult-Protokolle |
-| Löschen | beim Schulaustritt | per Jahresabschluss und automatischer Frist |
+| Löschen | beim Schulaustritt, oder vorher auf Verlangen (Abschnitt 12) | per Jahresabschluss |
 
 Das Backend bewahrt dauerhaft nur den Stand auf, nicht den Verlauf dahin.
 
@@ -900,7 +900,7 @@ Einmalig als root einzurichten sind also: der Benutzer, die Dienstvorlage, die P
 | Sichern | Kopie des Weltordners mit Datum nach `backups/` |
 | Archivieren | stoppen, sichern, nach `archive/` verschieben |
 | Wiederherstellen | eine archivierte Welt zurück in den Betrieb holen |
-| Endgültig löschen | Archiv und Sicherungen einer Welt entfernen |
+| Endgültig löschen | Archiv und Sicherungen einer Welt entfernen. Diesen Auftrag schickt nur der Jahresabschluss |
 | Logdatei leeren | Luantis eigene Logdatei einer Welt leeren, in der Chatnachrichten stehen (Abschnitt 12) |
 
 Ohne Auftrag meldet der Agent regelmäßig den Zustand: welche Welten laufen, auf welchem Port, mit welcher Version, und wie viel Platz auf der Platte frei ist. Die Web-Anwendung zeigt das bei der Gruppe.
@@ -911,11 +911,14 @@ Regeln für alle Aufträge:
 - Pfade entstehen nur aus dieser Kennung unter `/var/lib/lep`. Der Agent baut nie eine Befehlszeile aus Werten eines Auftrags und ruft keine Shell auf.
 - Ein Auftrag, den der Agent nicht kennt, wird abgelehnt und gemeldet.
 
-**Löschen in zwei Stufen**
+**Archivieren und Jahresabschluss**
 
-- „Gruppe löschen“ in der Web-Anwendung archiviert die Welt. Sie ist damit aus dem Betrieb, aber nicht verloren.
-- Das Backend führt die Frist: Nach 30 Tagen schickt es den Auftrag „Endgültig löschen“. Bis dahin lässt sich die Welt wiederherstellen.
-- Die 30 Tage gelten für das Löschen einer Gruppe. Was der Jahresabschluss löscht, regelt Abschnitt 12 ohne diese Frist.
+Es gibt einen einzigen Zeitpunkt, zu dem Welten endgültig verschwinden: den Jahresabschluss.
+
+- Eine Gruppe, die nicht mehr gebraucht wird, wird in der Web-Anwendung archiviert. Ihre Welt ist damit aus dem Betrieb, aber nicht verloren, und lässt sich wiederherstellen.
+- „Gruppe löschen“ gibt es nicht, und keine Frist, die von selbst abläuft.
+- Der Jahresabschluss für die ganze Schule schickt „Endgültig löschen“ für jede archivierte Welt und entfernt alle Sicherungen. Laufende Welten werden danach frisch gesichert.
+- Archive und Sicherungen enthalten die Protokolle ihrer Welt. Weil sie mit dem Jahresabschluss verschwinden, bleibt auch dort nichts länger als ein Jahr.
 
 **Schlüssel**
 
@@ -937,7 +940,6 @@ Der Agent muss sich ohne systemd und ohne Root-Rechte ausprobieren lassen. Dafü
 - **Erste Konten einer neuen Welt:** Eine frisch angelegte Welt kennt keine Lehrkraft. Das löst die Verteilung der Konten in Schritt 7.
 - **Sichern im Betrieb:** Eine Kopie der Karte, während die Welt läuft, kann unvollständig sein. Zu entscheiden ist, ob die Welt dafür kurz stoppt oder die Datenbank eine Sicherung im Betrieb erlaubt.
 - **Wann gesichert wird:** nach Zeitplan des Agenten oder auf Auftrag des Backends, und wie viele Sicherungen bleiben.
-- **Protokolle in Archiv und Sicherungen:** Die Protokolle einer Welt liegen in ihrem Ordner und damit auch in jeder Kopie. Der Jahresabschluss löscht Protokolle vollständig (Abschnitt 12). Zu entscheiden ist, ob der Agent sie beim Sichern und Archivieren weglässt oder der Jahresabschluss auch Kopien bereinigt.
 - **Mehrere Maschinen:** Nach welcher Regel das Backend die Maschine für eine neue Welt wählt.
 - **Andere Systeme als Debian:** Pfade wie `/usr/bin/nologin` und der Name des Luanti-Pakets unterscheiden sich. Die Einrichtung wird für Debian beschrieben.
 
@@ -1066,10 +1068,22 @@ Viele Kinder wählen ihren Vornamen. Lehrkräfte sollen Nachnamen und volle Name
 
 **Jahresabschluss**
 
+Der Jahresabschluss ist der einzige Zeitpunkt, zu dem Daten in großem Umfang gelöscht werden. Es gibt daneben keine Fristen, die von selbst ablaufen.
+
 - Löscht alle Jahresdaten, für die ganze Schule oder einzelne Gruppen.
-- Zeigt vorher an, was gelöscht wird, und bietet einen Export an.
+- Für die ganze Schule löscht er zusätzlich alle archivierten Welten und alle Sicherungen, für einzelne Gruppen deren Sicherungen (Abschnitt 11.3).
+- Zeigt vorher an, was gelöscht wird, auch die archivierten Gruppen, und bietet einen Export an. Eine versehentlich archivierte Gruppe lässt sich an dieser Stelle noch wiederherstellen.
 - Das Backend schickt den Welten den Auftrag, ihre lokalen Kopien zu löschen.
 - Die Löschung wird ohne Inhalte vermerkt: wer, wann, welcher Umfang.
+
+**Löschen auf Verlangen**
+
+Verlangen Eltern oder ein Schüler die Löschung, wartet die Schule nicht auf den Jahresabschluss.
+
+- Die Schulverwaltung löscht ein einzelnes Konto sofort: Kontodaten, Stand und die Einträge des Kontos in den Protokollen, im Backend und in der Welt.
+- Die Löschung wird ohne Inhalte vermerkt: wer, wann, welches Konto.
+- Kopien in Sicherungen und archivierten Welten bleiben bis zum Jahresabschluss. Ob das genügt oder die Sicherungen der betroffenen Welt sofort zu entfernen sind, klärt die Schule mit ihrem Datenschutzbeauftragten.
+- Das ist die Ausnahme. Der gewöhnliche Weg bleibt der Jahresabschluss.
 
 **Außerhalb des Backends**
 
