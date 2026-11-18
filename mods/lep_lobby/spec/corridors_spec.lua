@@ -259,6 +259,12 @@ describe("lep_lobby corridors rooms", function()
 		assert.are.equal("anna", corridors.sign_text("anna"))
 		assert.are.equal("a\nb_c", corridors.sign_text("a_b_c"))
 		assert.are.equal("", corridors.sign_text(nil))
+		-- Display names: a space splits first, also before a capital inside.
+		assert.are.equal("Anna\nLena", corridors.sign_text("Anna Lena"))
+		assert.are.equal("McDonald\nLea", corridors.sign_text("McDonald Lea"))
+		assert.are.equal("Max\nvon Stein", corridors.sign_text("Max von Stein"))
+		assert.are.equal("Anna-Lena", corridors.sign_text("Anna-Lena"))
+		assert.are.equal("Jörg", corridors.sign_text("Jörg"))
 	end)
 
 	it("knows who is inside a room", function()

@@ -6,6 +6,19 @@ local room_doors = load("game/doors")
 
 local builder = {}
 
+-- The name a room is labelled with: the display name of its owner.
+local function shown(owner)
+	if owner and core.global_exists("lep_accounts") then
+		return lep_accounts.get_display_name(owner)
+	end
+	return owner
+end
+
+--- Returns the text for the name sign of the room of an owner.
+function builder.sign_text(owner)
+	return corridors.sign_text(shown(owner))
+end
+
 --- Builds one corridor with its rooms.
 -- @param origin World position of the hall origin.
 -- @param direction Corridor number, 1 to 4.
@@ -67,7 +80,7 @@ function builder.build(origin, direction, get_count, get_owner, callback)
 					name = "lep_lobby:room_sign",
 					param2 = core.dir_to_wallmounted(room.sign_wall),
 				})
-				lep_core.signs.write(pos, corridors.sign_text(get_owner(slot)))
+				lep_core.signs.write(pos, builder.sign_text(get_owner(slot)))
 				room_doors.ensure(vector.add(origin, room.door), room.look_dir,
 					get_owner(slot) or "")
 			end

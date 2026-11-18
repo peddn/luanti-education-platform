@@ -282,13 +282,17 @@ end
 --- Returns the text for the name sign of a room. Account names are an
 -- adjective and a noun, like "klugeEule": the two parts go on two lines,
 -- so the letters can be large. The name is split where a capital letter
--- follows a small one, or at an underscore. A name without such a place
--- stays on one line.
+-- follows a small one, or at an underscore. A display name with a space
+-- is split there. A name without such a place stays on one line.
 function corridors.sign_text(name)
 	if type(name) ~= "string" then
 		return ""
 	end
-	local first, second = name:match("^(.-%l)(%u.*)$")
+	local first, second = name:match("^(.-) (.*)$")
+	if first then
+		return first .. "\n" .. second
+	end
+	first, second = name:match("^(.-%l)(%u.*)$")
 	if first then
 		return first .. "\n" .. second
 	end

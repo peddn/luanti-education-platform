@@ -45,7 +45,8 @@ core.register_node("lep_lobby:wall", unbreakable({
 }))
 
 -- Name sign above the door of a personal room. The third-party mod
--- signs_lib draws the text. Players cannot edit, dig or light up the sign.
+-- signs_lib draws the text. Players cannot edit, dig or light up the
+-- sign. The owner of the room chooses their display name there.
 signs_lib.register_sign("lep_lobby:room_sign", {
 	description = "LEP lobby room sign",
 	inventory_image = "signs_lib_sign_wall_wooden_inv.png",
@@ -57,7 +58,7 @@ signs_lib.register_sign("lep_lobby:room_sign", {
 	use_texture_alpha = "clip",
 	allow_glow = false,
 	-- Two lines of large letters: an account name has at most 19 characters
-	-- and is split at its underscore.
+	-- and is split into its two words, a display name at its space.
 	number_of_lines = 2,
 	chars_per_line = 14,
 	groups = { not_in_creative_inventory = 1 },
@@ -65,7 +66,11 @@ signs_lib.register_sign("lep_lobby:room_sign", {
 	diggable = false,
 	can_dig = function() return false end,
 	on_blast = function() end,
-	on_rightclick = function() end,
+	on_rightclick = function(pos, _, clicker)
+		if clicker and clicker:is_player() then
+			lep_lobby._on_sign_click(pos, clicker:get_player_name())
+		end
+	end,
 	on_rotate = function() return false end,
 })
 
