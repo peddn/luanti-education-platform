@@ -245,8 +245,22 @@ async function order(change) {
                   >
                     {{ openCell.locked ? $t('progress.unlock') : $t('progress.lock') }}
                   </button>
+                  <!-- Only a level whose workload is done can start again. -->
+                  <button
+                    v-if="openCell.percent === 100"
+                    type="button"
+                    data-test="repeat"
+                    class="rounded border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
+                    :disabled="busy"
+                    @click="order({ level: openCell.level })"
+                  >
+                    {{ $t('progress.repeat') }}
+                  </button>
                 </form>
                 <p class="max-w-3xl text-sm text-slate-500">{{ $t('progress.changeHint') }}</p>
+                <p v-if="openCell.percent === 100" data-test="repeat-hint" class="max-w-3xl text-sm text-slate-500">
+                  {{ $t('progress.repeatHint') }}
+                </p>
               </td>
             </tr>
           </template>

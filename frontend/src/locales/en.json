@@ -159,7 +159,9 @@
     "setLevel": "Set level",
     "lock": "Lock moving up",
     "unlock": "Unlock moving up",
-    "changeHint": "The world makes the change and notes it in the protocol of the teacher's desk. With moving up locked the child stays on their level, even after finishing its workload."
+    "repeat": "Repeat level",
+    "changeHint": "The world makes the change and notes it in the protocol of the teacher's desk. With moving up locked the child stays on their level, even after finishing its workload.",
+    "repeatHint": "Repeating empties the workload of this level. Every task counts and is rewarded again. The reward for completing the level is given the first time only."
   },
   "health": {
     "title": "Status",

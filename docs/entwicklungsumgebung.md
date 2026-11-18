@@ -377,6 +377,8 @@ Ein Klick auf ein Feld klappt die Aufgaben des Niveaus auf. Dort lässt sich ein
 - Bis die Welt geantwortet hat, steht im Feld „Änderung wartet auf die Welt“. Läuft die Welt nicht, bleibt das so, bis sie sich wieder meldet.
 - Lehnt die Welt ab, steht im Feld „Änderung von der Welt abgelehnt“ und im Log `failed unknown` (kein solches Konto), `failed module` oder `failed level`.
 
+Steht ein Kind auf einem Niveau, dessen Pensum voll ist, etwa mit gesperrtem Aufstieg oder auf dem letzten Niveau, bietet das Feld „Niveau wiederholen“ an. Das bestellt dasselbe Niveau noch einmal, und die Welt leert dessen Pensum.
+
 In der Testwelt gibt es neben „Kopfrechnen“ das „Testmodul“ aus den Debug-Hilfen.
 
 ### Mailversand
