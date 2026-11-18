@@ -366,6 +366,19 @@ Gibt es einen gewürfelten Namen in der Welt schon, etwa aus der Zeit, als man s
 
 Die Welt setzt ein Passwort nur für ein gewöhnliches Konto. Hat das Konto mehr als die Privilegien eines neuen Spielers, lehnt sie ab. Privilegien, die ein Ort vergibt, zählen nicht mit: `lep_places.get_granted_privileges(name)` nennt sie, auch für Spieler, die nicht da sind. In der Liste steht dann „neues Passwort von der Welt abgelehnt“, im Log der Welt `password for … not set: staff`. Das Passwort einer Lehrkraft setzt der Admin im Spiel.
 
+### Fortschritt
+
+Auf der Seite einer Gruppe führt „Fortschritt“ zur Tabelle der Schüler und Module. Sie zeigt, was die Welt zuletzt gemeldet hat, und lädt nicht von selbst neu: Dafür gibt es den Knopf „Neu laden“.
+
+Ein Klick auf ein Feld klappt die Aufgaben des Niveaus auf. Dort lässt sich ein Niveau setzen und der Aufstieg sperren oder freigeben. Beides ist ein Auftrag an die Welt:
+
+- Im Log der Welt steht `[lep_desk] <lehrkraft> used web:set_level <modul> <niveau> on <schüler>` und `job set_level …: done set`.
+- Im Protokoll des Pults (`lep_protocols/desk.tsv` im Ordner der Welt) steht dieselbe Zeile unter dem Konto der Lehrkraft.
+- Bis die Welt geantwortet hat, steht im Feld „Änderung wartet auf die Welt“. Läuft die Welt nicht, bleibt das so, bis sie sich wieder meldet.
+- Lehnt die Welt ab, steht im Feld „Änderung von der Welt abgelehnt“ und im Log `failed unknown` (kein solches Konto), `failed module` oder `failed level`.
+
+In der Testwelt gibt es neben „Kopfrechnen“ das „Testmodul“ aus den Debug-Hilfen.
+
 ### Mailversand
 
 Ohne Mailserver schreibt das Backend jede Mail in sein Terminal. Für echten Versand die Einstellungen in `.dev/backend.env` eintragen, zum Beispiel:
