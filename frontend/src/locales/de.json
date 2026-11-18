@@ -159,7 +159,9 @@
     "setLevel": "Niveau setzen",
     "lock": "Aufstieg sperren",
     "unlock": "Aufstieg freigeben",
-    "changeHint": "Die Welt führt die Änderung aus und hält sie im Protokoll des Lehrerpults fest. Mit gesperrtem Aufstieg bleibt das Kind auf seinem Niveau, auch wenn es das Pensum geschafft hat."
+    "repeat": "Niveau wiederholen",
+    "changeHint": "Die Welt führt die Änderung aus und hält sie im Protokoll des Lehrerpults fest. Mit gesperrtem Aufstieg bleibt das Kind auf seinem Niveau, auch wenn es das Pensum geschafft hat.",
+    "repeatHint": "Wiederholen leert das Pensum dieses Niveaus. Jede Aufgabe zählt und wird wieder belohnt. Die Belohnung für den Abschluss gibt es nur beim ersten Mal."
   },
   "health": {
     "title": "Zustand",

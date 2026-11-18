@@ -195,6 +195,29 @@ describe('progress page', () => {
     expect(ordered(send)).toEqual([{ locked: true }, { locked: false }])
   })
 
+  it('offers to repeat a level whose workload is done', async () => {
+    const done = { percent: 100, locked: true }
+    const send = backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/progress`]: [200, progress(done)],
+      [`POST ${CELL_PATH}`]: [200, progress({ ...done, change: 'pending' })],
+    })
+    const page = await show()
+    // Not for a level that is still being worked on.
+    await page.findAll('[data-test=cell]')[1].trigger('click')
+    expect(page.find('[data-test=repeat]').exists()).toBe(false)
+    expect(page.find('[data-test=repeat-hint]').exists()).toBe(false)
+
+    await page.findAll('[data-test=cell]')[0].trigger('click')
+    expect(page.get('[data-test=repeat]').text()).toBe('Niveau wiederholen')
+    expect(page.get('[data-test=repeat-hint]').text()).toContain('nur beim ersten Mal')
+    await page.get('[data-test=repeat]').trigger('click')
+    await flushPromises()
+    // The level the student is on, ordered again: the world empties it.
+    expect(ordered(send)).toEqual([{ level: 2 }])
+    expect(page.get('[data-test=change]').text()).toBe('Änderung wartet auf die Welt')
+  })
+
   it('says when the world refused a change or the backend an order', async () => {
     backend({
       [`GET ${BASE}`]: [200, GROUP],
