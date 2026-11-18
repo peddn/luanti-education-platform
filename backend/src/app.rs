@@ -81,6 +81,8 @@ impl AppState {
         web_api::reroll_student,
         web_api::remove_student,
         web_api::create_students,
+        web_api::show_progress,
+        web_api::change_progress,
         web_api::reset_password
     ),
     components(schemas(
@@ -118,6 +120,16 @@ impl AppState {
         lep_protocol::world::NewAccount,
         lep_protocol::world::CreateAccounts,
         lep_protocol::world::AccountsCreated,
+        lep_protocol::web::GroupProgress,
+        lep_protocol::web::ProgressModule,
+        lep_protocol::web::StudentProgress,
+        lep_protocol::web::ModuleProgress,
+        lep_protocol::web::ProgressTask,
+        lep_protocol::web::EarnedTrophy,
+        lep_protocol::web::ChangeState,
+        lep_protocol::web::ProgressChange,
+        lep_protocol::world::SetLevel,
+        lep_protocol::world::SetLocked,
         lep_protocol::web::MailTransport,
         lep_protocol::world::Done
     )),

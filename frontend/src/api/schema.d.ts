@@ -88,6 +88,47 @@ export interface paths {
         patch: operations["change_group"];
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shows where the students of a group stand: level and workload per
+         *     module, and the trophies. It is what the world reported last.
+         */
+        get: operations["show_progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/progress/{account}/{module}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Orders a new level, a lock or both for a student in a module. The
+         *     world makes the change and reports the new state; until then the
+         *     answer shows the old state with the change as pending.
+         */
+        post: operations["change_progress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/students": {
         parameters: {
             query?: never;
@@ -399,6 +440,11 @@ export interface components {
              */
             message: string;
         };
+        /**
+         * @description How far a change a teacher ordered is.
+         * @enum {string}
+         */
+        ChangeState: "pending" | "refused";
         /** @description Request to confirm an address with the token from a mail. */
         ConfirmRequest: {
             token: string;
@@ -421,6 +467,13 @@ export interface components {
              * @description How many names to roll.
              */
             count: number;
+        };
+        /** @description A trophy a student has earned. */
+        EarnedTrophy: {
+            /** @description "bronze", "silver" or "gold". */
+            material: string;
+            /** @description Name for people, in the language of the world. */
+            title: string;
         };
         /**
          * @description Why a request failed, as a fixed word. The frontend translates it into
@@ -505,6 +558,15 @@ export interface components {
              *     list replaces the old one.
              */
             teachers?: string[] | null;
+        };
+        /**
+         * @description The progress of a group: the modules of its world and the
+         *     students whose accounts exist, in the order of the list of
+         *     students.
+         */
+        GroupProgress: {
+            modules: components["schemas"]["ProgressModule"][];
+            students: components["schemas"]["StudentProgress"][];
         };
         /** @description The groups a teacher may see. */
         Groups: {
@@ -591,6 +653,33 @@ export interface components {
             /** @description Name for people, in the language of the world. */
             title: string;
         };
+        /** @description Where a student stands in one module. */
+        ModuleProgress: {
+            change?: components["schemas"]["ChangeState"] | null;
+            /** @description True if the whole module is completed. */
+            completed: boolean;
+            /**
+             * Format: int32
+             * @description Current level, counted from 1.
+             */
+            level: number;
+            /** @description True if moving up after a completed level is locked. */
+            locked: boolean;
+            /** @description Id of the module. */
+            module: string;
+            /**
+             * Format: int32
+             * @description Share of the workload of the level that is done, 0 to 100.
+             */
+            percent: number;
+            /**
+             * @description False if the world has reported nothing yet: the student
+             *     stands at the start of level 1.
+             */
+            started: boolean;
+            /** @description The kinds of tasks of the current level. */
+            tasks: components["schemas"]["ProgressTask"][];
+        };
         /**
          * @description Payload of the event "modules": all modules of the world. It
          *     replaces what the backend knew before.
@@ -636,6 +725,39 @@ export interface components {
             tasks?: components["schemas"]["TaskProgress"][];
         };
         /**
+         * @description Request to change where a student stands in a module. At least
+         *     one of the two has to be there.
+         */
+        ProgressChange: {
+            /**
+             * Format: int32
+             * @description The new level, if it changes.
+             */
+            level?: number | null;
+            /** @description Whether moving up is locked from now on, if that changes. */
+            locked?: boolean | null;
+        };
+        /** @description A learning module of the world of a group. */
+        ProgressModule: {
+            id: string;
+            /**
+             * Format: int32
+             * @description How many levels the module has.
+             */
+            levels: number;
+            /** @description Name for people, in the language of the world. */
+            title: string;
+        };
+        /** @description How far a student is with one kind of task of their level. */
+        ProgressTask: {
+            /** Format: int32 */
+            required: number;
+            /** Format: int32 */
+            solved: number;
+            /** @description Name for people, in the language of the world. */
+            title: string;
+        };
+        /**
          * @description Payload of the event "protocol": one entry of one of the protocols
          *     of a world. The time is the time of the event.
          */
@@ -651,6 +773,38 @@ export interface components {
             };
             /** @description Which protocol, one of `PROTOCOLS`. */
             protocol: string;
+        };
+        /**
+         * @description Payload of the job "set_level". The world writes the change into
+         *     the protocol of the desk, under the account of the teacher.
+         */
+        SetLevel: {
+            /** @description Account name of the student. */
+            account: string;
+            /** @description Account name of the teacher who ordered it. */
+            by: string;
+            /**
+             * Format: int32
+             * @description The new level, counted from 1.
+             */
+            level: number;
+            module: string;
+        };
+        /**
+         * @description Payload of the job "set_locked". The world writes the change into
+         *     the protocol of the desk, under the account of the teacher.
+         */
+        SetLocked: {
+            /** @description Account name of the student. */
+            account: string;
+            /** @description Account name of the teacher who ordered it. */
+            by: string;
+            /**
+             * @description True to lock moving up after a completed level, false to
+             *     unlock it.
+             */
+            locked: boolean;
+            module: string;
         };
         /**
          * @description Payload of the job "set_password". A world sets the password only
@@ -678,6 +832,15 @@ export interface components {
             account: string;
             password?: components["schemas"]["PasswordState"] | null;
             state: components["schemas"]["StudentState"];
+        };
+        /**
+         * @description Where a student stands: one entry per module of the world, in the
+         *     order of the modules, and the trophies.
+         */
+        StudentProgress: {
+            account: string;
+            modules: components["schemas"]["ModuleProgress"][];
+            trophies: components["schemas"]["EarnedTrophy"][];
         };
         /**
          * @description How far the account of a student is.
@@ -983,6 +1146,105 @@ export interface operations {
             };
             /** @description Another group has this name (name_taken) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    show_progress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The modules of the world and the students whose accounts exist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupProgress"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or not one of the teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    change_progress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description Account name of the student */
+                account: string;
+                /** @description Id of the module */
+                module: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressChange"];
+            };
+        };
+        responses: {
+            /** @description The progress of the group, with the change on its way */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupProgress"];
+                };
+            };
+            /** @description No such level, or nothing to change (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, no such account that exists in the world, or no such module (not_found) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -16,6 +16,8 @@ reports.EVENT_WEB_ACCESS = "web_access"
 reports.EVENT_ACCOUNTS_CREATED = "accounts_created"
 reports.JOB_CREATE_ACCOUNTS = "create_accounts"
 reports.JOB_SET_PASSWORD = "set_password"
+reports.JOB_SET_LEVEL = "set_level"
+reports.JOB_SET_LOCKED = "set_locked"
 reports.JOB_SYNC_STATE = "sync_state"
 reports.JOB_WEB_ACCESS_STATUS = "web_access_status"
 

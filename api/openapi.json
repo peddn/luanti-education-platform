@@ -268,6 +268,158 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/progress": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Shows where the students of a group stand: level and workload per\nmodule, and the trophies. It is what the world reported last.",
+        "operationId": "show_progress",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The modules of the world and the students whose accounts exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupProgress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or not one of the teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/progress/{account}/{module}": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Orders a new level, a lock or both for a student in a module. The\nworld makes the change and reports the new state; until then the\nanswer shows the old state with the change as pending.",
+        "operationId": "change_progress",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "description": "Account name of the student",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "module",
+            "in": "path",
+            "description": "Id of the module",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The progress of the group, with the change on its way",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No such level, or nothing to change (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, no such account that exists in the world, or no such module (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/students": {
       "get": {
         "tags": [
@@ -1150,6 +1302,14 @@
           }
         }
       },
+      "ChangeState": {
+        "type": "string",
+        "description": "How far a change a teacher ordered is.",
+        "enum": [
+          "pending",
+          "refused"
+        ]
+      },
       "ConfirmRequest": {
         "type": "object",
         "description": "Request to confirm an address with the token from a mail.",
@@ -1206,6 +1366,24 @@
             "format": "int32",
             "description": "How many names to roll.",
             "minimum": 0
+          }
+        }
+      },
+      "EarnedTrophy": {
+        "type": "object",
+        "description": "A trophy a student has earned.",
+        "required": [
+          "title",
+          "material"
+        ],
+        "properties": {
+          "material": {
+            "type": "string",
+            "description": "\"bronze\", \"silver\" or \"gold\"."
+          },
+          "title": {
+            "type": "string",
+            "description": "Name for people, in the language of the world."
           }
         }
       },
@@ -1378,6 +1556,28 @@
               "type": "string"
             },
             "description": "The teachers of the group from now on, if they change. The\nlist replaces the old one."
+          }
+        }
+      },
+      "GroupProgress": {
+        "type": "object",
+        "description": "The progress of a group: the modules of its world and the\nstudents whose accounts exist, in the order of the list of\nstudents.",
+        "required": [
+          "modules",
+          "students"
+        ],
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgressModule"
+            }
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentProgress"
+            }
           }
         }
       },
@@ -1580,6 +1780,67 @@
           }
         }
       },
+      "ModuleProgress": {
+        "type": "object",
+        "description": "Where a student stands in one module.",
+        "required": [
+          "module",
+          "started",
+          "level",
+          "locked",
+          "percent",
+          "completed",
+          "tasks"
+        ],
+        "properties": {
+          "change": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeState",
+                "description": "Missing in the usual case: no change is on its way."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "True if the whole module is completed."
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Current level, counted from 1.",
+            "minimum": 0
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "True if moving up after a completed level is locked."
+          },
+          "module": {
+            "type": "string",
+            "description": "Id of the module."
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Share of the workload of the level that is done, 0 to 100.",
+            "minimum": 0
+          },
+          "started": {
+            "type": "boolean",
+            "description": "False if the world has reported nothing yet: the student\nstands at the start of level 1."
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgressTask"
+            },
+            "description": "The kinds of tasks of the current level."
+          }
+        }
+      },
       "Modules": {
         "type": "object",
         "description": "Payload of the event \"modules\": all modules of the world. It\nreplaces what the backend knew before.",
@@ -1665,6 +1926,77 @@
           }
         }
       },
+      "ProgressChange": {
+        "type": "object",
+        "description": "Request to change where a student stands in a module. At least\none of the two has to be there.",
+        "properties": {
+          "level": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The new level, if it changes.",
+            "minimum": 0
+          },
+          "locked": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether moving up is locked from now on, if that changes."
+          }
+        }
+      },
+      "ProgressModule": {
+        "type": "object",
+        "description": "A learning module of the world of a group.",
+        "required": [
+          "id",
+          "title",
+          "levels"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many levels the module has.",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "Name for people, in the language of the world."
+          }
+        }
+      },
+      "ProgressTask": {
+        "type": "object",
+        "description": "How far a student is with one kind of task of their level.",
+        "required": [
+          "title",
+          "solved",
+          "required"
+        ],
+        "properties": {
+          "required": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "solved": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "Name for people, in the language of the world."
+          }
+        }
+      },
       "ProtocolEntry": {
         "type": "object",
         "description": "Payload of the event \"protocol\": one entry of one of the protocols\nof a world. The time is the time of the event.",
@@ -1690,6 +2022,62 @@
           "protocol": {
             "type": "string",
             "description": "Which protocol, one of `PROTOCOLS`."
+          }
+        }
+      },
+      "SetLevel": {
+        "type": "object",
+        "description": "Payload of the job \"set_level\". The world writes the change into\nthe protocol of the desk, under the account of the teacher.",
+        "required": [
+          "account",
+          "module",
+          "level",
+          "by"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the student."
+          },
+          "by": {
+            "type": "string",
+            "description": "Account name of the teacher who ordered it."
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The new level, counted from 1.",
+            "minimum": 0
+          },
+          "module": {
+            "type": "string"
+          }
+        }
+      },
+      "SetLocked": {
+        "type": "object",
+        "description": "Payload of the job \"set_locked\". The world writes the change into\nthe protocol of the desk, under the account of the teacher.",
+        "required": [
+          "account",
+          "module",
+          "locked",
+          "by"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the student."
+          },
+          "by": {
+            "type": "string",
+            "description": "Account name of the teacher who ordered it."
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "True to lock moving up after a completed level, false to\nunlock it."
+          },
+          "module": {
+            "type": "string"
           }
         }
       },
@@ -1756,6 +2144,32 @@
           },
           "state": {
             "$ref": "#/components/schemas/StudentState"
+          }
+        }
+      },
+      "StudentProgress": {
+        "type": "object",
+        "description": "Where a student stands: one entry per module of the world, in the\norder of the modules, and the trophies.",
+        "required": [
+          "account",
+          "modules",
+          "trophies"
+        ],
+        "properties": {
+          "account": {
+            "type": "string"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModuleProgress"
+            }
+          },
+          "trophies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EarnedTrophy"
+            }
           }
         }
       },

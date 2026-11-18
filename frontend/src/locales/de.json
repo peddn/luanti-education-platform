@@ -67,6 +67,7 @@
     "invalidName": "Der Name braucht 1 bis 60 Zeichen.",
     "readOnly": "Ändern kann das nur die Schulverwaltung.",
     "students": "Schülerkonten",
+    "progress": "Fortschritt",
     "address": "Adresse der Welt",
     "noAddress": "noch nicht eingetragen",
     "addressHint": "So erreichen die Kinder die Welt, zum Beispiel „spiel.schule.example, Port 30000“. Die Adresse steht auf den Zugangszetteln."
@@ -122,6 +123,43 @@
     "confirmLeave": "Die Passwörter lassen sich danach nicht mehr anzeigen.",
     "namePlaceholder": "Name des Kindes (freiwillig)",
     "resetNote": "Das neue Passwort gilt, sobald die Welt es übernommen hat. Bis dahin gilt das alte. Ist das Kind gerade im Spiel, bleibt es angemeldet."
+  },
+  "progress": {
+    "titleFor": "Fortschritt der Gruppe {group}",
+    "intro": "Die Tabelle zeigt, was die Welt zuletzt gemeldet hat. Ein Klick auf ein Feld zeigt die Aufgaben des Niveaus. Dort setzt du auch ein Niveau oder sperrst den Aufstieg.",
+    "back": "Zur Gruppe",
+    "loading": "Fortschritt wird geladen …",
+    "reload": "Neu laden",
+    "pendingHint": "Eine Änderung wartet auf die Welt. Lade neu, um den Stand zu sehen.",
+    "noModules": "Die Welt dieser Gruppe hat noch keine Lernmodule gemeldet.",
+    "noStudents": "Diese Gruppe hat noch keine Konten, die in der Welt angelegt sind.",
+    "account": "Konto",
+    "trophies": "Trophäen",
+    "noTrophies": "keine",
+    "trophy": "{title} ({material})",
+    "materials": {
+      "bronze": "Bronze",
+      "silver": "Silber",
+      "gold": "Gold"
+    },
+    "level": "Niveau {level} von {levels}",
+    "percent": "{percent} % des Pensums",
+    "notStarted": "noch nicht begonnen",
+    "completed": "Modul abgeschlossen",
+    "locked": "Aufstieg gesperrt",
+    "change": {
+      "pending": "Änderung wartet auf die Welt",
+      "refused": "Änderung von der Welt abgelehnt"
+    },
+    "detailTitle": "{account} in {module}",
+    "tasksOf": "Aufgaben in Niveau {level}",
+    "noTasks": "Dieses Niveau hat keine Aufgaben.",
+    "task": "{title}: {solved} von {required}",
+    "newLevel": "Neues Niveau",
+    "setLevel": "Niveau setzen",
+    "lock": "Aufstieg sperren",
+    "unlock": "Aufstieg freigeben",
+    "changeHint": "Die Welt führt die Änderung aus und hält sie im Protokoll des Lehrerpults fest. Mit gesperrtem Aufstieg bleibt das Kind auf seinem Niveau, auch wenn es das Pensum geschafft hat."
   },
   "health": {
     "title": "Zustand",

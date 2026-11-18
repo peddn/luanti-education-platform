@@ -13,6 +13,7 @@ load("game/sync").start(http)
 load("game/reports")
 load("game/web_access")
 load("game/accounts")
+load("game/progress")
 load("game/commands")
 
 core.log("action", "[lep_bridge] loaded")

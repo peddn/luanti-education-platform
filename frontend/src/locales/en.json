@@ -67,6 +67,7 @@
     "invalidName": "The name needs 1 to 60 characters.",
     "readOnly": "Only the school administration can change this.",
     "students": "Student accounts",
+    "progress": "Progress",
     "address": "Address of the world",
     "noAddress": "not entered yet",
     "addressHint": "How the children reach the world, for example “spiel.schule.example, port 30000”. The address is printed on the access slips."
@@ -122,6 +123,43 @@
     "confirmLeave": "The passwords cannot be shown again afterwards.",
     "namePlaceholder": "Name of the child (optional)",
     "resetNote": "The new password counts as soon as the world has taken it. Until then the old one does. A child who is in the game right now stays logged in."
+  },
+  "progress": {
+    "titleFor": "Progress of group {group}",
+    "intro": "The table shows what the world reported last. Click a field to see the tasks of the level. There you also set a level or lock moving up.",
+    "back": "To the group",
+    "loading": "Loading progress …",
+    "reload": "Reload",
+    "pendingHint": "A change is waiting for the world. Reload to see where it stands.",
+    "noModules": "The world of this group has not reported any learning modules yet.",
+    "noStudents": "This group has no accounts yet that exist in the world.",
+    "account": "Account",
+    "trophies": "Trophies",
+    "noTrophies": "none",
+    "trophy": "{title} ({material})",
+    "materials": {
+      "bronze": "bronze",
+      "silver": "silver",
+      "gold": "gold"
+    },
+    "level": "Level {level} of {levels}",
+    "percent": "{percent} % of the workload",
+    "notStarted": "not started yet",
+    "completed": "module completed",
+    "locked": "moving up locked",
+    "change": {
+      "pending": "change is waiting for the world",
+      "refused": "change refused by the world"
+    },
+    "detailTitle": "{account} in {module}",
+    "tasksOf": "Tasks of level {level}",
+    "noTasks": "This level has no tasks.",
+    "task": "{title}: {solved} of {required}",
+    "newLevel": "New level",
+    "setLevel": "Set level",
+    "lock": "Lock moving up",
+    "unlock": "Unlock moving up",
+    "changeHint": "The world makes the change and notes it in the protocol of the teacher's desk. With moving up locked the child stays on their level, even after finishing its workload."
   },
   "health": {
     "title": "Status",
