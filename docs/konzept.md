@@ -194,7 +194,7 @@ Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke 
 - Zwei Wörter und zwei Ziffern, etwa `wolke-apfel-47`. Kinder müssen es abtippen, deshalb ist es leicht statt stark. Sie können es im Spiel ändern. Erzwingen lässt sich das in Luanti nicht.
 - Das Backend zeigt es genau einmal, auf den Zugangszetteln, und bewahrt es nicht auf. Im Auftrag an die Welt steht es, bis die Welt geantwortet hat, dann wird es dort gelöscht. Die Welt speichert nur den Hash.
 - Geht ein Zettel verloren, setzt die Lehrkraft das Passwort in der Web-Anwendung zurück. Sie bekommt einen neuen Zettel mit einem neuen Startpasswort, wieder nur einmal angezeigt. Das alte gilt, bis die Welt das neue übernommen hat. Ein Kind, das gerade spielt, bleibt angemeldet.
-- Die Welt setzt ein Passwort nur für ein gewöhnliches Konto: eines, das nichts hat außer den Privilegien, die jeder neue Spieler bekommt. Für das Konto einer Lehrkraft oder des Admins lehnt sie ab, was auch immer der Auftrag sagt. Das Backend steht im Netz. Wer es übernimmt, soll damit nicht die Lehrer- und Admin-Konten der Welten bekommen.
+- Die Welt setzt ein Passwort nur für ein gewöhnliches Konto: eines, das nichts hat außer den Privilegien, die jeder neue Spieler bekommt. Für das Konto einer Lehrkraft oder des Admins lehnt sie ab, was auch immer der Auftrag sagt. Was ein Schüler nur wegen seines Orts hat, etwa Fliegen in einem Raum, der es erlaubt, zählt dabei nicht. Die Welt weiß von jedem Konto, welche Privilegien vom Ort kommen, auch wenn der Spieler gerade nicht da ist. Das Backend steht im Netz. Wer es übernimmt, soll damit nicht die Lehrer- und Admin-Konten der Welten bekommen.
 
 **Geschlossene Welt**
 

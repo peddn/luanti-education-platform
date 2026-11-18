@@ -110,6 +110,20 @@ describe("lep_accounts", function()
 		assert.is_false(accounts.is_ordinary({ lep_web_access = true }, ordinary))
 	end)
 
+	it("leaves out what a place gave", function()
+		local ordinary = { interact = true, shout = true }
+		-- A student in a room where flying is allowed.
+		local student = accounts.without({ interact = true, shout = true, fly = true },
+			{ fly = true })
+		assert.are.same({ interact = true, shout = true }, student)
+		assert.is_true(accounts.is_ordinary(student, ordinary))
+		-- A teacher in the same room stays a teacher.
+		local teacher = accounts.without(
+			{ interact = true, fly = true, lep_view_players = true }, { fly = true })
+		assert.is_false(accounts.is_ordinary(teacher, ordinary))
+		assert.are.same({ interact = true }, accounts.without({ interact = true, fly = false }, {}))
+	end)
+
 	it("sets a password only for an ordinary account that exists", function()
 		local ordinary = { interact = true, shout = true }
 		local student = { interact = true, shout = true }

@@ -364,7 +364,7 @@ Gibt es einen gewürfelten Namen in der Welt schon, etwa aus der Zeit, als man s
 
 **Passwort zurücksetzen.** Bei einem angelegten Konto steht „Passwort zurücksetzen“. Nach der Rückfrage zeigt die Seite einen Zettel mit dem neuen Startpasswort, nur einmal. Das alte gilt, bis die Welt das neue übernommen hat. Solange steht beim Konto „neues Passwort wartet auf die Welt“.
 
-Die Welt setzt ein Passwort nur für ein gewöhnliches Konto. Hat das Konto mehr als die Privilegien eines neuen Spielers, lehnt sie ab. In der Liste steht dann „neues Passwort von der Welt abgelehnt“, im Log der Welt `password for … not set: staff`. Das Passwort einer Lehrkraft setzt der Admin im Spiel.
+Die Welt setzt ein Passwort nur für ein gewöhnliches Konto. Hat das Konto mehr als die Privilegien eines neuen Spielers, lehnt sie ab. Privilegien, die ein Ort vergibt, zählen nicht mit: `lep_places.get_granted_privileges(name)` nennt sie, auch für Spieler, die nicht da sind. In der Liste steht dann „neues Passwort von der Welt abgelehnt“, im Log der Welt `password for … not set: staff`. Das Passwort einer Lehrkraft setzt der Admin im Spiel.
 
 ### Mailversand
 

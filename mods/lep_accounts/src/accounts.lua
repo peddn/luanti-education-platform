@@ -60,6 +60,17 @@ function accounts.privilege_set(text)
 	return set
 end
 
+--- Returns a set of privileges without the ones in another set.
+function accounts.without(privileges, taken)
+	local rest = {}
+	for name, held in pairs(privileges) do
+		if held and not taken[name] then
+			rest[name] = true
+		end
+	end
+	return rest
+end
+
 --- Returns true if an account holds nothing but what every new player
 -- gets. Only such an account may get a password from outside: whoever
 -- holds more is a teacher or an admin, and an order that names them is a

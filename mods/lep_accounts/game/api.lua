@@ -64,13 +64,19 @@ end
 
 --- Sets the password of an ordinary account. An account that holds more
 -- than every new player gets, a teacher or an admin, is refused: nobody
--- takes such an account over from outside.
+-- takes such an account over from outside. Privileges that come from the
+-- place a player is in do not count.
 -- Who is in the game stays in; the new password counts from the next
 -- login.
 -- @return true, or false and why not: "unknown", "staff" or "invalid"
 function lep_accounts.set_password(name, password)
 	local exists = lep_accounts.exists(name)
 	local privileges = exists and core.get_player_privs(name) or {}
+	if exists and core.global_exists("lep_places") then
+		-- What a student holds only because of the room they are in does
+		-- not make them a teacher.
+		privileges = accounts.without(privileges, lep_places.get_granted_privileges(name))
+	end
 	local ok, why = accounts.may_set_password(name, password, exists, privileges,
 		ordinary_privileges())
 	if not ok then
