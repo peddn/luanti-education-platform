@@ -85,6 +85,14 @@ pub mod world {
     /// account.
     pub const JOB_SET_PASSWORD: &str = "set_password";
 
+    /// Kind of the job that makes a world set the level of a student in
+    /// a module.
+    pub const JOB_SET_LEVEL: &str = "set_level";
+
+    /// Kind of the job that makes a world lock or unlock moving up for a
+    /// student in a module.
+    pub const JOB_SET_LOCKED: &str = "set_locked";
+
     /// The protocols a world keeps. Their entries are deleted with the end
     /// of the school year.
     pub const PROTOCOLS: [&str; 4] = ["rewards", "chat", "signs", "desk"];
@@ -332,6 +340,33 @@ pub mod world {
         pub password: String,
     }
 
+    /// Payload of the job "set_level". The world writes the change into
+    /// the protocol of the desk, under the account of the teacher.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetLevel {
+        /// Account name of the student.
+        pub account: String,
+        pub module: String,
+        /// The new level, counted from 1.
+        pub level: u32,
+        /// Account name of the teacher who ordered it.
+        pub by: String,
+    }
+
+    /// Payload of the job "set_locked". The world writes the change into
+    /// the protocol of the desk, under the account of the teacher.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetLocked {
+        /// Account name of the student.
+        pub account: String,
+        pub module: String,
+        /// True to lock moving up after a completed level, false to
+        /// unlock it.
+        pub locked: bool,
+        /// Account name of the teacher who ordered it.
+        pub by: String,
+    }
+
     /// Payload of the event "accounts_created": what became of the
     /// accounts a world was asked to create.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -505,6 +540,98 @@ pub mod web {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct AccessSlips {
         pub slips: Vec<AccessSlip>,
+    }
+
+    /// A learning module of the world of a group.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ProgressModule {
+        pub id: String,
+        /// Name for people, in the language of the world.
+        pub title: String,
+        /// How many levels the module has.
+        pub levels: u32,
+    }
+
+    /// How far a student is with one kind of task of their level.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ProgressTask {
+        /// Name for people, in the language of the world.
+        pub title: String,
+        pub solved: u32,
+        pub required: u32,
+    }
+
+    /// How far a change a teacher ordered is.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum ChangeState {
+        /// The world was asked and has not answered yet. What is shown
+        /// is still the old state.
+        Pending,
+        /// The world refused the newest change. Nothing was changed.
+        Refused,
+    }
+
+    /// Where a student stands in one module.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ModuleProgress {
+        /// Id of the module.
+        pub module: String,
+        /// False if the world has reported nothing yet: the student
+        /// stands at the start of level 1.
+        pub started: bool,
+        /// Current level, counted from 1.
+        pub level: u32,
+        /// True if moving up after a completed level is locked.
+        pub locked: bool,
+        /// Share of the workload of the level that is done, 0 to 100.
+        pub percent: u32,
+        /// True if the whole module is completed.
+        pub completed: bool,
+        /// The kinds of tasks of the current level.
+        pub tasks: Vec<ProgressTask>,
+        /// Missing in the usual case: no change is on its way.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub change: Option<ChangeState>,
+    }
+
+    /// A trophy a student has earned.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct EarnedTrophy {
+        /// Name for people, in the language of the world.
+        pub title: String,
+        /// "bronze", "silver" or "gold".
+        pub material: String,
+    }
+
+    /// Where a student stands: one entry per module of the world, in the
+    /// order of the modules, and the trophies.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StudentProgress {
+        pub account: String,
+        pub modules: Vec<ModuleProgress>,
+        pub trophies: Vec<EarnedTrophy>,
+    }
+
+    /// The progress of a group: the modules of its world and the
+    /// students whose accounts exist, in the order of the list of
+    /// students.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct GroupProgress {
+        pub modules: Vec<ProgressModule>,
+        pub students: Vec<StudentProgress>,
+    }
+
+    /// Request to change where a student stands in a module. At least
+    /// one of the two has to be there.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ProgressChange {
+        /// The new level, if it changes.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub level: Option<u32>,
+        /// Whether moving up is locked from now on, if that changes.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub locked: Option<bool>,
     }
 
     /// The groups a teacher may see.

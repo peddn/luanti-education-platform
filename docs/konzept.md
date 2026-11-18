@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 49 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 50 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -1064,6 +1064,15 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 - **Erster Abgleich:** Beim ersten Kontakt sendet die Welt den Stand aller bekannten Schüler. Das Backend kann ihn per Auftrag erneut anfordern.
 - **Keine Nachlieferung alter Protokolle:** Gemeldet wird, was ab der Verbindung geschieht. Was vorher in den Protokolldateien stand, bleibt dort. Im Betrieb ist eine Welt von Anfang an verbunden, und alte Einträge nachträglich in die Cloud zu schieben, passt nicht zur begrenzten Aufbewahrung.
 - Texte für Menschen, etwa Titel, verlassen die Welt auf Deutsch.
+
+**Was die Lehrkraft im Browser ändert**
+
+- Die Seite „Fortschritt“ einer Gruppe zeigt je Schüler und Modul Niveau, Pensum, Sperre und Trophäen. Gezeigt werden die Konten, die in der Welt angelegt sind. Wer noch nichts gelöst hat, steht am Anfang von Niveau 1.
+- Niveau setzen und Aufstieg sperren oder freigeben sind Aufträge an die Welt. Das Backend ändert seinen Stand nie selbst: Die Welt führt aus und meldet den neuen Stand wie nach jeder Änderung.
+- Bis die Welt geantwortet hat, zeigt die Seite den alten Stand mit dem Hinweis „Änderung wartet auf die Welt“. Lehnt die Welt ab, steht das dort, bis eine Änderung gelingt.
+- Die Welt hält jede dieser Änderungen im Protokoll des Pults fest, unter dem Konto der Lehrkraft. Der Auftrag nennt es dafür.
+- Ob eine Lehrkraft die Änderung bestellen darf, entscheidet das Backend über die Zuordnung zur Gruppe. Die Welt prüft, ob es Konto, Modul und Niveau gibt.
+- Trophäen und Meilensteine sind verdient und werden nur angezeigt.
 
 ## 12. Datenschutz
 

@@ -8,6 +8,7 @@ import HealthPage from './pages/HealthPage.vue'
 import LoginPage from './pages/LoginPage.vue'
 import NotFoundPage from './pages/NotFoundPage.vue'
 import OverviewPage from './pages/OverviewPage.vue'
+import ProgressPage from './pages/ProgressPage.vue'
 import { useAuthStore } from './stores/auth'
 
 // Pages are closed unless they say `public`. Without a login only the
@@ -19,6 +20,7 @@ export const routes = [
   { path: '/groups', name: 'groups', component: GroupsPage },
   { path: '/groups/:id', name: 'group', component: GroupPage, props: true },
   { path: '/groups/:id/students', name: 'students', component: StudentsPage, props: true },
+  { path: '/groups/:id/progress', name: 'progress', component: ProgressPage, props: true },
   { path: '/status', name: 'health', component: HealthPage },
   { path: '/login', name: 'login', component: LoginPage, meta: { public: true } },
   { path: '/confirm', name: 'confirm', component: ConfirmPage, meta: { public: true } },

@@ -148,11 +148,15 @@ function lep_desk.get_tabs(teacher_name)
 end
 
 --- Writes into the protocol of the desk that a teacher did something
--- that is not an action on students.
+-- that is not one of the actions of the desk, for example a change made
+-- in the browser.
 -- @param action Short name of what was done, for example "web_access:set".
-function lep_desk.record(teacher_name, action)
-	protocol:append({ account = teacher_name, action = action, targets = "" })
-	core.log("action", "[lep_desk] " .. teacher_name .. " used " .. action)
+-- @param target Optional account name of the student it was done to.
+function lep_desk.record(teacher_name, action, target)
+	target = type(target) == "string" and target or ""
+	protocol:append({ account = teacher_name, action = action, targets = target })
+	core.log("action", "[lep_desk] " .. teacher_name .. " used " .. action
+		.. (target ~= "" and " on " .. target or ""))
 end
 
 --- Returns the actions a teacher may use, each with id and title.
