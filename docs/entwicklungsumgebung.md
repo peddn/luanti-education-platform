@@ -199,7 +199,14 @@ Ein Rechtsklick auf das Türschild des eigenen Raums in der Lobby öffnet das Fe
 - Wer das Pult öffnen darf und im Spiel ist, bekommt bei jeder Änderung eine Nachricht mit Konto und neuem Namen.
 - Jede Änderung steht im Protokoll `lep_protocols/names.tsv` im Ordner der Welt.
 
-Entfernen und Sperren kommt aus der Web-Anwendung. Bis das gebaut ist, und zum Ausprobieren, gibt es drei Debug-Befehle:
+Ist die Welt mit dem Backend verbunden, meldet sie den Stand jedes Kontos nach jeder Änderung. In der Web-Anwendung zeigt die Liste der Schüler dann den Wunschnamen mit dem Tag der Änderung:
+
+- „Wunschname entfernen“ und „Wählen sperren“ oder „Wählen freigeben“ sind Aufträge an die Welt. Bis sie geantwortet hat, steht bei dem Konto „Änderung wartet auf die Welt“.
+- „Verlauf“ zeigt, was mit den Namen eines Kontos geschah. Er kommt aus dem Protokoll `names`, das die Welt ans Backend weitergibt.
+- Das Suchfeld über der Liste filtert nach Konto und Wunschname.
+- Bei jedem neuen Wunschnamen eines Schülers schreibt das Backend den Lehrkräften der Gruppe eine Mail mit Konto und Namen. Ohne Mailserver steht sie im Terminal des Backends. Für Namen von Lehrkräften und für „Zurück zum Kontonamen“ gibt es keine Mail.
+
+Ohne Browser, und zum Ausprobieren, gibt es drei Debug-Befehle:
 
 | Befehl | Wirkung |
 |---|---|
