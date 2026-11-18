@@ -222,7 +222,8 @@ Der Grundsatz: Schüler bekommen die Möglichkeit, sich richtig zu verhalten. Ni
 2. Die Welt prüft die Regeln unten. Passt der Name, gilt er sofort, auch wenn das Backend gerade nicht erreichbar ist.
 3. Die Welt schreibt die Änderung in ein Protokoll und sagt sie allen Lehrkräften, die gerade im Spiel sind.
 4. Die Welt meldet den Namen über die Brücke ans Backend. Die Web-Anwendung zeigt ihn bei dem Schüler und markiert Namen, die neu sind.
-5. Die Lehrkraft der Gruppe kann einen Namen in der Web-Anwendung entfernen und dem Schüler das Ändern sperren. Beides ist ein Auftrag an die Welt.
+5. Das Backend schreibt den Lehrkräften der Gruppe eine E-Mail, dass es neue Wunschnamen gibt. So erfahren sie es auch in den Ferien, wenn lange keine Lehrkraft im Spiel ist.
+6. Die Lehrkraft der Gruppe kann einen Namen in der Web-Anwendung entfernen und dem Schüler das Ändern sperren. Beides ist ein Auftrag an die Welt.
 
 Regeln:
 
@@ -234,6 +235,8 @@ Regeln:
 - Eine Sperre gilt, bis die Lehrkraft sie aufhebt. Sie entfernt den Namen nicht von selbst.
 - Das Protokoll hält fest, wer wann welchen Namen gesetzt hat und welche Lehrkraft einen Namen entfernt oder gesperrt hat. Es gehört zu den Protokollen der Welt und wird mit ihnen gelöscht.
 - Entfernen und Sperren gibt es zunächst nur in der Web-Anwendung. Das Pult im Spiel kann es später bekommen.
+- Die E-Mail nennt die Gruppe, aber weder den Wunschnamen noch das Konto. Die Namen stehen nur in der Web-Anwendung, hinter der Anmeldung.
+- Je Gruppe geht höchstens eine solche E-Mail am Tag hinaus, an die Lehrkräfte der Gruppe mit bestätigter Adresse.
 - Genau eine Funktion „Anzeigename dieses Spielers“ bedient alle Stellen: Name über der Figur, Chat, Türschild, Pult.
 - Lehrkräfte sehen immer beides: im Chat, am Pult und in der Web-Anwendung. Über der Figur steht nur der Wunschname, denn das Spiel zeigt dort allen dasselbe.
 
@@ -1111,7 +1114,7 @@ Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen und Aktionen am Pult.
 **Zähler des Awards-Mods**
 
 - Der Awards-Mod zählt pro Spieler, wie oft er welche Blockart abgebaut, gesetzt oder hergestellt hat. Das ist ein Stand ohne Zeitpunkte, aber es sind Daten über das Spielverhalten.
-- Sie liegen in der Welt und werden beim Jahresabschluss gelöscht.
+- Der Wunschname liegt in der Welt und bleibt mit dem Konto erhalten. Beim Jahresabschluss wird nur das Protokoll der Wunschnamen gelöscht.
 
 **Wunschnamen**
 
