@@ -45,8 +45,9 @@ local function show(player_name, typed, message)
 	else
 		hint = S("You can choose a new name once in 30 days. Your teachers see every name.")
 	end
-	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "",
-		formspec.escape(message or hint), "")
+	-- A text area without a name only shows its text, and breaks lines.
+	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "",
+		formspec.escape(message or hint))
 
 	fs:field(0.5, 3.3, WIDTH - 1, 0.8, "name", S("New name"), typed or state.display or "")
 	fs:submit_on_enter("name")
@@ -57,6 +58,12 @@ local function show(player_name, typed, message)
 	fs:button_exit(WIDTH - 2, 4.5, 1.5, 0.8, "close", S("Close"))
 	open[player_name] = true
 	core.show_formspec(player_name, FORM, fs:build())
+end
+
+local function close(player_name, message)
+	open[player_name] = nil
+	core.close_formspec(player_name, FORM)
+	core.chat_send_player(player_name, message)
 end
 
 --- Opens the window for choosing a display name for a player.
@@ -78,14 +85,16 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 	-- A player only ever changes their own name: the account comes from
 	-- the connection, never from the window. The rules are checked again
 	-- by lep_accounts.
+	-- When the change is made the window closes, and the chat says what
+	-- counts now. It stays open only to say why a name does not fit.
 	if fields.give_up then
 		lep_accounts.give_up_display_name(player_name)
-		show(player_name, "", S("You are shown under your account name again."))
+		close(player_name, S("You are shown under your account name again."))
 	elseif fields.apply or fields.key_enter_field == "name" then
 		local typed = type(fields.name) == "string" and fields.name:sub(1, 200) or ""
 		local ok, why, from = lep_accounts.choose_display_name(player_name, typed)
 		if ok then
-			show(player_name, nil, S("Done. Others see you as: @1",
+			close(player_name, S("Your display name is now: @1",
 				lep_accounts.get_display_name(player_name)))
 		else
 			show(player_name, typed, explain(why, from))
