@@ -106,14 +106,31 @@ describe("lep_progress record", function()
 		assert.is_false(progress.is_module_completed(module, state))
 	end)
 
-	it("counts solved tasks and reports the share of done task types", function()
+	it("counts solved tasks and reports the share of the workload", function()
+		-- Level 1 asks for three tasks: two of one type, one of another.
 		local state, events = solve(module, progress.new_state(), 1, "add")
 		assert.are.equal(1, progress.solved_count(state, 1, "add"))
-		assert.are.equal(0, progress.percent(module, state, 1))
+		assert.are.equal(33, progress.percent(module, state, 1))
 		assert.are.same({}, events)
 		state = solve(module, state, 1, "add")
-		assert.are.equal(50, progress.percent(module, state, 1))
+		assert.are.equal(66, progress.percent(module, state, 1))
 		assert.are.same({ 1, 2 }, { progress.done_tasks(module, state, 1) })
+		-- More than required moves nothing.
+		state = solve(module, state, 1, "add")
+		assert.are.equal(66, progress.percent(module, state, 1))
+	end)
+
+	it("moves the share with every task, not only with a finished type", function()
+		local wide = new_module({
+			{ tasks = { { id = "a", required = 5 }, { id = "b", required = 5 } } },
+		})
+		local state = solve(wide, progress.new_state(), 1, "a", 4)
+		assert.are.equal(40, progress.percent(wide, state, 1))
+		assert.are.same({ 0, 2 }, { progress.done_tasks(wide, state, 1) })
+		state = solve(wide, state, 1, "b", 5)
+		assert.are.equal(90, progress.percent(wide, state, 1))
+		state = solve(wide, state, 1, "a")
+		assert.are.equal(100, progress.percent(wide, state, 1))
 	end)
 
 	it("does not count wrong answers and takes nothing away", function()
@@ -239,14 +256,80 @@ describe("lep_progress set_level", function()
 		assert.is_nil(progress.set_level(module, progress.new_state(), "2"))
 	end)
 
-	it("does not move a player up who was put back on a completed level", function()
+	it("lets a player repeat a completed level and move up again", function()
+		local state = solve(module, progress.new_state(), 1, "add", 2)
+		state = solve(module, state, 1, "sub")
+		state = solve(module, state, 2, "mul")
+		assert.are.equal(2, state.level)
+
+		-- Back on level 1: its workload starts again, level 2 keeps its count.
+		state = progress.set_level(module, state, 1)
+		assert.are.equal(0, progress.percent(module, state, 1))
+		assert.are.equal(0, progress.solved_count(state, 1, "add"))
+		assert.are.equal(1, progress.solved_count(state, 2, "mul"))
+
+		-- The tasks count again.
+		local events, counted
+		state, events, counted = progress.record(module, state,
+			{ level = 1, task = "add", solved = true })
+		assert.is_true(counted)
+		assert.are.same({}, events)
+		assert.are.equal(33, progress.percent(module, state, 1))
+
+		-- With the workload done the player moves up, but the level is
+		-- not reported as completed a second time.
+		state = solve(module, state, 1, "add")
+		state, events = solve(module, state, 1, "sub")
+		assert.are.same({ progress.LEVEL_CHANGED }, names(events))
+		assert.are.equal(progress.REASON_COMPLETED, events[1].reason)
+		assert.are.equal(2, state.level)
+		assert.are.equal(1, progress.solved_count(state, 2, "mul"))
+	end)
+
+	it("does not move a player up who is in the middle of repeating", function()
 		local state = solve(module, progress.new_state(), 1, "add", 2)
 		state = solve(module, state, 1, "sub")
 		state = progress.set_level(module, state, 1)
+		state = solve(module, state, 1, "add")
+		-- Locking and unlocking is no way around the workload.
+		state = progress.set_locked(module, state, true)
 		local events
-		state, events = solve(module, state, 1, "add")
+		state, events = progress.set_locked(module, state, false)
 		assert.are.same({}, events)
 		assert.are.equal(1, state.level)
+
+		-- Locked, the player stays even with the workload done again.
+		state = progress.set_locked(module, state, true)
+		state = solve(module, state, 1, "add")
+		state, events = solve(module, state, 1, "sub")
+		assert.are.same({}, events)
+		assert.are.equal(1, state.level)
+		state, events = progress.set_locked(module, state, false)
+		assert.are.same({ progress.LEVEL_CHANGED }, names(events))
+		assert.are.equal(2, state.level)
+	end)
+
+	it("keeps the counts of a level that was not completed", function()
+		local state = solve(module, progress.new_state(), 1, "add")
+		state = progress.set_level(module, state, 2)
+		state = progress.set_level(module, state, 1)
+		assert.are.equal(1, progress.solved_count(state, 1, "add"))
+		-- Setting the level a player is on changes nothing either.
+		state = progress.set_level(module, state, 1)
+		assert.are.equal(1, progress.solved_count(state, 1, "add"))
+	end)
+
+	it("repeats the last level without completing the module again", function()
+		local state = progress.set_level(module, progress.new_state(), 3)
+		local events
+		state, events = solve(module, state, 3, "div")
+		assert.are.same({ progress.LEVEL_COMPLETED, progress.MODULE_COMPLETED }, names(events))
+		state = progress.set_level(module, state, 3)
+		assert.are.equal(0, progress.percent(module, state, 3))
+		assert.is_true(progress.is_module_completed(module, state))
+		state, events = solve(module, state, 3, "div")
+		assert.are.same({}, events)
+		assert.are.equal(100, progress.percent(module, state, 3))
 	end)
 end)
 

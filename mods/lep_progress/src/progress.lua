@@ -189,10 +189,19 @@ function progress.done_tasks(module, state, level)
 	return done, #tasks
 end
 
---- Returns the share of done task types of a level in percent, 0 to 100.
+--- Returns the share of the workload of a level that is done, in
+-- percent, 0 to 100: solved tasks of all that are required. Every task
+-- that counts moves it, not only a task type that is done.
 function progress.percent(module, state, level)
-	local done, total = progress.done_tasks(module, state, level)
-	return math.floor(done * 100 / total)
+	local solved, required = 0, 0
+	for _, task in ipairs(module.levels[level].tasks) do
+		solved = solved + math.min(progress.solved_count(state, level, task.id), task.required)
+		required = required + task.required
+	end
+	if required == 0 then
+		return 0
+	end
+	return math.floor(solved * 100 / required)
 end
 
 --- Returns true if the player completed the last level of the module.
@@ -204,6 +213,12 @@ end
 local function move_up(module, state, events)
 	if state.locked or not state.completed[state.level]
 			or state.level >= #module.levels then
+		return
+	end
+	-- A player who repeats a completed level moves up when its workload
+	-- is done again, not before.
+	local done, total = progress.done_tasks(module, state, state.level)
+	if done < total then
 		return
 	end
 	local old = state.level
@@ -255,22 +270,29 @@ function progress.record(module, state, result)
 	counts[task.id] = (counts[task.id] or 0) + 1
 
 	local done, total = progress.done_tasks(module, new_state, level)
-	if done == total and not new_state.completed[level] then
-		new_state.completed[level] = true
-		events[#events + 1] = {
-			name = progress.LEVEL_COMPLETED,
-			level = level,
-			stage = module.levels[level].stage,
-		}
-		if level == #module.levels then
-			events[#events + 1] = { name = progress.MODULE_COMPLETED }
+	if done == total then
+		-- A level is completed once. Whoever repeats it moves up again,
+		-- but nothing is reported as completed a second time.
+		if not new_state.completed[level] then
+			new_state.completed[level] = true
+			events[#events + 1] = {
+				name = progress.LEVEL_COMPLETED,
+				level = level,
+				stage = module.levels[level].stage,
+			}
+			if level == #module.levels then
+				events[#events + 1] = { name = progress.MODULE_COMPLETED }
+			end
 		end
 		move_up(module, new_state, events)
 	end
 	return new_state, events, true
 end
 
---- Sets the level by hand. The counts of all levels are kept.
+--- Sets the level by hand. The counts of the other levels are kept. A
+-- level that was completed before is repeated: its counts start again,
+-- and the player moves up once more when its workload is done. That it
+-- was completed stays noted, so it is not reported a second time.
 -- @return new state, list of events  or  nil, error message
 function progress.set_level(module, state, level)
 	if type(level) ~= "number" or level ~= math.floor(level)
@@ -287,6 +309,9 @@ function progress.set_level(module, state, level)
 			reason = progress.REASON_TEACHER,
 		}
 		new_state.level = level
+	end
+	if new_state.completed[level] then
+		new_state.solved[level] = nil
 	end
 	return new_state, events
 end
