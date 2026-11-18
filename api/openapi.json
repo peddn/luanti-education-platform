@@ -543,6 +543,72 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/students/{account}/password": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Makes up a new start password for the account of a student and asks\nthe world to set it. The password is shown this once. Until the world\nhas set it, the old one counts.",
+        "operationId": "reset_password",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "description": "The account that gets a new password",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One access slip, shown once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessSlips"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or no such account that exists in the world (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/students/{account}/reroll": {
       "post": {
         "tags": [
@@ -1543,6 +1609,14 @@
           }
         }
       },
+      "PasswordState": {
+        "type": "string",
+        "description": "How far a new start password for an account is.",
+        "enum": [
+          "pending",
+          "refused"
+        ]
+      },
       "Progress": {
         "type": "object",
         "description": "Payload of the event \"progress\": where one student stands in one\nmodule. It is the whole state, not a change, and replaces what the\nbackend knew before.",
@@ -1619,6 +1693,23 @@
           }
         }
       },
+      "SetPassword": {
+        "type": "object",
+        "description": "Payload of the job \"set_password\". A world sets the password only\nfor an ordinary account: one that holds nothing but what every new\nplayer gets.",
+        "required": [
+          "name",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "description": "The new start password. The world stores only its hash."
+          }
+        }
+      },
       "Status": {
         "type": "object",
         "description": "State of the backend with its details, for teachers who are\nlogged in.",
@@ -1651,6 +1742,17 @@
           "account": {
             "type": "string",
             "description": "Account name. It says nothing about the person."
+          },
+          "password": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PasswordState",
+                "description": "Missing in the usual case: the password the student was given\nlast is the one that counts."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "state": {
             "$ref": "#/components/schemas/StudentState"

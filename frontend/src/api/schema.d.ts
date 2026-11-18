@@ -147,6 +147,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/students/{account}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Makes up a new start password for the account of a student and asks
+         *     the world to set it. The password is shown this once. Until the world
+         *     has set it, the old one counts.
+         */
+        post: operations["reset_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/students/{account}/reroll": {
         parameters: {
             query?: never;
@@ -584,6 +605,11 @@ export interface components {
             password: string;
         };
         /**
+         * @description How far a new start password for an account is.
+         * @enum {string}
+         */
+        PasswordState: "pending" | "refused";
+        /**
          * @description Payload of the event "progress": where one student stands in one
          *     module. It is the whole state, not a change, and replaces what the
          *     backend knew before.
@@ -627,6 +653,16 @@ export interface components {
             protocol: string;
         };
         /**
+         * @description Payload of the job "set_password". A world sets the password only
+         *     for an ordinary account: one that holds nothing but what every new
+         *     player gets.
+         */
+        SetPassword: {
+            name: string;
+            /** @description The new start password. The world stores only its hash. */
+            password: string;
+        };
+        /**
          * @description State of the backend with its details, for teachers who are
          *     logged in.
          */
@@ -640,6 +676,7 @@ export interface components {
         Student: {
             /** @description Account name. It says nothing about the person. */
             account: string;
+            password?: components["schemas"]["PasswordState"] | null;
             state: components["schemas"]["StudentState"];
         };
         /**
@@ -1142,6 +1179,49 @@ export interface operations {
                 };
             };
             /** @description No such group, or no such name that could still be changed (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    reset_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description The account that gets a new password */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One access slip, shown once */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessSlips"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no such account that exists in the world (not_found) */
             404: {
                 headers: {
                     [name: string]: unknown;

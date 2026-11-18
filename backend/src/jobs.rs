@@ -35,15 +35,30 @@ impl Waiters {
 
 /// Puts a job for a world into the database and returns its id.
 pub async fn add(pool: &SqlitePool, world_id: &str, kind: &str, payload: &Value) -> Result<String> {
+    add_about(pool, world_id, kind, payload, None).await
+}
+
+/// Puts a job into the database that is about one account, and returns
+/// its id. The account stays known after the job has forgotten its
+/// payload.
+pub async fn add_about(
+    pool: &SqlitePool,
+    world_id: &str,
+    kind: &str,
+    payload: &Value,
+    subject: Option<&str>,
+) -> Result<String> {
     let id = Uuid::new_v4().to_string();
     sqlx::query(
-        "INSERT INTO jobs (id, world_id, kind, payload, created_at) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO jobs (id, world_id, kind, payload, created_at, subject)
+         VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(world_id)
     .bind(kind)
     .bind(payload.to_string())
     .bind(clock::now())
+    .bind(subject)
     .execute(pool)
     .await?;
     Ok(id)
@@ -101,7 +116,7 @@ pub async fn finish(
     // answered, nobody needs them in the database any more.
     sqlx::query(
         "UPDATE jobs SET finished_at = ?, ok = ?, message = ?,
-            payload = CASE WHEN kind = 'create_accounts' THEN '{}' ELSE payload END
+            payload = CASE WHEN kind IN ('create_accounts', 'set_password') THEN '{}' ELSE payload END
          WHERE id = ? AND world_id = ? AND finished_at IS NULL",
     )
     .bind(clock::now())

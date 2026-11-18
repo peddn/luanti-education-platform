@@ -54,6 +54,10 @@ pub fn router() -> Router<AppState> {
             "/v1/groups/{id}/students/{account}/reroll",
             post(reroll_student),
         )
+        .route(
+            "/v1/groups/{id}/students/{account}/password",
+            post(reset_password),
+        )
 }
 
 /// Reads a JSON body, with our own answer if it cannot be read.
@@ -580,6 +584,40 @@ pub async fn create_students(
     // Passwords must not stay in a cache of the browser or of a proxy.
     let no_store = AppendHeaders([(axum::http::header::CACHE_CONTROL, "no-store")]);
     Ok((no_store, Json(AccessSlips { slips })))
+}
+
+/// Makes up a new start password for the account of a student and asks
+/// the world to set it. The password is shown this once. Until the world
+/// has set it, the old one counts.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/students/{account}/password",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "The account that gets a new password"),
+    ),
+    responses(
+        (status = 200, description = "One access slip, shown once", body = AccessSlips),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or no such account that exists in the world (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn reset_password(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+) -> Result<impl IntoResponse, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    let Some(slip) = students::reset_password(&state.db, &id, &account).await? else {
+        return Err(Failure::not_found(
+            "no such account that exists in the world",
+        ));
+    };
+    state.waiters.wake(&id);
+    tracing::info!(account = %teacher.account, group = %id, student = %slip.account, "new password ordered");
+    let no_store = AppendHeaders([(axum::http::header::CACHE_CONTROL, "no-store")]);
+    Ok((no_store, Json(AccessSlips { slips: vec![slip] })))
 }
 
 #[cfg(test)]

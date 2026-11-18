@@ -6,8 +6,10 @@
 //! the world in a job, and kept nowhere else.
 
 use anyhow::Result;
-use lep_protocol::web::{AccessSlip, Student, StudentState};
-use lep_protocol::world::{AccountsCreated, CreateAccounts, NewAccount, JOB_CREATE_ACCOUNTS};
+use lep_protocol::web::{AccessSlip, PasswordState, Student, StudentState};
+use lep_protocol::world::{
+    AccountsCreated, CreateAccounts, NewAccount, SetPassword, JOB_CREATE_ACCOUNTS, JOB_SET_PASSWORD,
+};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::{clock, jobs, names};
@@ -42,15 +44,31 @@ fn state_of(text: &str) -> StudentState {
 /// were rolled. The order never changes: a name that is rolled again
 /// keeps its place, so a list on a screen does not jump.
 pub async fn list(pool: &SqlitePool, world_id: &str) -> Result<Vec<Student>> {
-    let rows = sqlx::query("SELECT account, state FROM students WHERE world_id = ? ORDER BY rowid")
-        .bind(world_id)
-        .fetch_all(pool)
-        .await?;
+    // The newest order for a new password says how far it is: not
+    // answered yet, or refused by the world.
+    let rows = sqlx::query(
+        "SELECT account, state,
+                (SELECT CASE WHEN jobs.finished_at IS NULL THEN 'pending'
+                             WHEN jobs.ok = 0 THEN 'refused' END
+                 FROM jobs
+                 WHERE jobs.world_id = students.world_id AND jobs.kind = 'set_password'
+                   AND jobs.subject = students.account
+                 ORDER BY jobs.rowid DESC LIMIT 1) AS password
+         FROM students WHERE world_id = ? ORDER BY rowid",
+    )
+    .bind(world_id)
+    .fetch_all(pool)
+    .await?;
     Ok(rows
         .iter()
         .map(|row| Student {
             account: row.get("account"),
             state: state_of(row.get("state")),
+            password: match row.get::<Option<String>, _>("password").as_deref() {
+                Some("pending") => Some(PasswordState::Pending),
+                Some("refused") => Some(PasswordState::Refused),
+                _ => None,
+            },
         })
         .collect())
 }
@@ -245,6 +263,45 @@ pub async fn create(
     )
     .await?;
     Ok(Some((job, slips)))
+}
+
+/// Makes up a new start password for an account that exists in the
+/// world, and asks the world to set it. The password is in the returned
+/// slip and in the job for the world, nowhere else. Returns `None` if
+/// the group has no such account that exists in the world.
+pub async fn reset_password(
+    pool: &SqlitePool,
+    world_id: &str,
+    account: &str,
+) -> Result<Option<AccessSlip>> {
+    // The name as it is stored: the engine tells letter cases apart.
+    let stored: Option<String> = sqlx::query_scalar(
+        "SELECT account FROM students WHERE account = ? AND world_id = ? AND state = 'active'",
+    )
+    .bind(account)
+    .bind(world_id)
+    .fetch_optional(pool)
+    .await?;
+    let Some(account) = stored else {
+        return Ok(None);
+    };
+    let slip = AccessSlip {
+        account: account.clone(),
+        password: names::roll_password(),
+    };
+    let payload = SetPassword {
+        name: slip.account.clone(),
+        password: slip.password.clone(),
+    };
+    jobs::add_about(
+        pool,
+        world_id,
+        JOB_SET_PASSWORD,
+        &serde_json::to_value(payload)?,
+        Some(&account),
+    )
+    .await?;
+    Ok(Some(slip))
 }
 
 /// Notes what a world made of the accounts it was asked to create. Only
@@ -461,6 +518,143 @@ mod tests {
             remove(&pool, &first, &drafted[0]).await.unwrap(),
             Err(DraftError::NotADraft)
         );
+    }
+
+    /// A group with one account that exists in the world.
+    async fn with_active_account() -> (SqlitePool, String, String, String) {
+        let (pool, first, second) = setup().await;
+        draft(&pool, &first, 2).await.unwrap().unwrap();
+        let (job, slips) = create(&pool, &first).await.unwrap().unwrap();
+        let report = AccountsCreated {
+            created: vec![slips[0].account.clone()],
+            refused: vec![],
+        };
+        note_created(&pool, &first, &report).await.unwrap();
+        finish(&pool, &first, &job, true, "done").await.unwrap();
+        (pool, first, second, slips[0].account.clone())
+    }
+
+    async fn finish(
+        pool: &SqlitePool,
+        world: &str,
+        job: &str,
+        ok: bool,
+        message: &str,
+    ) -> Result<bool> {
+        let result = lep_protocol::world::JobResult {
+            ok,
+            message: message.to_owned(),
+        };
+        jobs::finish(pool, world, job, &result).await
+    }
+
+    async fn password_state(
+        pool: &SqlitePool,
+        world: &str,
+        account: &str,
+    ) -> Option<PasswordState> {
+        list(pool, world)
+            .await
+            .unwrap()
+            .into_iter()
+            .find(|student| student.account == account)
+            .unwrap()
+            .password
+    }
+
+    #[tokio::test]
+    async fn a_new_password_is_rolled_and_ordered_from_the_world() {
+        let (pool, first, _, account) = with_active_account().await;
+        assert_eq!(password_state(&pool, &first, &account).await, None);
+
+        let slip = reset_password(&pool, &first, &account.to_uppercase())
+            .await
+            .unwrap()
+            .unwrap();
+        // The name goes out as it is stored, whatever was asked for.
+        assert_eq!(slip.account, account);
+        assert_eq!(slip.password.split('-').count(), 3);
+        assert_eq!(
+            password_state(&pool, &first, &account).await,
+            Some(PasswordState::Pending)
+        );
+
+        let waiting = jobs::take_waiting(&pool, &first).await.unwrap();
+        assert_eq!(waiting.len(), 1);
+        assert_eq!(waiting[0].kind, JOB_SET_PASSWORD);
+        let sent: SetPassword = serde_json::from_value(waiting[0].payload.clone()).unwrap();
+        assert_eq!(
+            (sent.name, sent.password),
+            (slip.account, slip.password.clone())
+        );
+
+        // Done: nothing to show, and the password is gone from the database.
+        finish(&pool, &first, &waiting[0].id, true, "set")
+            .await
+            .unwrap();
+        assert_eq!(password_state(&pool, &first, &account).await, None);
+        let stored: String = sqlx::query_scalar("SELECT payload FROM jobs WHERE id = ?")
+            .bind(&waiting[0].id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(stored, "{}");
+    }
+
+    #[tokio::test]
+    async fn a_refusal_of_the_world_is_shown_until_the_next_try() {
+        let (pool, first, _, account) = with_active_account().await;
+        reset_password(&pool, &first, &account)
+            .await
+            .unwrap()
+            .unwrap();
+        let job = jobs::take_waiting(&pool, &first).await.unwrap().remove(0);
+        finish(&pool, &first, &job.id, false, "staff")
+            .await
+            .unwrap();
+        assert_eq!(
+            password_state(&pool, &first, &account).await,
+            Some(PasswordState::Refused)
+        );
+        // The newest order counts.
+        reset_password(&pool, &first, &account)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            password_state(&pool, &first, &account).await,
+            Some(PasswordState::Pending)
+        );
+    }
+
+    #[tokio::test]
+    async fn only_accounts_that_exist_in_the_world_get_a_new_password() {
+        let (pool, first, second, account) = with_active_account().await;
+        // Still on its way into the world.
+        let creating = names_in(&pool, &first)
+            .await
+            .into_iter()
+            .find(|name| *name != account)
+            .unwrap();
+        draft(&pool, &first, 1).await.unwrap().unwrap();
+        let drafted = names_in(&pool, &first).await.pop().unwrap();
+        for name in [creating.as_str(), drafted.as_str(), "lehrer1", "niemand"] {
+            assert_eq!(
+                reset_password(&pool, &first, name).await.unwrap(),
+                None,
+                "{name}"
+            );
+        }
+        // Not through another group.
+        assert_eq!(
+            reset_password(&pool, &second, &account).await.unwrap(),
+            None
+        );
+        assert!(jobs::take_waiting(&pool, &first)
+            .await
+            .unwrap()
+            .iter()
+            .all(|job| job.kind != JOB_SET_PASSWORD));
     }
 
     #[tokio::test]
