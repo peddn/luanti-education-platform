@@ -105,7 +105,31 @@
     "password": {
       "pending": "new password waits for the world",
       "refused": "new password refused by the world, the old one still counts"
-    }
+    },
+    "search": "Search for account or display name",
+    "noMatch": "No account matches the search.",
+    "displayName": "Display name",
+    "noDisplayName": "none",
+    "displaySince": "since {day}",
+    "displayLocked": "choosing locked",
+    "displayChange": {
+      "pending": "change is waiting for the world",
+      "refused": "change refused by the world"
+    },
+    "displayRemove": "Remove display name",
+    "displayLock": "Lock choosing",
+    "displayUnlock": "Unlock choosing",
+    "history": "History",
+    "historyTitle": "Display names of {account}",
+    "historyEmpty": "There are no entries yet.",
+    "historyActions": {
+      "chosen": "{day}: chose “{name}”",
+      "given_up": "{day}: back to the account name, before “{name}”",
+      "removed": "{day}: “{name}” removed by {by}",
+      "locked": "{day}: choosing locked by {by}",
+      "unlocked": "{day}: choosing unlocked by {by}"
+    },
+    "historyHint": "The history comes from the protocol of the world and is deleted with the end of the school year."
   },
   "slips": {
     "title": "Access slips",
