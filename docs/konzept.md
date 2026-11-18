@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 48 · 17. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 49 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -193,7 +193,16 @@ Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke 
 
 - Zwei Wörter und zwei Ziffern, etwa `wolke-apfel-47`. Kinder müssen es abtippen, deshalb ist es leicht statt stark. Sie können es im Spiel ändern. Erzwingen lässt sich das in Luanti nicht.
 - Das Backend zeigt es genau einmal, auf den Zugangszetteln, und bewahrt es nicht auf. Im Auftrag an die Welt steht es, bis die Welt geantwortet hat, dann wird es dort gelöscht. Die Welt speichert nur den Hash.
-- Geht ein Zettel verloren, setzt die Lehrkraft das Passwort zurück.
+- Geht ein Zettel verloren, setzt die Lehrkraft das Passwort in der Web-Anwendung zurück. Sie bekommt einen neuen Zettel mit einem neuen Startpasswort, wieder nur einmal angezeigt. Das alte gilt, bis die Welt das neue übernommen hat. Ein Kind, das gerade spielt, bleibt angemeldet.
+- Die Welt setzt ein Passwort nur für ein gewöhnliches Konto: eines, das nichts hat außer den Privilegien, die jeder neue Spieler bekommt. Für das Konto einer Lehrkraft oder des Admins lehnt sie ab, was auch immer der Auftrag sagt. Das Backend steht im Netz. Wer es übernimmt, soll damit nicht die Lehrer- und Admin-Konten der Welten bekommen.
+
+**Geschlossene Welt**
+
+- Eine Welt lässt nur Namen hinein, für die es ein Konto gibt. Wer mit einem unbekannten Namen kommt, wird abgewiesen. Konten entstehen auf Auftrag, nicht durch Hereinkommen.
+- Die Ausnahme ist der Admin aus der Einstellung `name`: Er darf sein Konto durch das erste Anmelden anlegen, sonst käme in eine neue Welt niemand hinein.
+- Das gilt für jede Welt, auch für die Testumgebung. Eine Einstellung zum Offenhalten gibt es nicht.
+- Ein Konto ist ein Konto. Ob jemand Schüler oder Lehrkraft ist, sagen allein die Privilegien. Bis die Schulverwaltung Lehrerkonten anlegen kann (Schritt 7), entsteht eine Lehrkraft, indem der Admin einem angelegten Konto die Privilegien gibt.
+- Fremde Zusatzmods für Namenslisten werden nicht eingesetzt: Sie führten eine zweite Liste neben den Konten, die mit ihnen im Gleichschritt bleiben müsste.
 
 **Echte Namen**
 
@@ -1175,6 +1184,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
 | `lep_attention` | Aufmerksamkeitsmodus: Zelle, schwarzes Vollbild mit Text, Chat-Sperre |
 | `lep_chat` | Protokoll für Chat und Schildtexte, Stummschalten, Verteilung der Nachrichten |
+| `lep_accounts` | Geschlossene Welt: wer hinein darf. Konten anlegen und Passwörter setzen auf Auftrag |
 | `lep_bridge` | Verbindung zum Backend: Warteschlange für Ereignisse, Aufträge per Long Polling |
 | `lep_quiz` | Textfragen: Fragensets, Dialogfenster |
 | `lep_tz` | Technisches Zeichnen: Datenmodell, Generator, Prüfung, Baustein, Raum |
@@ -1192,7 +1202,7 @@ Die Verzeichnisstruktur des Repositorys steht in der `README.md`.
 4. **Rechnen und Aufgabentruhe.** Prüft, ob die Schnittstellen tragen.
 5. **Lehrerpult, Aufmerksamkeitsmodus, Chat.**
 6. **Backend und Brücke:** Konten, Gruppen, E-Mail-Anmeldung, Wunschnamen, Fortschritt, Protokolle, Jahresabschluss.
-7. **Agent und mehrere Welten:** zuerst der Agent, der Welten anlegt, startet und stoppt, dann Verteilung der Konten und Gruppenwechsel. Weitere Welten entstehen so von Anfang an über ihn.
+7. **Agent und mehrere Welten:** zuerst der Agent, der Welten anlegt, startet und stoppt, dann Verteilung der Konten und Gruppenwechsel. Weitere Welten entstehen so von Anfang an über ihn. Dazu gehört, dass die Schulverwaltung Lehrerkonten anlegt: Bis dahin gibt es in einer geschlossenen Welt keinen Weg zu einem neuen Lehrerkonto außer über den Admin.
 8. **Textfragen** mit GIFT-Import.
 9. **TZ-Modul.**
 10. **Logikrätsel.**
