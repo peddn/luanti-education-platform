@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 52 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 53 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -989,6 +989,7 @@ Der Agent muss sich ohne systemd und ohne Root-Rechte ausprobieren lassen. Dafü
 - **Erste Konten einer neuen Welt:** Eine frisch angelegte Welt kennt keine Lehrkraft. Das löst die Verteilung der Konten in Schritt 7.
 - **Sichern im Betrieb:** Eine Kopie der Karte, während die Welt läuft, kann unvollständig sein. Zu entscheiden ist, ob die Welt dafür kurz stoppt oder die Datenbank eine Sicherung im Betrieb erlaubt.
 - **Wann gesichert wird:** nach Zeitplan des Agenten oder auf Auftrag des Backends, und wie viele Sicherungen bleiben.
+- **Welt ohne ihren alten Stand:** Das Backend spiegelt, was eine Welt zuletzt gemeldet hat. Meldet sich unter einer bekannten Kennung eine frisch erzeugte Welt, etwa nach einem Verlust ohne Sicherung, weiß sie nichts von den alten Konten und meldet nichts über sie. Das Backend zeigt dann weiter Fortschritt, Trophäen und Wunschnamen, die es in der Welt nicht mehr gibt, und führt Konten als angelegt, mit denen sich niemand anmelden kann. Im Betrieb soll eine Welt aus ihrer Sicherung zurückkommen, dann stimmt beides wieder. Zu entscheiden ist, ob das Backend eine frische Welt erkennt und seine Kopie dann verwirft, oder ob der Agent das Neuerzeugen unter einer bekannten Kennung gar nicht zulässt. In der Testumgebung tritt der Fall auf, sobald man nur die Testwelt löscht.
 - **Mehrere Maschinen:** Nach welcher Regel das Backend die Maschine für eine neue Welt wählt.
 - **Andere Systeme als Debian:** Pfade wie `/usr/bin/nologin` und der Name des Luanti-Pakets unterscheiden sich. Die Einrichtung wird für Debian beschrieben.
 
