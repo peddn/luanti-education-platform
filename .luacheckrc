@@ -8,6 +8,9 @@ read_globals = {
 		fields = {
 			-- Mods may wrap the protection check.
 			is_protected = { read_only = false },
+			-- lep_accounts puts the display name into these messages.
+			send_join_message = { read_only = false },
+			send_leave_message = { read_only = false },
 		},
 	},
 	"vector",
