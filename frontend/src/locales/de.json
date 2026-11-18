@@ -96,7 +96,15 @@
     "creating": "Wird angelegt …",
     "refusedHint": "Abgelehnte Namen gibt es in der Welt schon. Würfle sie neu oder entferne sie.",
     "pendingHint": "Die Welt legt die Konten an, sobald sie verbunden ist. Lade die Seite neu, um den Stand zu sehen.",
-    "reload": "Neu laden"
+    "reload": "Neu laden",
+    "reset": "Passwort zurücksetzen",
+    "resetConfirm": "Das alte Passwort gilt dann nicht mehr.",
+    "resetYes": "Ja, neues Passwort",
+    "resetNo": "Abbrechen",
+    "password": {
+      "pending": "neues Passwort wartet auf die Welt",
+      "refused": "neues Passwort von der Welt abgelehnt, das alte gilt weiter"
+    }
   },
   "slips": {
     "title": "Zugangszettel",
@@ -112,7 +120,8 @@
     "hint": "Tippe Name und Passwort genau so ab, auch die Groß- und Kleinschreibung. Dein Passwort kannst du im Spiel ändern.",
     "done": "Fertig, Zettel sind gedruckt",
     "confirmLeave": "Die Passwörter lassen sich danach nicht mehr anzeigen.",
-    "namePlaceholder": "Name des Kindes (freiwillig)"
+    "namePlaceholder": "Name des Kindes (freiwillig)",
+    "resetNote": "Das neue Passwort gilt, sobald die Welt es übernommen hat. Bis dahin gilt das alte. Ist das Kind gerade im Spiel, bleibt es angemeldet."
   },
   "health": {
     "title": "Zustand",

@@ -96,7 +96,15 @@
     "creating": "Creating …",
     "refusedHint": "Refused names exist in the world already. Roll them again or remove them.",
     "pendingHint": "The world creates the accounts as soon as it is connected. Reload the page to see how far it is.",
-    "reload": "Reload"
+    "reload": "Reload",
+    "reset": "Reset password",
+    "resetConfirm": "The old password will no longer work.",
+    "resetYes": "Yes, new password",
+    "resetNo": "Cancel",
+    "password": {
+      "pending": "new password waits for the world",
+      "refused": "new password refused by the world, the old one still counts"
+    }
   },
   "slips": {
     "title": "Access slips",
@@ -112,7 +120,8 @@
     "hint": "Type name and password exactly like this, capital and small letters too. You can change your password in the game.",
     "done": "Done, the slips are printed",
     "confirmLeave": "The passwords cannot be shown again afterwards.",
-    "namePlaceholder": "Name of the child (optional)"
+    "namePlaceholder": "Name of the child (optional)",
+    "resetNote": "The new password counts as soon as the world has taken it. Until then the old one does. A child who is in the game right now stays logged in."
   },
   "health": {
     "title": "Status",

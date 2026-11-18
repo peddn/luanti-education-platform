@@ -27,6 +27,10 @@ const error = ref(/** @type {ErrorCode | null} */ (null))
 
 // The slips with the passwords, only in the memory of this page.
 const slips = ref(/** @type {AccessSlip[] | null} */ (null))
+// True if the slips are for a new password of an account that exists.
+const slipsAreReset = ref(false)
+// The account whose password is about to be reset, after the first click.
+const resetting = ref(/** @type {string | null} */ (null))
 
 const drafts = computed(() => students.value.filter((student) => student.state === 'draft'))
 const anyRefused = computed(() => students.value.some((student) => student.state === 'refused'))
@@ -84,11 +88,27 @@ function remove(account) {
   apply(() => api.removeStudent(props.id, account))
 }
 
+/** @param {string} account */
+async function resetPassword(account) {
+  busy.value = true
+  error.value = null
+  try {
+    slips.value = await api.resetPassword(props.id, account)
+    slipsAreReset.value = true
+    resetting.value = null
+  } catch (err) {
+    error.value = errorCode(err)
+  } finally {
+    busy.value = false
+  }
+}
+
 async function create() {
   busy.value = true
   error.value = null
   try {
     slips.value = await api.createStudents(props.id)
+    slipsAreReset.value = false
     students.value = await api.students(props.id)
   } catch (err) {
     error.value = errorCode(err)
@@ -112,7 +132,13 @@ function closeSlips() {
     <ErrorNote v-if="loadError" :code="loadError" />
     <p v-else-if="!group" class="text-slate-500">{{ $t('students.loading') }}</p>
 
-    <AccessSlips v-else-if="slips" :slips="slips" :address="group.address ?? ''" @done="closeSlips" />
+    <AccessSlips
+      v-else-if="slips"
+      :slips="slips"
+      :address="group.address ?? ''"
+      :reset="slipsAreReset"
+      @done="closeSlips"
+    />
 
     <template v-else>
       <div>
@@ -141,8 +167,43 @@ function closeSlips() {
             <td class="px-4 py-2 font-mono font-semibold">{{ student.account }}</td>
             <td class="px-4 py-2" :class="student.state === 'refused' ? 'text-red-800' : 'text-slate-600'">
               {{ $t(`students.states.${student.state}`) }}
+              <span
+                v-if="student.password"
+                data-test="password-state"
+                class="block text-sm"
+                :class="student.password === 'refused' ? 'text-red-800' : 'text-amber-700'"
+              >
+                {{ $t(`students.password.${student.password}`) }}
+              </span>
             </td>
             <td class="space-x-3 px-4 py-2 text-right text-sm">
+              <template v-if="student.state === 'active'">
+                <template v-if="resetting === student.account">
+                  <span class="text-slate-600">{{ $t('students.resetConfirm') }}</span>
+                  <button
+                    type="button"
+                    data-test="reset-yes"
+                    class="font-semibold text-red-800 underline"
+                    :disabled="busy"
+                    @click="resetPassword(student.account)"
+                  >
+                    {{ $t('students.resetYes') }}
+                  </button>
+                  <button type="button" class="text-slate-600 underline" @click="resetting = null">
+                    {{ $t('students.resetNo') }}
+                  </button>
+                </template>
+                <button
+                  v-else
+                  type="button"
+                  data-test="reset"
+                  class="text-emerald-700 underline"
+                  :disabled="busy"
+                  @click="resetting = student.account"
+                >
+                  {{ $t('students.reset') }}
+                </button>
+              </template>
               <template v-if="changeable(student)">
                 <button type="button" class="text-emerald-700 underline" :disabled="busy" @click="reroll(student.account)">
                   {{ $t('students.reroll') }}

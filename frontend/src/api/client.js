@@ -304,6 +304,20 @@ export function createClient(options = {}) {
     },
 
     /**
+     * Orders a new start password for an account that exists in the
+     * world. The password in the answer is shown once.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @returns {Promise<AccessSlip[]>} one slip
+     */
+    async resetPassword(id, account) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}/password`
+      const answer = /** @type {Schemas['AccessSlips']} */ (await request(path, undefined, false, 'POST'))
+      return answer.slips
+    },
+
+    /**
      * Returns the accounts that can be assigned to groups. Only for the
      * school administration.
      *
