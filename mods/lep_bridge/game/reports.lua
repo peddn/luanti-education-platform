@@ -51,6 +51,15 @@ local function send_trophies(player_name)
 	lep_bridge.send(reports.EVENT_TROPHIES, reports.trophies(player_name, list))
 end
 
+-- Other files of the bridge add what belongs to the whole state.
+local more_state = {}
+
+--- Adds a function that sends a part of the whole state. It is called
+-- when the backend asks for everything again.
+function lep_bridge._add_state(send)
+	more_state[#more_state + 1] = send
+end
+
 -- Sends the whole state of all students the world knows.
 local function send_everything()
 	local count = 0
@@ -68,6 +77,9 @@ local function send_everything()
 		for _, player_name in ipairs(lep_trophies.get_players()) do
 			send_trophies(player_name)
 		end
+	end
+	for _, send in ipairs(more_state) do
+		send()
 	end
 	core.log("action", "[lep_bridge] queued the whole state of " .. count .. " student(s)")
 	return count

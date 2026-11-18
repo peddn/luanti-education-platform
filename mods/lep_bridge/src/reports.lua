@@ -14,10 +14,13 @@ reports.EVENT_PROTOCOL = "protocol"
 reports.EVENT_TEACHERS = "teachers"
 reports.EVENT_WEB_ACCESS = "web_access"
 reports.EVENT_ACCOUNTS_CREATED = "accounts_created"
+reports.EVENT_DISPLAY_NAME = "display_name"
 reports.JOB_CREATE_ACCOUNTS = "create_accounts"
 reports.JOB_SET_PASSWORD = "set_password"
 reports.JOB_SET_LEVEL = "set_level"
 reports.JOB_SET_LOCKED = "set_locked"
+reports.JOB_REMOVE_DISPLAY_NAME = "remove_display_name"
+reports.JOB_SET_DISPLAY_LOCKED = "set_display_locked"
 reports.JOB_SYNC_STATE = "sync_state"
 reports.JOB_WEB_ACCESS_STATUS = "web_access_status"
 
@@ -80,6 +83,19 @@ function reports.trophies(account, trophies)
 			material = tostring(trophy.material) }
 	end
 	return { account = account, trophies = list }
+end
+
+--- Builds the payload of the event "display_name": what an account is
+-- shown under. Always the whole state.
+-- @param state Table with display, changed_at and locked, as
+--   lep_accounts.get_display_state returns it.
+function reports.display_name(account, state)
+	return {
+		account = account,
+		name = type(state.display) == "string" and state.display or nil,
+		changed_at = type(state.changed_at) == "number" and math.floor(state.changed_at) or nil,
+		locked = state.locked == true,
+	}
 end
 
 --- Builds the payload of the event "protocol" from an entry of a

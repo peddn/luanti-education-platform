@@ -46,6 +46,33 @@ function orders.parse_locked(payload)
 	return order
 end
 
+-- Reads what the two orders about display names share.
+local function name_target(payload)
+	if type(payload) ~= "table" or not is_name(payload.account) or not is_name(payload.by) then
+		return nil
+	end
+	return { account = payload.account, by = payload.by }
+end
+
+--- Reads the payload of the job "remove_display_name".
+-- @return Table with account and by, or nil if the payload cannot be
+--   read.
+function orders.parse_remove_name(payload)
+	return name_target(payload)
+end
+
+--- Reads the payload of the job "set_display_locked".
+-- @return Table with account, locked and by, or nil if the payload
+--   cannot be read.
+function orders.parse_name_lock(payload)
+	local order = name_target(payload)
+	if not order or type(payload.locked) ~= "boolean" then
+		return nil
+	end
+	order.locked = payload.locked
+	return order
+end
+
 --- Returns the line for the protocol of the desk.
 function orders.describe(kind, order)
 	if kind == "set_level" then

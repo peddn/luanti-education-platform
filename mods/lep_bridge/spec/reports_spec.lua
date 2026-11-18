@@ -77,6 +77,19 @@ describe("lep_bridge reports", function()
 		assert.are.same({}, bare.fields)
 	end)
 
+	it("reports the display name of an account as a whole state", function()
+		local payload = reports.display_name("klugeEule",
+			{ display = "Jörg Weiß", changed_at = 1700000000.7, locked = false, next_change = 5 })
+		assert.is_true(fits("DisplayName", payload))
+		assert.are.same({ account = "klugeEule", name = "Jörg Weiß", changed_at = 1700000000,
+			locked = false }, payload)
+		-- No name, only a lock.
+		local bare = reports.display_name("klugeEule", { locked = true })
+		assert.is_true(fits("DisplayName", bare))
+		assert.are.same({ account = "klugeEule", locked = true }, bare)
+		assert.are.equal("display_name", reports.EVENT_DISPLAY_NAME)
+	end)
+
 	it("names events and jobs as the backend does", function()
 		local json = require("dkjson")
 		local file = assert(io.open("api/openapi.json"))

@@ -76,12 +76,14 @@ function lep_accounts.get_display_name(account)
 end
 
 --- Returns what is known about the display name of an account: a table
--- with display (nil while the account name is shown), locked, and
--- next_change (time from which a new name can be chosen, nil if now).
+-- with display (nil while the account name is shown), changed_at (when
+-- the player chose a name last, or nil), locked, and next_change (time
+-- from which a new name can be chosen, nil if now).
 function lep_accounts.get_display_state(account)
 	local state = state_of(account)
 	return {
 		display = state.display,
+		changed_at = state.changed_at,
 		locked = state.locked,
 		next_change = names.next_change(state, os.time()),
 	}

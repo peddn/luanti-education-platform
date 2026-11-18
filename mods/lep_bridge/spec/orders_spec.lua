@@ -44,6 +44,26 @@ describe("lep_bridge orders", function()
 		assert.is_nil(orders.parse_locked({ locked = true }))
 	end)
 
+	it("reads the orders about display names", function()
+		assert.are.same({ account = "klugeEule", by = "lehrer1" },
+			orders.parse_remove_name({ account = "klugeEule", by = "lehrer1", extra = 1 }))
+		assert.are.same({ account = "klugeEule", by = "lehrer1", locked = true },
+			orders.parse_name_lock({ account = "klugeEule", by = "lehrer1", locked = true }))
+		assert.is_false(
+			orders.parse_name_lock({ account = "klugeEule", by = "lehrer1", locked = false }).locked)
+		for _, payload in ipairs({
+			{ account = "klugeEule" }, { by = "lehrer1" }, { account = "kluge Eule", by = "lehrer1" },
+			{ account = "klugeEule", by = "lehrer\n1" }, { account = 5, by = "lehrer1" },
+		}) do
+			assert.is_nil(orders.parse_remove_name(payload))
+			payload.locked = true
+			assert.is_nil(orders.parse_name_lock(payload))
+		end
+		assert.is_nil(orders.parse_remove_name(nil))
+		assert.is_nil(orders.parse_name_lock({ account = "klugeEule", by = "lehrer1" }))
+		assert.is_nil(orders.parse_name_lock({ account = "klugeEule", by = "lehrer1", locked = 1 }))
+	end)
+
 	it("describes an order for the protocol", function()
 		assert.are.equal("web:set_level lep_math:math 3",
 			orders.describe("set_level", orders.parse_level(level())))
