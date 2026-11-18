@@ -235,6 +235,7 @@ Regeln:
 - Eine Sperre gilt, bis die Lehrkraft sie aufhebt. Sie entfernt den Namen nicht von selbst.
 - Das Protokoll hält fest, wer wann welchen Namen gesetzt hat und welche Lehrkraft einen Namen entfernt oder gesperrt hat. Es gehört zu den Protokollen der Welt und wird mit ihnen gelöscht.
 - Entfernen und Sperren gibt es zunächst nur in der Web-Anwendung. Das Pult im Spiel kann es später bekommen.
+- Der Wunschname liegt in der Welt und bleibt mit dem Konto erhalten. Beim Jahresabschluss wird nur das Protokoll der Wunschnamen gelöscht.
 - Die E-Mail nennt die Gruppe, aber weder den Wunschnamen noch das Konto. Die Namen stehen nur in der Web-Anwendung, hinter der Anmeldung.
 - Je Gruppe geht höchstens eine solche E-Mail am Tag hinaus, an die Lehrkräfte der Gruppe mit bestätigter Adresse.
 - Genau eine Funktion „Anzeigename dieses Spielers“ bedient alle Stellen: Name über der Figur, Chat, Türschild, Pult.
@@ -1101,7 +1102,7 @@ Fortschritt, Belohnungsprotokoll und Chatprotokoll gehen vom Spielserver der Sch
 
 **Protokolle**
 
-Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen und Aktionen am Pult. Alle werden gleich verwaltet.
+Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen, Aktionen am Pult und Wunschnamen. Alle werden gleich verwaltet.
 
 - Jedes Protokoll ist eine Datei im Ordner der Welt, an die nur angehängt wird. Eine Zeile ist ein Eintrag mit Zeitpunkt und Kontoname.
 - Die gemeinsame Technik liegt in `lep_core`. Kein Mod baut ein eigenes Protokoll.
@@ -1114,7 +1115,7 @@ Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen und Aktionen am Pult.
 **Zähler des Awards-Mods**
 
 - Der Awards-Mod zählt pro Spieler, wie oft er welche Blockart abgebaut, gesetzt oder hergestellt hat. Das ist ein Stand ohne Zeitpunkte, aber es sind Daten über das Spielverhalten.
-- Der Wunschname liegt in der Welt und bleibt mit dem Konto erhalten. Beim Jahresabschluss wird nur das Protokoll der Wunschnamen gelöscht.
+- Sie liegen in der Welt und werden beim Jahresabschluss gelöscht.
 
 **Wunschnamen**
 
