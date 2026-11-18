@@ -114,9 +114,11 @@ end
 --   module_id, title
 --   level           current level
 --   levels          number of levels of the module
---   percent         share of done task types of the current level
+--   percent         share of the workload of the current level that
+--                   is done: solved tasks of all that are required
 --   locked          true if moving up is locked
---   level_completed true if the current level is completed
+--   level_completed true if the current level is completed and not
+--                   being repeated
 --   completed       true if the whole module is completed
 --   tasks           task types of the current level, each with id, title,
 --                   solved and required
@@ -142,7 +144,8 @@ function lep_progress.get_progress(player_name, module_id)
 		levels = #module.levels,
 		percent = progress.percent(module, state, state.level),
 		locked = state.locked,
-		level_completed = state.completed[state.level] == true,
+		level_completed = state.completed[state.level] == true
+			and progress.percent(module, state, state.level) == 100,
 		completed = progress.is_module_completed(module, state),
 		tasks = tasks,
 	}

@@ -398,7 +398,7 @@ Erzeugte Aufgaben gibt es unbegrenzt. Damit ein Prozentwert und ein Abschluss m�
 - Falsche Antworten ziehen nichts ab, sie zählen nur nicht.
 - Gezählt werden nur Aufgaben auf dem aktuellen Niveau. Aufgaben eines höheren Niveaus, etwa aus einer Aufgabentruhe, werden gemeldet und können belohnt werden, zählen aber nicht für das Pensum.
 - Setzt die Lehrkraft das Niveau um, bleibt der Stand der anderen Niveaus erhalten.
-- Der Prozentwert ist der Anteil der geschafften Aufgabentypen.
+- Der Prozentwert ist der Anteil der richtig gelösten Aufgaben an den verlangten, über alle Aufgabentypen des Niveaus. Vier von zweimal fünf sind 40 %. So zeigt jede gezählte Aufgabe Wirkung, nicht erst ein voller Aufgabentyp.
 - Bei 100 % ist das Niveau abgeschlossen.
 - Bei Textfragen ordnet die Lehrkraft ein Fragenset einem Niveau zu. Der Prozentwert ist der Anteil richtig gelöster Fragen.
 
@@ -407,6 +407,8 @@ Erzeugte Aufgaben gibt es unbegrenzt. Damit ein Prozentwert und ein Abschluss m�
 - Nach dem Abschluss eines Niveaus steigt der Schüler automatisch ins nächste auf.
 - Der automatische Aufstieg ist voreingestellt an. Die Lehrkraft kann ihn pro Schüler sperren.
 - Die Lehrkraft kann das Niveau jederzeit von Hand ändern.
+- Setzt die Lehrkraft einen Schüler auf ein Niveau, das er schon abgeschlossen hat, wird dessen Pensum geleert: Er wiederholt das Niveau. Ist das Pensum wieder voll, steigt er von selbst auf, wenn der Aufstieg nicht gesperrt ist.
+- Ein Niveau wird nur einmal abgeschlossen. Beim Wiederholen gibt es die Belohnung für den Abschluss und die Trophäe nicht noch einmal. Die einzelnen Aufgaben zählen und werden belohnt wie beim ersten Mal.
 - Nach dem letzten Niveau ist das Modul abgeschlossen. Belohnungen gibt es danach weiter über die Tagesaufgaben.
 
 **Begriffe**
