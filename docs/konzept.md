@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 50 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 51 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -52,10 +52,10 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Gruppen anlegen | Die Schulverwaltung entscheidet. Solange Welten von Hand entstehen, legt der Server-Admin Gruppe und Welt zusammen an (Abschnitt 5) |
 | Quelle für Konten | Das Backend. Welten legen Konten auf Auftrag an |
 | Kontoname | Zufällige Kombination aus Adjektiv und Nomen, z. B. `lustiger_loewe` |
-| Wunschname | Vom Schüler beantragt, von der Lehrkraft freigegeben, nur Anzeige |
+| Wunschname | Vom Schüler selbst gesetzt, ohne Freigabe. Jede Änderung wird protokolliert, die Lehrkraft kann entfernen und sperren. Nur Anzeige |
 | Lebensdauer | Das Konto wächst mit dem Schüler mit |
 | Bleibt erhalten | Lernniveau, Meilensteine, Trophäen, Wunschname |
-| Jährlich gelöscht | Chatprotokolle, Belohnungsprotokoll, einzelne Aufgabenversuche, Pult-Protokolle |
+| Jährlich gelöscht | Chatprotokolle, Belohnungsprotokoll, einzelne Aufgabenversuche, Pult-Protokolle, Protokoll der Wunschnamen |
 | Schulaustritt | Konto und alle Daten werden gelöscht |
 | Passwort | Schüler dürfen es ändern, die zuständige Lehrkraft setzt es zurück |
 | Konten der Lehrkräfte | Die Schulverwaltung legt sie beim Ernennen im Pult an, der Name ist frei wählbar |
@@ -216,26 +216,32 @@ Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke 
 
 ### 6.2 Wunschname
 
-1. Der Schüler beantragt im Spiel einen Wunschnamen, am Türschild seines Lobby-Raums.
-2. Der Antrag geht über die Brücke ans Backend.
-3. Die Lehrkraft der Gruppe gibt ihn in der Web-Anwendung frei oder lehnt ab.
-4. Nach der Freigabe zeigt das Spiel den Wunschnamen an.
+Der Grundsatz: Schüler bekommen die Möglichkeit, sich richtig zu verhalten. Niemand prüft vorab. Dafür ist alles nachvollziehbar, und die Schule kann eingreifen.
+
+1. Der Schüler setzt im Spiel seinen Wunschnamen, am Türschild seines Lobby-Raums.
+2. Die Welt prüft die Regeln unten. Passt der Name, gilt er sofort, auch wenn das Backend gerade nicht erreichbar ist.
+3. Die Welt schreibt die Änderung in ein Protokoll und sagt sie allen Lehrkräften, die gerade im Spiel sind.
+4. Die Welt meldet den Namen über die Brücke ans Backend. Die Web-Anwendung zeigt ihn bei dem Schüler und markiert Namen, die neu sind.
+5. Die Lehrkraft der Gruppe kann einen Namen in der Web-Anwendung entfernen und dem Schüler das Ändern sperren. Beides ist ein Auftrag an die Welt.
 
 Regeln:
 
 - Der Wunschname ist nur eine Anzeige.
 - Eindeutig pro Welt. Er darf keinem Kontonamen, keinem anderen Wunschnamen und keinem Namen einer Lehrkraft gleichen.
-- Umlaute erlaubt, Länge begrenzt.
-- Die Lehrkraft kann jederzeit widerrufen.
-- Ein neuer Antrag ist einmal im Monat möglich.
+- 2 bis 16 Zeichen: Buchstaben, auch Umlaute und ß, Ziffern, dazu einzelne Leerzeichen und Bindestriche in der Mitte.
+- Ein Schüler kann seinen Namen einmal im Monat ändern. Zum Kontonamen zurück kann er jederzeit.
+- Hat die Lehrkraft einen Namen entfernt, darf der Schüler sofort einen neuen setzen, wenn er nicht gesperrt ist.
+- Eine Sperre gilt, bis die Lehrkraft sie aufhebt. Sie entfernt den Namen nicht von selbst.
+- Das Protokoll hält fest, wer wann welchen Namen gesetzt hat und welche Lehrkraft einen Namen entfernt oder gesperrt hat. Es gehört zu den Protokollen der Welt und wird mit ihnen gelöscht.
+- Entfernen und Sperren gibt es zunächst nur in der Web-Anwendung. Das Pult im Spiel kann es später bekommen.
 - Genau eine Funktion „Anzeigename dieses Spielers“ bedient alle Stellen: Name über der Figur, Chat, Türschild, Pult.
-- Lehrkräfte sehen immer beides.
+- Lehrkräfte sehen immer beides: im Chat, am Pult und in der Web-Anwendung. Über der Figur steht nur der Wunschname, denn das Spiel zeigt dort allen dasselbe.
 
 ### 6.3 Zwei Arten von Daten
 
 | | Bleibt mit dem Konto | Wird jährlich gelöscht |
 |---|---|---|
-| Was | Lernniveau pro Modul, Meilensteine, Trophäen, Wunschname | Chatprotokolle, Belohnungsprotokoll, einzelne Aufgabenversuche, Pult-Protokolle |
+| Was | Lernniveau pro Modul, Meilensteine, Trophäen, Wunschname | Chatprotokolle, Belohnungsprotokoll, einzelne Aufgabenversuche, Pult-Protokolle, Protokoll der Wunschnamen |
 | Löschen | beim Schulaustritt, oder vorher auf Verlangen (Abschnitt 12) | per Jahresabschluss |
 
 Das Backend bewahrt dauerhaft nur den Stand auf, nicht den Verlauf dahin.
@@ -335,7 +341,7 @@ Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später er
 - Persönliches Portal.
 - Belohnungskiste: Nur der Besitzer öffnet sie, und er kann nur entnehmen.
 - Sechs Sockel für Trophäen, drei an jeder Seitenwand (Abschnitt 8.4).
-- Türschild über dem Eingang mit dem Anzeigenamen in lesbarer Schrift, dort wird auch der Wunschname beantragt. Kontonamen stehen in zwei Zeilen, getrennt am Unterstrich. Umlaute brauchen eine zweite Schrift von signs_lib, sie wird mit den Wunschnamen eingeschaltet.
+- Türschild über dem Eingang mit dem Anzeigenamen in lesbarer Schrift, dort setzt der Besitzer auch seinen Wunschnamen. Kontonamen stehen in zwei Zeilen, getrennt am Unterstrich. Umlaute brauchen eine zweite Schrift von signs_lib, sie wird mit den Wunschnamen eingeschaltet.
 - Andere dürfen den Raum betreten und schauen, solange die Tür offen ist. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
 - Wände, Portal, Kiste und Sockel sind unveränderlich.
 - Im Raum stehen nur Trophäen, keine normalen Gegenstände.
@@ -1031,7 +1037,7 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 ### 11.5 Funktionen
 
 - Konten für Schüler anlegen, Namen neu würfeln, Zugangszettel drucken. Die Namen der Kinder bleiben dabei im Browser (Abschnitt 6.1).
-- Wunschnamen freigeben.
+- Wunschnamen sehen, entfernen und das Ändern sperren. Neue Namen sind markiert.
 - Passwörter zurücksetzen.
 - Schüler in eine andere Gruppe verschieben.
 - Niveau pro Schüler und Modul setzen, Startniveau pro Gruppe festlegen, automatischen Aufstieg sperren.
@@ -1109,7 +1115,7 @@ Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen und Aktionen am Pult.
 
 **Wunschnamen**
 
-Viele Kinder wählen ihren Vornamen. Lehrkräfte sollen Nachnamen und volle Namen ablehnen. Der Wunschname gehört zu den Kontodaten und wird mit dem Konto gelöscht.
+Viele Kinder wählen ihren Vornamen. Die Welt kann nicht erkennen, ob ein Name echt ist, und niemand gibt Namen vorab frei. Lehrkräfte sollen deshalb Nachnamen und volle Namen entfernen, sobald sie sie sehen. Bis dahin ist ein solcher Name im Spiel sichtbar. Der Wunschname gehört zu den Kontodaten und wird mit dem Konto gelöscht. Das Protokoll der Wunschnamen enthält auch entfernte Namen und wird wie alle Protokolle beim Jahresabschluss gelöscht.
 
 **Jahresabschluss**
 
