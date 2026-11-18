@@ -126,10 +126,12 @@ Der Server lauscht auf Port 30000. Ob die Mods geladen wurden, zeigt die Ausgabe
 
 1. Luanti starten und den Reiter **Spiel beitreten** öffnen.
 2. Adresse `127.0.0.1`, Port `30000`.
-3. Beim ersten Mal **Registrieren** wählen, Name und Passwort eingeben. Luanti legt Konten nicht stillschweigend an.
+3. Als Admin beim ersten Mal **Registrieren** wählen, mit dem Namen aus der Einstellung `name` (in der Testumgebung `tester`) und einem Passwort. Luanti legt Konten nicht stillschweigend an.
 4. Danach mit **Anmelden** verbinden.
 
-Für Tests mit einem zweiten Spieler ohne Admin-Rechte einfach ein weiteres Konto registrieren. Einzelne Privilegien vergibt der Admin im Spiel mit `/grant <name> <privileg>`.
+**Die Welt ist geschlossen.** Nur der Admin kann sein Konto durch Registrieren anlegen. Jeder andere unbekannte Name wird abgewiesen: „Ein Konto mit diesem Namen gibt es nicht.“ Konten, die es in der Welt schon gibt, funktionieren weiter.
+
+Weitere Konten entstehen über die Oberfläche (Abschnitt „Schülerkonten“). Für einen zweiten Spieler ohne Admin-Rechte dort ein Konto anlegen und mit Name und Passwort vom Zugangszettel anmelden. Für eine zweite Lehrkraft gibt der Admin einem solchen Konto im Spiel die Privilegien, zum Beispiel `/grant <name> lep_view_players` und `/grant <name> lep_web_access`. Ob jemand Schüler oder Lehrkraft ist, sagen allein die Privilegien.
 
 ### Ohne Server starten
 
@@ -358,7 +360,11 @@ Auf jedem Zettel gibt es ein Feld für den Namen des Kindes. Die Namen bleiben i
 
 Die Adresse auf den Zetteln trägt die Schulverwaltung auf der Seite der Gruppe ein. Für die Testumgebung ist das `127.0.0.1, Port 30000`.
 
-Gibt es einen gewürfelten Namen in der Welt schon, etwa weil sich dort jemand von Hand so registriert hat, lehnt die Welt ihn ab und fasst das vorhandene Konto nicht an. Der Name steht dann als „von der Welt abgelehnt“ in der Liste.
+Gibt es einen gewürfelten Namen in der Welt schon, etwa aus der Zeit, als man sich noch selbst registrieren konnte, lehnt die Welt ihn ab und fasst das vorhandene Konto nicht an. Der Name steht dann als „von der Welt abgelehnt“ in der Liste.
+
+**Passwort zurücksetzen.** Bei einem angelegten Konto steht „Passwort zurücksetzen“. Nach der Rückfrage zeigt die Seite einen Zettel mit dem neuen Startpasswort, nur einmal. Das alte gilt, bis die Welt das neue übernommen hat. Solange steht beim Konto „neues Passwort wartet auf die Welt“.
+
+Die Welt setzt ein Passwort nur für ein gewöhnliches Konto. Hat das Konto mehr als die Privilegien eines neuen Spielers, lehnt sie ab. Privilegien, die ein Ort vergibt, zählen nicht mit: `lep_places.get_granted_privileges(name)` nennt sie, auch für Spieler, die nicht da sind. In der Liste steht dann „neues Passwort von der Welt abgelehnt“, im Log der Welt `password for … not set: staff`. Das Passwort einer Lehrkraft setzt der Admin im Spiel.
 
 ### Mailversand
 

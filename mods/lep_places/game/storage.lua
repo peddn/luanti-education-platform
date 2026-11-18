@@ -6,6 +6,10 @@ local storage = {}
 local STATE_KEY = "lep_places:state"
 local SURVIVAL_KEY = "lep_places:survival"
 local RETURNS_KEY = "lep_places:returns"
+-- Key in the storage of the mod: privileges of the place, by player name.
+local GRANTED_PREFIX = "granted:"
+
+local mod_storage = core.get_mod_storage()
 
 -- Inventory lists that make up the survival inventory.
 local SURVIVAL_LISTS = { "main", "craft" }
@@ -21,6 +25,26 @@ end
 
 function storage.write_state(player, state)
 	player:get_meta():set_string(STATE_KEY, core.write_json(state))
+	-- The privileges of the place are also kept by name, so they can be
+	-- asked for while the player is away. See storage.read_granted.
+	local granted = {}
+	for privilege in pairs(type(state.granted) == "table" and state.granted or {}) do
+		granted[#granted + 1] = privilege
+	end
+	table.sort(granted)
+	mod_storage:set_string(GRANTED_PREFIX .. player:get_player_name(),
+		table.concat(granted, ","))
+end
+
+--- Returns the set of privileges a player holds only because of the
+-- place they were in when their state was written last. Works for
+-- players who are away.
+function storage.read_granted(player_name)
+	local set = {}
+	for privilege in mod_storage:get_string(GRANTED_PREFIX .. player_name):gmatch("[^,]+") do
+		set[privilege] = true
+	end
+	return set
 end
 
 --- Returns the stored return positions: a table from place id to

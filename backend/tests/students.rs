@@ -256,6 +256,113 @@ async fn a_teacher_rolls_names_and_the_world_creates_the_accounts() {
 }
 
 #[tokio::test]
+async fn a_teacher_orders_a_new_password_for_a_student() {
+    let setup = Setup::new().await;
+    let teacher = log_in(&setup.state.db, "lehrer1").await;
+    let stranger = log_in(&setup.state.db, "lehrer2").await;
+    let path = setup.students(&setup.first);
+
+    // One account that exists in the world.
+    setup
+        .web(Method::POST, &path, &teacher, Some(json!({ "count": 1 })))
+        .await;
+    setup
+        .web(Method::POST, &format!("{path}/create"), &teacher, None)
+        .await;
+    let name = setup.listed(&setup.first, &teacher).await.remove(0).0;
+    let reset = format!("{path}/{name}/password");
+
+    // Not before the world has created it.
+    let (status, json) = setup.web(Method::POST, &reset, &teacher, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(json["code"], "not_found");
+
+    let (_, jobs) = setup.world(Method::GET, "/api/world/v1/jobs", None).await;
+    let created = json!({ "events": [{
+        "id": "e1", "kind": "accounts_created", "time": 1700000000,
+        "payload": { "created": [name] }
+    }] });
+    setup
+        .world(Method::POST, "/api/world/v1/events", Some(created))
+        .await;
+    let done = format!(
+        "/api/world/v1/jobs/{}/result",
+        jobs["jobs"][0]["id"].as_str().unwrap()
+    );
+    setup
+        .world(
+            Method::POST,
+            &done,
+            Some(json!({ "ok": true, "message": "1 created" })),
+        )
+        .await;
+
+    // Nobody from outside the group, and nobody without a login.
+    let (status, _) = setup.web(Method::POST, &reset, &stranger, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _, _) = setup.call(Method::POST, &reset, None, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // The teacher gets one slip, once, not to be cached.
+    let cookie = (header::COOKIE, format!("lep_session={teacher}"));
+    let (status, json, headers) = setup.call(Method::POST, &reset, Some(cookie), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers.get(header::CACHE_CONTROL).unwrap(), "no-store");
+    let slips = json["slips"].as_array().unwrap();
+    assert_eq!(slips.len(), 1);
+    assert_eq!(slips[0]["account"], name.as_str());
+    let password = slips[0]["password"].as_str().unwrap().to_owned();
+
+    let (_, list) = setup.web(Method::GET, &path, &teacher, None).await;
+    assert_eq!(list["students"][0]["password"], "pending");
+
+    // The world gets the order and refuses it: the list says so.
+    let (_, jobs) = setup.world(Method::GET, "/api/world/v1/jobs", None).await;
+    let job = &jobs["jobs"][0];
+    assert_eq!(job["kind"], "set_password");
+    assert_eq!(
+        job["payload"],
+        json!({ "name": name, "password": password })
+    );
+    let result = format!("/api/world/v1/jobs/{}/result", job["id"].as_str().unwrap());
+    setup
+        .world(
+            Method::POST,
+            &result,
+            Some(json!({ "ok": false, "message": "staff" })),
+        )
+        .await;
+    let (_, list) = setup.web(Method::GET, &path, &teacher, None).await;
+    assert_eq!(list["students"][0]["password"], "refused");
+
+    // A second order, done this time: nothing left to show, and no
+    // password left in the database.
+    setup.web(Method::POST, &reset, &teacher, None).await;
+    let (_, jobs) = setup.world(Method::GET, "/api/world/v1/jobs", None).await;
+    let result = format!(
+        "/api/world/v1/jobs/{}/result",
+        jobs["jobs"][0]["id"].as_str().unwrap()
+    );
+    setup
+        .world(
+            Method::POST,
+            &result,
+            Some(json!({ "ok": true, "message": "set" })),
+        )
+        .await;
+    let (_, list) = setup.web(Method::GET, &path, &teacher, None).await;
+    assert!(list["students"][0].get("password").is_none());
+    let payloads: Vec<String> = sqlx::query("SELECT payload FROM jobs WHERE kind = 'set_password'")
+        .fetch_all(&setup.state.db)
+        .await
+        .unwrap()
+        .iter()
+        .map(|row| row.get("payload"))
+        .collect();
+    assert_eq!(payloads, vec!["{}", "{}"]);
+}
+
+#[tokio::test]
 async fn only_the_teachers_of_a_group_and_the_administration_get_in() {
     let setup = Setup::new().await;
     let teacher = log_in(&setup.state.db, "lehrer1").await;

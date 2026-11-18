@@ -80,7 +80,8 @@ impl AppState {
         web_api::draft_students,
         web_api::reroll_student,
         web_api::remove_student,
-        web_api::create_students
+        web_api::create_students,
+        web_api::reset_password
     ),
     components(schemas(
         Health,
@@ -108,6 +109,8 @@ impl AppState {
         lep_protocol::web::TeacherList,
         lep_protocol::web::Student,
         lep_protocol::web::StudentState,
+        lep_protocol::web::PasswordState,
+        lep_protocol::world::SetPassword,
         lep_protocol::web::Students,
         lep_protocol::web::DraftRequest,
         lep_protocol::web::AccessSlip,

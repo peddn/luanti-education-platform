@@ -64,9 +64,11 @@ describe('students page', () => {
     const page = await show()
     expect(page.get('h1').text()).toBe('Schülerkonten der Gruppe 7b')
     const rows = page.findAll('[data-test=student]')
-    expect(rows.map((row) => row.text())).toEqual(['frohesRehangelegt', 'klugeEulewird in der Welt angelegt'])
-    // Nothing to change on accounts that exist or are on their way.
-    expect(rows[0].findAll('button')).toHaveLength(0)
+    expect(rows.map((row) => row.findAll('td')[1].text())).toEqual(['angelegt', 'wird in der Welt angelegt'])
+    // An account that exists can get a new password, nothing else. One
+    // that is on its way offers nothing.
+    expect(rows[0].findAll('button').map((button) => button.text())).toEqual(['Passwort zurücksetzen'])
+    expect(rows[1].findAll('button')).toHaveLength(0)
     expect(page.find('[data-test=create]').exists()).toBe(false)
     expect(page.text()).toContain('sobald sie verbunden ist')
   })
@@ -170,6 +172,56 @@ describe('students page', () => {
     expect(page.find('[data-test=slip]').exists()).toBe(false)
     expect(page.html()).not.toContain('wolke-apfel-47')
     expect(page.findAll('[data-test=student]')).toHaveLength(2)
+  })
+
+  it('resets a password only after a second click and shows one slip', async () => {
+    const list = { students: [
+      { account: 'frohesReh', state: 'active' },
+      { account: 'klugeEule', state: 'active', password: 'refused' },
+      { account: 'mutigerDachs', state: 'active', password: 'pending' },
+    ] }
+    const send = backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: [200, list],
+      [`POST ${BASE}/students/frohesReh/password`]: [200, { slips: [{ account: 'frohesReh', password: 'tal-zelt-11' }] }],
+    })
+    const page = await show()
+    const rows = page.findAll('[data-test=student]')
+    expect(rows[0].find('[data-test=password-state]').exists()).toBe(false)
+    expect(rows[1].get('[data-test=password-state]').text()).toContain('abgelehnt')
+    expect(rows[2].get('[data-test=password-state]').text()).toBe('neues Passwort wartet auf die Welt')
+
+    // The first click only asks.
+    await rows[0].get('[data-test=reset]').trigger('click')
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(rows[0].text()).toContain('Das alte Passwort gilt dann nicht mehr.')
+    // Cancelling leaves everything as it was.
+    await rows[0].findAll('button')[1].trigger('click')
+    expect(rows[0].find('[data-test=reset-yes]').exists()).toBe(false)
+    expect(send).toHaveBeenCalledTimes(2)
+
+    await rows[0].get('[data-test=reset]').trigger('click')
+    await rows[0].get('[data-test=reset-yes]').trigger('click')
+    await flushPromises()
+    expect(calls(send)[2]).toBe(`POST ${BASE}/students/frohesReh/password`)
+    const slips = page.findAll('[data-test=slip]')
+    expect(slips).toHaveLength(1)
+    expect(slips[0].get('[data-test=account]').text()).toBe('frohesReh')
+    expect(slips[0].get('[data-test=password]').text()).toBe('tal-zelt-11')
+    expect(page.get('[data-test=reset-note]').text()).toContain('Bis dahin gilt das alte.')
+
+    await page.get('[data-test=done]').trigger('click')
+    await flushPromises()
+    expect(page.html()).not.toContain('tal-zelt-11')
+  })
+
+  it('offers no reset for accounts that do not exist in the world', async () => {
+    backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: [200, students([['a', 'draft'], ['b', 'creating'], ['c', 'refused']])],
+    })
+    const page = await show()
+    expect(page.find('[data-test=reset]').exists()).toBe(false)
   })
 
   it('says what to do with names the world refused', async () => {

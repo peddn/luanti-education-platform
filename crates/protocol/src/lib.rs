@@ -81,6 +81,10 @@ pub mod world {
     /// Kind of the job that makes a world create accounts for students.
     pub const JOB_CREATE_ACCOUNTS: &str = "create_accounts";
 
+    /// Kind of the job that makes a world set a new start password for an
+    /// account.
+    pub const JOB_SET_PASSWORD: &str = "set_password";
+
     /// The protocols a world keeps. Their entries are deleted with the end
     /// of the school year.
     pub const PROTOCOLS: [&str; 4] = ["rewards", "chat", "signs", "desk"];
@@ -318,6 +322,16 @@ pub mod world {
         pub accounts: Vec<NewAccount>,
     }
 
+    /// Payload of the job "set_password". A world sets the password only
+    /// for an ordinary account: one that holds nothing but what every new
+    /// player gets.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetPassword {
+        pub name: String,
+        /// The new start password. The world stores only its hash.
+        pub password: String,
+    }
+
     /// Payload of the event "accounts_created": what became of the
     /// accounts a world was asked to create.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -441,12 +455,27 @@ pub mod web {
         Refused,
     }
 
+    /// How far a new start password for an account is.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum PasswordState {
+        /// The world was asked to set it and has not answered yet. Until
+        /// then the old password counts.
+        Pending,
+        /// The world refused to set it. The old password counts.
+        Refused,
+    }
+
     /// The account of a student.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct Student {
         /// Account name. It says nothing about the person.
         pub account: String,
         pub state: StudentState,
+        /// Missing in the usual case: the password the student was given
+        /// last is the one that counts.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub password: Option<PasswordState>,
     }
 
     /// The accounts of the students of a group, in the order they were

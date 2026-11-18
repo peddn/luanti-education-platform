@@ -96,6 +96,22 @@ function lep_places.get_place(player_name)
 	return read_state(player).place
 end
 
+--- Returns the set of privileges a player holds only because of their
+-- place, for example flying in a room that allows it. They are taken
+-- back when the player leaves the place. Works for players who are away:
+-- a place keeps its privileges on an account until the next join.
+function lep_places.get_granted_privileges(player_name)
+	local player = core.get_player_by_name(player_name)
+	if player then
+		local granted = {}
+		for privilege in pairs(read_state(player).granted) do
+			granted[privilege] = true
+		end
+		return granted
+	end
+	return storage.read_granted(player_name)
+end
+
 --- Returns true if a player is online and carries the survival
 -- inventory right now, so items given to the player end up in survival.
 -- In learning rooms the survival inventory is stored away.

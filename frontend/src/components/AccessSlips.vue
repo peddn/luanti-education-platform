@@ -8,6 +8,8 @@ const props = defineProps({
   slips: { type: Array, required: true },
   /** Where players reach the world, or nothing. */
   address: { type: String, default: '' },
+  /** True if the slips carry a new password for accounts that exist. */
+  reset: { type: Boolean, default: false },
 })
 
 defineEmits(['done'])
@@ -29,6 +31,7 @@ function print() {
       <p role="alert" class="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
         {{ $t('slips.once') }}
       </p>
+      <p v-if="reset" data-test="reset-note" class="text-sm text-slate-600">{{ $t('slips.resetNote') }}</p>
       <p class="text-sm text-slate-600">{{ $t('slips.namesHint') }}</p>
       <div class="flex flex-wrap items-center gap-4">
         <button
