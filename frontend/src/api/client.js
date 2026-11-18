@@ -10,6 +10,9 @@
 /** @typedef {Schemas['GroupChange']} GroupChange */
 /** @typedef {Schemas['Student']} Student */
 /** @typedef {Schemas['AccessSlip']} AccessSlip */
+/** @typedef {Schemas['GroupProgress']} GroupProgress */
+/** @typedef {Schemas['ModuleProgress']} ModuleProgress */
+/** @typedef {Schemas['ProgressChange']} ProgressChange */
 /** @typedef {Schemas['ErrorCode']} BackendErrorCode */
 
 /**
@@ -315,6 +318,36 @@ export function createClient(options = {}) {
       const path = `${studentsPath(id)}/${encodeURIComponent(account)}/password`
       const answer = /** @type {Schemas['AccessSlips']} */ (await request(path, undefined, false, 'POST'))
       return answer.slips
+    },
+
+    /**
+     * Returns where the students of a group stand, as the world reported
+     * it last.
+     *
+     * @param {string} id
+     * @returns {Promise<GroupProgress>}
+     */
+    async progress(id) {
+      const path = `/api/web/v1/groups/${encodeURIComponent(id)}/progress`
+      return /** @type {GroupProgress} */ (await request(path))
+    },
+
+    /**
+     * Orders a new level, a lock or both for a student in a module. The
+     * answer shows the old state with the change on its way: the world
+     * makes it.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @param {string} module id of the module
+     * @param {ProgressChange} change
+     * @returns {Promise<GroupProgress>}
+     */
+    async changeProgress(id, account, module, change) {
+      const path =
+        `/api/web/v1/groups/${encodeURIComponent(id)}/progress/` +
+        `${encodeURIComponent(account)}/${encodeURIComponent(module)}`
+      return /** @type {GroupProgress} */ (await request(path, change))
     },
 
     /**
