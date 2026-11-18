@@ -348,7 +348,7 @@ Die Halle wird aus Code erzeugt. Eine von Hand gebaute Halle kann sie später er
 - Persönliches Portal.
 - Belohnungskiste: Nur der Besitzer öffnet sie, und er kann nur entnehmen.
 - Sechs Sockel für Trophäen, drei an jeder Seitenwand (Abschnitt 8.4).
-- Türschild über dem Eingang mit dem Anzeigenamen in lesbarer Schrift, dort setzt der Besitzer auch seinen Wunschnamen. Kontonamen stehen in zwei Zeilen, getrennt am Unterstrich. Umlaute brauchen eine zweite Schrift von signs_lib, sie wird mit den Wunschnamen eingeschaltet.
+- Türschild über dem Eingang mit dem Anzeigenamen in lesbarer Schrift, dort setzt der Besitzer auch seinen Wunschnamen. Kontonamen stehen in zwei Zeilen, getrennt am Unterstrich. Ein Wunschname mit Leerzeichen wird dort getrennt. Umlaute und ß zeigt die Schrift von signs_lib ohne Zutun.
 - Andere dürfen den Raum betreten und schauen, solange die Tür offen ist. Portal, Kiste und Trophäen funktionieren nur für den Besitzer.
 - Wände, Portal, Kiste und Sockel sind unveränderlich.
 - Im Raum stehen nur Trophäen, keine normalen Gegenstände.
@@ -1208,7 +1208,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
 | `lep_attention` | Aufmerksamkeitsmodus: Zelle, schwarzes Vollbild mit Text, Chat-Sperre |
 | `lep_chat` | Protokoll für Chat und Schildtexte, Stummschalten, Verteilung der Nachrichten |
-| `lep_accounts` | Geschlossene Welt: wer hinein darf. Konten anlegen und Passwörter setzen auf Auftrag |
+| `lep_accounts` | Geschlossene Welt: wer hinein darf. Konten anlegen und Passwörter setzen auf Auftrag. Wunschnamen: Regeln, Speicher, Fenster und die eine Funktion für den Anzeigenamen |
 | `lep_bridge` | Verbindung zum Backend: Warteschlange für Ereignisse, Aufträge per Long Polling |
 | `lep_quiz` | Textfragen: Fragensets, Dialogfenster |
 | `lep_tz` | Technisches Zeichnen: Datenmodell, Generator, Prüfung, Baustein, Raum |
