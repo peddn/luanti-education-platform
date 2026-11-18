@@ -53,6 +53,7 @@ function lep_accounts.create(list)
 		-- The engine gives a new account the default privileges.
 		handler.create_auth(entry.name, core.get_password_hash(entry.name, entry.password))
 		if handler.get_auth(entry.name) then
+			lep_accounts._release_name(entry.name)
 			created[#created + 1] = entry.name
 			core.log("action", "[lep_accounts] account " .. entry.name .. " created")
 		else

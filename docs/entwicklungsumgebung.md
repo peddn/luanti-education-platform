@@ -189,6 +189,26 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_chests age <minuten>` | macht die erzeugten Truhen älter, als wären so viele Minuten vergangen. Damit lässt sich das Verschwinden prüfen, ohne zu warten |
 | `/lep_report <aufgabe> [fail \| daily \| daily_low \| daily_high] [<niveau>]` | meldet eine Aufgabe des Testmoduls: gelöst als Niveauaufgabe, falsch, oder gelöst als Tagesaufgabe mit normalem, geringem oder hohem Aufwand. Niveau 2 und 4 sind Etappen. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
 
+### Wunschnamen
+
+Ein Rechtsklick auf das Türschild des eigenen Raums in der Lobby öffnet das Fenster für den Wunschnamen. Fremde Schilder tun nichts. Der Name gilt sofort: über der Figur, im Chat, am Türschild und in der Liste des Pults. Protokolle und das Log des Servers nennen weiter den Kontonamen.
+
+- Erlaubt sind 2 bis 16 Zeichen: Buchstaben, auch ä, ö, ü und ß, Ziffern, dazu einzelne Leerzeichen und Bindestriche in der Mitte.
+- Vergeben ist ein Name, den es als Kontonamen oder als Wunschnamen schon gibt, ohne Rücksicht auf Groß- und Kleinschreibung.
+- Ein neuer Name ist 30 Tage nach dem letzten möglich. „Zurück zum Kontonamen“ geht immer und verkürzt die Frist nicht.
+- Wer das Pult öffnen darf und im Spiel ist, bekommt bei jeder Änderung eine Nachricht mit Konto und neuem Namen.
+- Jede Änderung steht im Protokoll `lep_protocols/names.tsv` im Ordner der Welt.
+
+Entfernen und Sperren kommt aus der Web-Anwendung. Bis das gebaut ist, und zum Ausprobieren, gibt es drei Debug-Befehle:
+
+| Befehl | Wirkung |
+|---|---|
+| `/lep_name_remove <konto>` | nimmt den Wunschnamen weg, das Konto darf sofort neu wählen |
+| `/lep_name_lock <konto> on\|off` | sperrt das Wählen oder gibt es frei, der Name bleibt |
+| `/lep_name_wait <konto>` | beendet die Frist von 30 Tagen |
+
+Andere Mods fragen `lep_accounts.get_display_name(name)` und speichern den Namen nie. Mit `lep_accounts.register_on_display_name_changed` erfahren sie von Änderungen.
+
 ### Hinweise
 
 - Die Skripte setzen `LUANTI_USER_PATH` und zusätzlich das ältere `MINETEST_USER_PATH`. Neuere Luanti-Versionen geben für das ältere eine Warnung aus, die sich ignorieren lässt.

@@ -41,7 +41,7 @@ luanti-education-platform/
 │   ├── lep_desk/                Lehrerpult mit Reiter „Web-Zugang“
 │   ├── lep_attention/           Aufmerksamkeitsmodus
 │   ├── lep_chat/
-│   ├── lep_accounts/            Geschlossene Welt, Konten anlegen, Passwörter setzen
+│   ├── lep_accounts/            Geschlossene Welt, Konten anlegen, Passwörter setzen, Wunschnamen
 │   ├── lep_bridge/              Verbindung zum Backend
 │   ├── lep_quiz/                Textfragen
 │   ├── lep_tz/                  Technisches Zeichnen

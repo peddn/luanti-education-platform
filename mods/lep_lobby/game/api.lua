@@ -234,3 +234,31 @@ function lep_lobby.rebuild(callback)
 		end
 	end)
 end
+
+-- Display names. The sign of a room shows the display name of its owner,
+-- and the owner chooses the name there.
+if core.global_exists("lep_accounts") then
+	lep_accounts.register_on_display_name_changed(function(account)
+		local room = lep_lobby.get_room(account)
+		if not room then
+			return
+		end
+		-- The owner may be far away or not in the game: the name can be
+		-- taken away from outside.
+		core.load_area(room.sign)
+		if core.get_node(room.sign).name == "lep_lobby:room_sign" then
+			lep_core.signs.write(room.sign, builder.sign_text(account))
+		end
+	end)
+end
+
+-- A click on a name sign. Only the sign of the own room does something.
+function lep_lobby._on_sign_click(pos, player_name)
+	if not core.global_exists("lep_accounts") then
+		return
+	end
+	local room = lep_lobby.get_room(player_name)
+	if room and vector.equals(room.sign, pos) then
+		lep_accounts.show_name_window(player_name)
+	end
+end

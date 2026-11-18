@@ -43,6 +43,14 @@ local function send_to_hearing(line)
 	end
 end
 
+-- The name others see a player under: the display name they chose.
+local function shown(player_name)
+	if core.global_exists("lep_accounts") then
+		return lep_accounts.get_display_name(player_name)
+	end
+	return player_name
+end
+
 -- Messages to everybody. Commands never arrive here, the engine handles
 -- them first. A player without the shout privilege is turned away by the
 -- engine right after this, so their message is not written down.
@@ -58,14 +66,11 @@ core.register_on_chat_message(function(player_name, message)
 		return false
 	end
 	chat_protocol:append({ account = player_name, kind = chat.KIND_CHAT, text = message })
-	if next(deaf) == nil then
-		-- Nobody is deaf: the engine sends the message to everybody.
-		return false
-	end
-	-- The engine cannot leave out single players, so the message is sent
-	-- here, to everybody who may hear it.
+	-- The message is sent here and not by the engine, for two reasons:
+	-- the engine cannot leave out single players, and it would show the
+	-- account name. The log keeps the account name, like the protocol.
 	core.log("action", "CHAT: " .. core.format_chat_message(player_name, message))
-	send_to_hearing(core.format_chat_message(player_name, message))
+	send_to_hearing(core.format_chat_message(shown(player_name), message))
 	return true
 end)
 
@@ -117,7 +122,7 @@ do
 	if core.registered_chatcommands.me then
 		core.override_chatcommand("me", {
 			func = function(player_name, param)
-				send_to_hearing("* " .. player_name .. " " .. param)
+				send_to_hearing("* " .. shown(player_name) .. " " .. param)
 				return true
 			end,
 		})
