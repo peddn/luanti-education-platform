@@ -188,6 +188,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/students/{account}/display-name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Orders the world to take the display name of a student away. The
+         *     student may choose a new one right away, unless choosing is locked.
+         *     The answer shows the list with the order on its way.
+         */
+        delete: operations["remove_display_name"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/students/{account}/display-name/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Orders the world to lock or unlock choosing a display name for a
+         *     student. A lock does not take the name away.
+         */
+        post: operations["lock_display_name"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/students/{account}/display-names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shows what happened to the display name of a student, newest first.
+         *     It is read from a protocol of the world and is deleted with it.
+         */
+        get: operations["display_name_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/students/{account}/password": {
         parameters: {
             query?: never;
@@ -457,6 +518,59 @@ export interface components {
         /** @description Payload of the job "create_accounts". */
         CreateAccounts: {
             accounts: components["schemas"]["NewAccount"][];
+        };
+        /** @description Request to lock or unlock choosing a display name. */
+        DisplayLock: {
+            locked: boolean;
+        };
+        /**
+         * @description Payload of the event "display_name": what an account is shown
+         *     under in the world. Always the whole state of the account.
+         */
+        DisplayName: {
+            account: string;
+            /**
+             * Format: int64
+             * @description When the player chose a name last, in seconds since 1970.
+             *     Missing or null if never, or after a teacher took it away.
+             */
+            changed_at?: number | null;
+            /** @description True if a teacher has locked choosing a name. */
+            locked?: boolean;
+            /**
+             * @description The name the player chose. Missing or null while the account
+             *     name is shown.
+             */
+            name?: string | null;
+        };
+        /**
+         * @description What can happen to a display name.
+         * @enum {string}
+         */
+        DisplayNameAction: "chosen" | "given_up" | "removed" | "locked" | "unlocked";
+        /** @description One entry of the history of the display names of a student. */
+        DisplayNameEntry: {
+            /** @description What happened. */
+            action: components["schemas"]["DisplayNameAction"];
+            /** @description Account name of who did it: the student, or a teacher. */
+            by: string;
+            /**
+             * @description The name that was chosen, given up or taken away. Missing for
+             *     a lock.
+             */
+            name?: string | null;
+            /**
+             * Format: int64
+             * @description When it happened, in seconds since 1970.
+             */
+            time: number;
+        };
+        /**
+         * @description The history of the display names of a student, newest first. It
+         *     comes from a protocol of the world and is deleted with it.
+         */
+        DisplayNameHistory: {
+            entries: components["schemas"]["DisplayNameEntry"][];
         };
         /** @description Answer to a request that needs nothing said. */
         Done: Record<string, never>;
@@ -775,6 +889,28 @@ export interface components {
             protocol: string;
         };
         /**
+         * @description Payload of the job "remove_display_name". The world writes it
+         *     into the protocol of the names, under the account of the teacher.
+         */
+        RemoveDisplayName: {
+            /** @description Account name of the student. */
+            account: string;
+            /** @description Account name of the teacher who ordered it. */
+            by: string;
+        };
+        /**
+         * @description Payload of the job "set_display_locked". The world writes it into
+         *     the protocol of the names, under the account of the teacher.
+         */
+        SetDisplayLocked: {
+            /** @description Account name of the student. */
+            account: string;
+            /** @description Account name of the teacher who ordered it. */
+            by: string;
+            /** @description True to lock choosing a name, false to unlock it. */
+            locked: boolean;
+        };
+        /**
          * @description Payload of the job "set_level". The world writes the change into
          *     the protocol of the desk, under the account of the teacher.
          */
@@ -830,6 +966,19 @@ export interface components {
         Student: {
             /** @description Account name. It says nothing about the person. */
             account: string;
+            display_change?: components["schemas"]["ChangeState"] | null;
+            /**
+             * Format: int64
+             * @description When the student chose that name, in seconds since 1970.
+             */
+            display_changed_at?: number | null;
+            /** @description True if a teacher has locked choosing a name. */
+            display_locked?: boolean;
+            /**
+             * @description The name the student chose to be shown under in the world.
+             *     Missing while the account name is shown.
+             */
+            display_name?: string | null;
             password?: components["schemas"]["PasswordState"] | null;
             state: components["schemas"]["StudentState"];
         };
@@ -839,6 +988,8 @@ export interface components {
          */
         StudentProgress: {
             account: string;
+            /** @description The name the student chose to be shown under in the world. */
+            display_name?: string | null;
             modules: components["schemas"]["ModuleProgress"][];
             trophies: components["schemas"]["EarnedTrophy"][];
         };
@@ -1441,6 +1592,148 @@ export interface operations {
                 };
             };
             /** @description No such group, or no such name that could still be changed (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    remove_display_name: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description Account name of the student */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The students of the group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no such account that exists in the world (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    lock_display_name: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description Account name of the student */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisplayLock"];
+            };
+        };
+        responses: {
+            /** @description The students of the group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description The request cannot be read (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no such account that exists in the world (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    display_name_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description Account name of the student */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history of the display names */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisplayNameHistory"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no such account that exists in the world (not_found) */
             404: {
                 headers: {
                     [name: string]: unknown;

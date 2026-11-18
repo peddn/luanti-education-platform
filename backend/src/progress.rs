@@ -147,6 +147,15 @@ pub async fn of_group(pool: &SqlitePool, world_id: &str) -> Result<GroupProgress
             });
     }
 
+    let mut display_names: HashMap<String, String> = sqlx::query_as(
+        "SELECT account, name FROM display_names WHERE world_id = ? AND name IS NOT NULL",
+    )
+    .bind(world_id)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .collect();
+
     let mut changes = changes_of(pool, world_id).await?;
     let students = accounts
         .into_iter()
@@ -186,6 +195,7 @@ pub async fn of_group(pool: &SqlitePool, world_id: &str) -> Result<GroupProgress
                 })
                 .collect();
             StudentProgress {
+                display_name: display_names.remove(&account),
                 trophies: trophies.remove(&account).unwrap_or_default(),
                 modules: cells,
                 account,

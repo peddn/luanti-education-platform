@@ -10,17 +10,18 @@ use axum::http::header::{COOKIE, SET_COOKIE};
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{AppendHeaders, IntoResponse};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use lep_protocol::web::{
-    AccessSlips, ConfirmRequest, Confirmed, DraftRequest, Group, GroupChange, GroupProgress,
-    Groups, LoginLinkRequest, LoginRequest, MailTransport, Me, ProgressChange, Status, Students,
-    TeacherList,
+    AccessSlips, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory, DraftRequest, Group,
+    GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest, MailTransport, Me,
+    ProgressChange, Status, Students, TeacherList,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
 
 use crate::app::AppState;
+use crate::display_names;
 use crate::failure::Failure;
 use crate::groups::{self, ChangeError};
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
@@ -59,6 +60,18 @@ pub fn router() -> Router<AppState> {
         .route(
             "/v1/groups/{id}/students/{account}/password",
             post(reset_password),
+        )
+        .route(
+            "/v1/groups/{id}/students/{account}/display-name",
+            delete(remove_display_name),
+        )
+        .route(
+            "/v1/groups/{id}/students/{account}/display-name/lock",
+            post(lock_display_name),
+        )
+        .route(
+            "/v1/groups/{id}/students/{account}/display-names",
+            get(display_name_history),
         )
         .route("/v1/groups/{id}/progress", get(show_progress))
         .route(
@@ -625,6 +638,110 @@ pub async fn reset_password(
     tracing::info!(account = %teacher.account, group = %id, student = %slip.account, "new password ordered");
     let no_store = AppendHeaders([(axum::http::header::CACHE_CONTROL, "no-store")]);
     Ok((no_store, Json(AccessSlips { slips: vec![slip] })))
+}
+
+/// Orders the world to take the display name of a student away. The
+/// student may choose a new one right away, unless choosing is locked.
+/// The answer shows the list with the order on its way.
+#[utoipa::path(
+    delete,
+    path = "/api/web/v1/groups/{id}/students/{account}/display-name",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "Account name of the student"),
+    ),
+    responses(
+        (status = 200, description = "The students of the group", body = Students),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or no such account that exists in the world (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn remove_display_name(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+) -> Result<Json<Students>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    if !display_names::remove(&state.db, &id, &account, &teacher.account).await? {
+        return Err(Failure::not_found(
+            "no such account that exists in the world",
+        ));
+    }
+    state.waiters.wake(&id);
+    tracing::info!(account = %teacher.account, group = %id, student = %account, "removal of a display name ordered");
+    Ok(Json(Students {
+        students: students::list(&state.db, &id).await?,
+    }))
+}
+
+/// Orders the world to lock or unlock choosing a display name for a
+/// student. A lock does not take the name away.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/students/{account}/display-name/lock",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "Account name of the student"),
+    ),
+    request_body = DisplayLock,
+    responses(
+        (status = 200, description = "The students of the group", body = Students),
+        (status = 400, description = "The request cannot be read (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or no such account that exists in the world (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn lock_display_name(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+    wanted: Result<Json<DisplayLock>, JsonRejection>,
+) -> Result<Json<Students>, Failure> {
+    let wanted = body(wanted)?;
+    group_of(&state, &teacher.account, &id).await?;
+    if !display_names::set_locked(&state.db, &id, &account, wanted.locked, &teacher.account).await?
+    {
+        return Err(Failure::not_found(
+            "no such account that exists in the world",
+        ));
+    }
+    state.waiters.wake(&id);
+    tracing::info!(account = %teacher.account, group = %id, student = %account, locked = wanted.locked, "lock of a display name ordered");
+    Ok(Json(Students {
+        students: students::list(&state.db, &id).await?,
+    }))
+}
+
+/// Shows what happened to the display name of a student, newest first.
+/// It is read from a protocol of the world and is deleted with it.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/students/{account}/display-names",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "Account name of the student"),
+    ),
+    responses(
+        (status = 200, description = "The history of the display names", body = DisplayNameHistory),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or no such account that exists in the world (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn display_name_history(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+) -> Result<Json<DisplayNameHistory>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    match display_names::history(&state.db, &id, &account).await? {
+        Some(entries) => Ok(Json(DisplayNameHistory { entries })),
+        None => Err(Failure::not_found(
+            "no such account that exists in the world",
+        )),
+    }
 }
 
 /// Shows where the students of a group stand: level and workload per

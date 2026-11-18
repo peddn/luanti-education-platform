@@ -5,6 +5,7 @@ pub mod cli;
 pub mod clock;
 pub mod config;
 pub mod db;
+pub mod display_names;
 pub mod events;
 pub mod failure;
 pub mod groups;

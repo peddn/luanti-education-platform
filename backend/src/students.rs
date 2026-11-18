@@ -6,7 +6,7 @@
 //! the world in a job, and kept nowhere else.
 
 use anyhow::Result;
-use lep_protocol::web::{AccessSlip, PasswordState, Student, StudentState};
+use lep_protocol::web::{AccessSlip, ChangeState, PasswordState, Student, StudentState};
 use lep_protocol::world::{
     AccountsCreated, CreateAccounts, NewAccount, SetPassword, JOB_CREATE_ACCOUNTS, JOB_SET_PASSWORD,
 };
@@ -47,14 +47,27 @@ pub async fn list(pool: &SqlitePool, world_id: &str) -> Result<Vec<Student>> {
     // The newest order for a new password says how far it is: not
     // answered yet, or refused by the world.
     let rows = sqlx::query(
-        "SELECT account, state,
+        "SELECT students.account, students.state,
                 (SELECT CASE WHEN jobs.finished_at IS NULL THEN 'pending'
                              WHEN jobs.ok = 0 THEN 'refused' END
                  FROM jobs
                  WHERE jobs.world_id = students.world_id AND jobs.kind = 'set_password'
                    AND jobs.subject = students.account
-                 ORDER BY jobs.rowid DESC LIMIT 1) AS password
-         FROM students WHERE world_id = ? ORDER BY rowid",
+                 ORDER BY jobs.rowid DESC LIMIT 1) AS password,
+                (SELECT CASE WHEN jobs.finished_at IS NULL THEN 'pending'
+                             WHEN jobs.ok = 0 THEN 'refused' END
+                 FROM jobs
+                 WHERE jobs.world_id = students.world_id
+                   AND jobs.kind IN ('remove_display_name', 'set_display_locked')
+                   AND jobs.subject = students.account
+                 ORDER BY jobs.finished_at IS NULL DESC, jobs.rowid DESC LIMIT 1) AS display_change,
+                display_names.name AS display_name,
+                display_names.changed_at AS display_changed_at,
+                COALESCE(display_names.locked, 0) AS display_locked
+         FROM students
+         LEFT JOIN display_names ON display_names.world_id = students.world_id
+                                AND display_names.account = students.account
+         WHERE students.world_id = ? ORDER BY students.rowid",
     )
     .bind(world_id)
     .fetch_all(pool)
@@ -67,6 +80,15 @@ pub async fn list(pool: &SqlitePool, world_id: &str) -> Result<Vec<Student>> {
             password: match row.get::<Option<String>, _>("password").as_deref() {
                 Some("pending") => Some(PasswordState::Pending),
                 Some("refused") => Some(PasswordState::Refused),
+                _ => None,
+            },
+            display_name: row.get("display_name"),
+            display_changed_at: row.get("display_changed_at"),
+            display_locked: row.get("display_locked"),
+            // An order that waits counts before one that was refused.
+            display_change: match row.get::<Option<String>, _>("display_change").as_deref() {
+                Some("pending") => Some(ChangeState::Pending),
+                Some("refused") => Some(ChangeState::Refused),
                 _ => None,
             },
         })

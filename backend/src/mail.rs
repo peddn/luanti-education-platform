@@ -246,6 +246,58 @@ pub fn login(public_url: &str, to: &str, account: &str, token: &str, minutes: i6
     }
 }
 
+/// Builds the mail that tells a teacher of a group about a new display
+/// name, in German and English. Nobody approves names, so the teachers
+/// hear of each one. The mail goes to an address the teacher confirmed.
+pub fn display_name(
+    public_url: &str,
+    to: &str,
+    teacher: &str,
+    group: &str,
+    group_id: &str,
+    account: &str,
+    name: &str,
+) -> Mail {
+    let link = format!(
+        "{}/groups/{group_id}/students",
+        public_url.trim_end_matches('/')
+    );
+    let body = format!(
+        "Hallo {teacher},\n\
+         \n\
+         in der Gruppe {group} hat sich ein Konto einen neuen Wunschnamen gegeben:\n\
+         \n\
+         Konto: {account}\n\
+         Wunschname: {name}\n\
+         \n\
+         Niemand hat den Namen vorab geprüft. Passt er nicht, kannst du ihn hier \
+         entfernen und dem Konto das Wählen sperren:\n\
+         \n\
+         {link}\n\
+         \n\
+         ----\n\
+         \n\
+         Hello {teacher},\n\
+         \n\
+         an account of the group {group} has chosen a new display name:\n\
+         \n\
+         Account: {account}\n\
+         Display name: {name}\n\
+         \n\
+         Nobody checked the name beforehand. If it does not fit, you can take it \
+         away and lock choosing a name for the account here:\n\
+         \n\
+         {link}"
+    );
+    Mail {
+        to: to.to_owned(),
+        subject: format!(
+            "Luanti Education Platform: Neuer Wunschname in {group} / New display name"
+        ),
+        body,
+    }
+}
+
 /// Builds the mail that asks a teacher to confirm their address. The
 /// backend does not know the language of the teacher, so the mail speaks
 /// German and English.

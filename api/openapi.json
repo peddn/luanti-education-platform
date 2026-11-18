@@ -695,6 +695,224 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/students/{account}/display-name": {
+      "delete": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Orders the world to take the display name of a student away. The\nstudent may choose a new one right away, unless choosing is locked.\nThe answer shows the list with the order on its way.",
+        "operationId": "remove_display_name",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "description": "Account name of the student",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The students of the group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Students"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or no such account that exists in the world (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/students/{account}/display-name/lock": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Orders the world to lock or unlock choosing a display name for a\nstudent. A lock does not take the name away.",
+        "operationId": "lock_display_name",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "description": "Account name of the student",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisplayLock"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The students of the group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Students"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request cannot be read (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or no such account that exists in the world (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/students/{account}/display-names": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Shows what happened to the display name of a student, newest first.\nIt is read from a protocol of the world and is deleted with it.",
+        "operationId": "display_name_history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "description": "Account name of the student",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The history of the display names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisplayNameHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or no such account that exists in the world (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/students/{account}/password": {
       "post": {
         "tags": [
@@ -1346,6 +1564,106 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NewAccount"
+            }
+          }
+        }
+      },
+      "DisplayLock": {
+        "type": "object",
+        "description": "Request to lock or unlock choosing a display name.",
+        "required": [
+          "locked"
+        ],
+        "properties": {
+          "locked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DisplayName": {
+        "type": "object",
+        "description": "Payload of the event \"display_name\": what an account is shown\nunder in the world. Always the whole state of the account.",
+        "required": [
+          "account"
+        ],
+        "properties": {
+          "account": {
+            "type": "string"
+          },
+          "changed_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "When the player chose a name last, in seconds since 1970.\nMissing or null if never, or after a teacher took it away."
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "True if a teacher has locked choosing a name."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name the player chose. Missing or null while the account\nname is shown."
+          }
+        }
+      },
+      "DisplayNameAction": {
+        "type": "string",
+        "description": "What can happen to a display name.",
+        "enum": [
+          "chosen",
+          "given_up",
+          "removed",
+          "locked",
+          "unlocked"
+        ]
+      },
+      "DisplayNameEntry": {
+        "type": "object",
+        "description": "One entry of the history of the display names of a student.",
+        "required": [
+          "time",
+          "action",
+          "by"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/DisplayNameAction",
+            "description": "What happened."
+          },
+          "by": {
+            "type": "string",
+            "description": "Account name of who did it: the student, or a teacher."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name that was chosen, given up or taken away. Missing for\na lock."
+          },
+          "time": {
+            "type": "integer",
+            "format": "int64",
+            "description": "When it happened, in seconds since 1970."
+          }
+        }
+      },
+      "DisplayNameHistory": {
+        "type": "object",
+        "description": "The history of the display names of a student, newest first. It\ncomes from a protocol of the world and is deleted with it.",
+        "required": [
+          "entries"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DisplayNameEntry"
             }
           }
         }
@@ -2025,6 +2343,47 @@
           }
         }
       },
+      "RemoveDisplayName": {
+        "type": "object",
+        "description": "Payload of the job \"remove_display_name\". The world writes it\ninto the protocol of the names, under the account of the teacher.",
+        "required": [
+          "account",
+          "by"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the student."
+          },
+          "by": {
+            "type": "string",
+            "description": "Account name of the teacher who ordered it."
+          }
+        }
+      },
+      "SetDisplayLocked": {
+        "type": "object",
+        "description": "Payload of the job \"set_display_locked\". The world writes it into\nthe protocol of the names, under the account of the teacher.",
+        "required": [
+          "account",
+          "locked",
+          "by"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of the student."
+          },
+          "by": {
+            "type": "string",
+            "description": "Account name of the teacher who ordered it."
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "True to lock choosing a name, false to unlock it."
+          }
+        }
+      },
       "SetLevel": {
         "type": "object",
         "description": "Payload of the job \"set_level\". The world writes the change into\nthe protocol of the desk, under the account of the teacher.",
@@ -2131,6 +2490,36 @@
             "type": "string",
             "description": "Account name. It says nothing about the person."
           },
+          "display_change": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeState",
+                "description": "Missing in the usual case: no change to the display name or\nits lock is on its way."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_changed_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "When the student chose that name, in seconds since 1970."
+          },
+          "display_locked": {
+            "type": "boolean",
+            "description": "True if a teacher has locked choosing a name."
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name the student chose to be shown under in the world.\nMissing while the account name is shown."
+          },
           "password": {
             "oneOf": [
               {
@@ -2158,6 +2547,13 @@
         "properties": {
           "account": {
             "type": "string"
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name the student chose to be shown under in the world."
           },
           "modules": {
             "type": "array",
