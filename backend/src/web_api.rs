@@ -13,8 +13,9 @@ use axum::response::{AppendHeaders, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use lep_protocol::web::{
-    AccessSlips, ConfirmRequest, Confirmed, DraftRequest, Group, GroupChange, Groups,
-    LoginLinkRequest, LoginRequest, MailTransport, Me, Status, Students, TeacherList,
+    AccessSlips, ConfirmRequest, Confirmed, DraftRequest, Group, GroupChange, GroupProgress,
+    Groups, LoginLinkRequest, LoginRequest, MailTransport, Me, ProgressChange, Status, Students,
+    TeacherList,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -23,6 +24,7 @@ use crate::app::AppState;
 use crate::failure::Failure;
 use crate::groups::{self, ChangeError};
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
+use crate::progress::{self, ChangeError as ChangeProgressError};
 use crate::students::{self, DraftError};
 use crate::teachers::{self, ConfirmError};
 use crate::{clock, mail, web_access};
@@ -57,6 +59,11 @@ pub fn router() -> Router<AppState> {
         .route(
             "/v1/groups/{id}/students/{account}/password",
             post(reset_password),
+        )
+        .route("/v1/groups/{id}/progress", get(show_progress))
+        .route(
+            "/v1/groups/{id}/progress/{account}/{module}",
+            post(change_progress),
         )
 }
 
@@ -618,6 +625,73 @@ pub async fn reset_password(
     tracing::info!(account = %teacher.account, group = %id, student = %slip.account, "new password ordered");
     let no_store = AppendHeaders([(axum::http::header::CACHE_CONTROL, "no-store")]);
     Ok((no_store, Json(AccessSlips { slips: vec![slip] })))
+}
+
+/// Shows where the students of a group stand: level and workload per
+/// module, and the trophies. It is what the world reported last.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/progress",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The modules of the world and the students whose accounts exist", body = GroupProgress),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or not one of the teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn show_progress(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Json<GroupProgress>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    Ok(Json(progress::of_group(&state.db, &id).await?))
+}
+
+/// Orders a new level, a lock or both for a student in a module. The
+/// world makes the change and reports the new state; until then the
+/// answer shows the old state with the change as pending.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/progress/{account}/{module}",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "Account name of the student"),
+        ("module" = String, Path, description = "Id of the module"),
+    ),
+    request_body = ProgressChange,
+    responses(
+        (status = 200, description = "The progress of the group, with the change on its way", body = GroupProgress),
+        (status = 400, description = "No such level, or nothing to change (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, no such account that exists in the world, or no such module (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn change_progress(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account, module)): Path<(String, String, String)>,
+    wanted: Result<Json<ProgressChange>, JsonRejection>,
+) -> Result<Json<GroupProgress>, Failure> {
+    let wanted = body(wanted)?;
+    group_of(&state, &teacher.account, &id).await?;
+    progress::change(&state.db, &id, &account, &module, &wanted, &teacher.account)
+        .await?
+        .map_err(|error| match error {
+            ChangeProgressError::NoStudent => {
+                Failure::not_found("no such account that exists in the world")
+            }
+            ChangeProgressError::NoModule => Failure::not_found("no such module"),
+            ChangeProgressError::BadLevel => {
+                Failure::invalid_request("the module has no such level")
+            }
+            ChangeProgressError::Empty => Failure::invalid_request("nothing to change"),
+        })?;
+    state.waiters.wake(&id);
+    tracing::info!(account = %teacher.account, group = %id, student = %account, module = %module, "progress change ordered");
+    Ok(Json(progress::of_group(&state.db, &id).await?))
 }
 
 #[cfg(test)]

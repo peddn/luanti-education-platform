@@ -13,6 +13,7 @@ pub mod keys;
 pub mod logins;
 pub mod mail;
 pub mod names;
+pub mod progress;
 pub mod state;
 pub mod students;
 pub mod teachers;
