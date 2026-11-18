@@ -29,6 +29,14 @@ local ACTIVE = "#30C030"
 -- with).
 local desks = {}
 
+-- The name a student is listed under: the display name they chose.
+local function shown(student)
+	if core.global_exists("lep_accounts") then
+		return lep_accounts.get_display_name(student)
+	end
+	return student
+end
+
 local function state_of(teacher_name)
 	if not desks[teacher_name] then
 		desks[teacher_name] = { selection = desk.new_selection(), status = "" }
@@ -118,7 +126,7 @@ local function show(teacher_name)
 	local rows = {}
 	for _, student in ipairs(students) do
 		local marked = desk.is_selected(state.selection, student)
-		rows[#rows + 1] = { marked and MARKED or UNMARKED, box(marked), student,
+		rows[#rows + 1] = { marked and MARKED or UNMARKED, box(marked), shown(student),
 			describe_place(student), describe_levels(student) }
 	end
 
