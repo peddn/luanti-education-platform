@@ -146,5 +146,9 @@ describe("lep_bridge reports", function()
 		local order = { accounts = { { name = "klugeEule", password = "wolke-apfel-47" } } }
 		assert.is_true(fits("CreateAccounts", order))
 		assert.are.same(order.accounts, accounts.parse(order))
+
+		local reset = { name = "klugeEule", password = "berg-see-03" }
+		assert.is_true(fits("SetPassword", reset))
+		assert.are.equal("klugeEule", (accounts.parse_password(reset)))
 	end)
 end)

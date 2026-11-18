@@ -1,4 +1,4 @@
-local accounts = dofile("mods/lep_bridge/src/accounts.lua")
+local accounts = dofile("mods/lep_accounts/src/accounts.lua")
 
 -- A world with accounts: name -> password.
 local function world_with(existing)
@@ -25,7 +25,7 @@ local function names(list)
 	return result
 end
 
-describe("lep_bridge accounts", function()
+describe("lep_accounts", function()
 	it("knows the names the engine takes", function()
 		assert.is_true(accounts.is_name("klugeEule"))
 		assert.is_true(accounts.is_name("a_b-C9"))
@@ -36,22 +36,6 @@ describe("lep_bridge accounts", function()
 		assert.is_false(accounts.is_name("klügeEule"))
 		assert.is_false(accounts.is_name(nil))
 		assert.is_false(accounts.is_name(5))
-	end)
-
-	it("reads the order of the backend", function()
-		local list = accounts.parse({ accounts = {
-			{ name = "klugeEule", password = "wolke-apfel-47" },
-			"nonsense",
-			{ name = "frohesReh", password = "berg-see-03" },
-		} })
-		assert.are.same({
-			{ name = "klugeEule", password = "wolke-apfel-47" },
-			{ name = "frohesReh", password = "berg-see-03" },
-		}, list)
-		assert.is_nil(accounts.parse(nil))
-		assert.is_nil(accounts.parse({}))
-		assert.is_nil(accounts.parse({ accounts = "x" }))
-		assert.are.same({}, accounts.parse({ accounts = {} }))
 	end)
 
 	it("creates what is free", function()
@@ -106,39 +90,59 @@ describe("lep_bridge accounts", function()
 			"FlinkerOtter" }, refused)
 	end)
 
-	it("runs jobs one after the other", function()
-		local log, waiting = {}, {}
-		local function defer(next_step)
-			waiting[#waiting + 1] = next_step
-		end
-		local held
-		local jobs = {
-			function(done) log[#log + 1] = "first" done() end,
-			-- This one finishes later, and reports twice.
-			function(done) log[#log + 1] = "second" held = done end,
-			function(done) log[#log + 1] = "third" done() end,
-		}
-		accounts.run_in_order(jobs, defer, function() log[#log + 1] = "end" end)
-		assert.are.same({ "first" }, log)
-
-		-- Nothing goes on before the pause is over.
-		table.remove(waiting, 1)()
-		assert.are.same({ "first", "second" }, log)
-		assert.are.equal(0, #waiting)
-
-		held()
-		held()
-		assert.are.equal(1, #waiting)
-		table.remove(waiting, 1)()
-		assert.are.same({ "first", "second", "third" }, log)
-		table.remove(waiting, 1)()
-		assert.are.same({ "first", "second", "third", "end" }, log)
+	it("reads lists of privileges", function()
+		assert.are.same({ interact = true, shout = true }, accounts.privilege_set("interact, shout"))
+		assert.are.same({ interact = true }, accounts.privilege_set(" interact "))
+		assert.are.same({}, accounts.privilege_set(""))
+		assert.are.same({}, accounts.privilege_set(nil))
 	end)
 
-	it("ends at once without jobs", function()
-		local ended = false
-		accounts.run_in_order({}, function() error("no pause needed") end,
-			function() ended = true end)
-		assert.is_true(ended)
+	it("tells ordinary accounts from teachers and admins", function()
+		local ordinary = { interact = true, shout = true }
+		assert.is_true(accounts.is_ordinary({ interact = true, shout = true }, ordinary))
+		-- A muted student holds less, not more.
+		assert.is_true(accounts.is_ordinary({ interact = true }, ordinary))
+		assert.is_true(accounts.is_ordinary({}, ordinary))
+		assert.is_true(accounts.is_ordinary({ interact = true, fly = false }, ordinary))
+		assert.is_false(accounts.is_ordinary({ interact = true, lep_view_players = true }, ordinary))
+		assert.is_false(accounts.is_ordinary({ interact = true, shout = true, server = true },
+			ordinary))
+		assert.is_false(accounts.is_ordinary({ lep_web_access = true }, ordinary))
+	end)
+
+	it("sets a password only for an ordinary account that exists", function()
+		local ordinary = { interact = true, shout = true }
+		local student = { interact = true, shout = true }
+		assert.is_true(accounts.may_set_password("klugeEule", "wolke-apfel-47", true, student,
+			ordinary))
+
+		local ok, why = accounts.may_set_password("klugeEule", "wolke-apfel-47", false, {},
+			ordinary)
+		assert.is_false(ok)
+		assert.are.equal(accounts.UNKNOWN, why)
+
+		ok, why = accounts.may_set_password("lehrer1", "wolke-apfel-47", true,
+			{ interact = true, lep_view_players = true }, ordinary)
+		assert.is_false(ok)
+		assert.are.equal(accounts.STAFF, why)
+
+		for _, bad in ipairs({ { "kluge Eule", "x" }, { "klugeEule", "" }, { "klugeEule", nil },
+			{ nil, "x" } }) do
+			ok, why = accounts.may_set_password(bad[1], bad[2], true, student, ordinary)
+			assert.is_false(ok)
+			assert.are.equal(accounts.INVALID, why)
+		end
+	end)
+
+	it("lets in only names with an account, and the admin", function()
+		assert.is_true(accounts.may_join("klugeEule", true, "tester"))
+		assert.is_false(accounts.may_join("fremder", false, "tester"))
+		-- The admin may create their own account by entering.
+		assert.is_true(accounts.may_join("tester", false, "tester"))
+		assert.is_true(accounts.may_join("tester", true, "tester"))
+		assert.is_false(accounts.may_join("Tester", false, "tester"))
+		-- Without an admin in the settings nobody new gets in.
+		assert.is_false(accounts.may_join("fremder", false, nil))
+		assert.is_false(accounts.may_join("", false, ""))
 	end)
 end)
