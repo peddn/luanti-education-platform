@@ -65,3 +65,19 @@ lep_bridge.register_job(reports.JOB_SET_LOCKED, function(payload)
 	record(reports.JOB_SET_LOCKED, order)
 	return true, "set"
 end)
+
+lep_bridge.register_job(reports.JOB_SET_START_LEVEL, function(payload)
+	local order = orders.parse_start_level(payload)
+	if not order then
+		return false, "the order cannot be read"
+	end
+	if not lep_progress.get_module(order.module) then
+		return false, "module"
+	end
+	-- The module decides whether it has this level.
+	if not lep_progress.set_start_level(order.module, order.level) then
+		return false, "level"
+	end
+	record(reports.JOB_SET_START_LEVEL, order)
+	return true, "set"
+end)

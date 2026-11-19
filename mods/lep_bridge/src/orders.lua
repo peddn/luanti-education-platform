@@ -46,6 +46,20 @@ function orders.parse_locked(payload)
 	return order
 end
 
+--- Reads the payload of the job "set_start_level".
+-- @return Table with module, level and by, or nil if the payload cannot
+--   be read.
+function orders.parse_start_level(payload)
+	if type(payload) ~= "table" or not is_module(payload.module) or not is_name(payload.by) then
+		return nil
+	end
+	local level = payload.level
+	if type(level) ~= "number" or level ~= math.floor(level) or level < 1 then
+		return nil
+	end
+	return { module = payload.module, level = level, by = payload.by }
+end
+
 -- Reads what the two orders about display names share.
 local function name_target(payload)
 	if type(payload) ~= "table" or not is_name(payload.account) or not is_name(payload.by) then
@@ -103,6 +117,8 @@ end
 function orders.describe(kind, order)
 	if kind == "set_level" then
 		return "web:set_level " .. order.module .. " " .. order.level
+	elseif kind == "set_start_level" then
+		return "web:set_start_level " .. order.module .. " " .. order.level
 	end
 	return "web:set_locked " .. order.module .. " " .. (order.locked and "on" or "off")
 end

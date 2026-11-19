@@ -41,6 +41,17 @@ function storage.players()
 	return names
 end
 
+--- Returns the stored start levels as { [module_id] = level }.
+function storage.load_start_levels()
+	local data = core.deserialize(mod_storage:get_string("start_levels"))
+	return type(data) == "table" and data or {}
+end
+
+--- Stores the start levels.
+function storage.save_start_levels(levels)
+	mod_storage:set_string("start_levels", core.serialize(levels))
+end
+
 --- Deletes everything stored about a player.
 function storage.remove(player_name)
 	mod_storage:set_string(key(player_name), "")

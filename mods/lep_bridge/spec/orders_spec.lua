@@ -102,4 +102,21 @@ describe("lep_bridge orders", function()
 		assert.is_nil(orders.parse_remove_account({ account = "klugeEule", only_unused = true }))
 		assert.is_nil(orders.parse_remove_account(nil))
 	end)
+	it("reads the order to set the start level of a module", function()
+		local order = orders.parse_start_level({ module = "lep_math:math", level = 3,
+			by = "lehrer1" })
+		assert.are.same({ module = "lep_math:math", level = 3, by = "lehrer1" }, order)
+		assert.are.equal("web:set_start_level lep_math:math 3",
+			orders.describe("set_start_level", order))
+		for _, bad in ipairs({
+			{ module = "lep_math:math", level = 0, by = "lehrer1" },
+			{ module = "lep_math:math", level = 1.5, by = "lehrer1" },
+			{ module = "lep_math:math", level = "3", by = "lehrer1" },
+			{ module = "math", level = 3, by = "lehrer1" },
+			{ module = "lep_math:math", level = 3 },
+		}) do
+			assert.is_nil(orders.parse_start_level(bad))
+		end
+		assert.is_nil(orders.parse_start_level(nil))
+	end)
 end)

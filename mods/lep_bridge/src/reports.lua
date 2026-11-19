@@ -22,6 +22,7 @@ reports.JOB_REMOVE_ACCOUNT = "remove_account"
 reports.JOB_SET_PASSWORD = "set_password"
 reports.JOB_SET_LEVEL = "set_level"
 reports.JOB_SET_LOCKED = "set_locked"
+reports.JOB_SET_START_LEVEL = "set_start_level"
 reports.JOB_REMOVE_DISPLAY_NAME = "remove_display_name"
 reports.JOB_SET_DISPLAY_LOCKED = "set_display_locked"
 reports.JOB_CLEAR_PROTOCOLS = "clear_protocols"
@@ -36,7 +37,9 @@ local function whole(number)
 end
 
 --- Builds the payload of the event "modules".
--- @param modules List of { id, title, levels }, where levels is a list of
+-- @param modules List of { id, title, levels, start_level }, where
+--   start_level is the level new players start on (1 if missing) and
+--   levels is a list of
 --   { stage, tasks } and tasks a list of { id, title, required }. Titles
 --   are plain text, already in the language of the world.
 function reports.modules(modules)
@@ -54,7 +57,8 @@ function reports.modules(modules)
 			end
 			levels[number] = { stage = level.stage == true, tasks = tasks }
 		end
-		list[index] = { id = module.id, title = tostring(module.title), levels = levels }
+		list[index] = { id = module.id, title = tostring(module.title), levels = levels,
+			start_level = math.max(1, whole(module.start_level)) }
 	end
 	return { modules = list }
 end
