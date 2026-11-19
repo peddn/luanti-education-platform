@@ -352,6 +352,15 @@ pub mod world {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct CreateAccounts {
         pub accounts: Vec<NewAccount>,
+        /// True if the accounts are for teachers: the world gives them
+        /// the privileges of the bundle for teachers. Only the school
+        /// administration orders that.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        pub teacher: bool,
+        /// Account name of who ordered it, for accounts of teachers. The
+        /// world writes it into the protocol of the desk.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub by: Option<String>,
     }
 
     /// Payload of the job "set_password". A world sets the password only
@@ -362,6 +371,13 @@ pub mod world {
         pub name: String,
         /// The new start password. The world stores only its hash.
         pub password: String,
+        /// True if the order is meant for a teacher. The world still
+        /// refuses the admin and the school administration.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        pub staff: bool,
+        /// Account name of who ordered it, for accounts of teachers.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub by: Option<String>,
     }
 
     /// Payload of the event "display_name": what an account is shown
@@ -414,6 +430,10 @@ pub mod world {
         /// logged in with it: a teacher takes back what they created.
         /// The world checks that itself.
         pub only_unused: bool,
+        /// True if the order is meant for a teacher. The world still
+        /// refuses the admin and the school administration.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        pub staff: bool,
         /// Account name of who ordered it.
         pub by: String,
     }
@@ -988,6 +1008,71 @@ pub mod web {
         pub address: Option<String>,
     }
 
+    /// How far the account of a teacher is that the school
+    /// administration ordered.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum StaffState {
+        /// The worlds were asked to create it.
+        Creating,
+        /// It exists in at least one world.
+        Active,
+        /// Every world refused: the name is taken there.
+        Refused,
+    }
+
+    /// How the web access of a teacher stands.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum WebAccessState {
+        /// No address was entered at the desk yet.
+        None,
+        /// An address waits for its confirmation.
+        Pending,
+        /// The teacher can log in.
+        Confirmed,
+    }
+
+    /// The account of a teacher, as the school administration sees it.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StaffAccount {
+        pub account: String,
+        /// Missing for an account that was not created here, for example
+        /// the one of the admin.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub state: Option<StaffState>,
+        /// True if the account holds the privilege for web access in at
+        /// least one world.
+        pub holder: bool,
+        /// True if it belongs to the school administration. Such an
+        /// account is never changed from here.
+        pub school_admin: bool,
+        pub web_access: WebAccessState,
+        /// Names of the groups the teacher is assigned to, sorted.
+        pub groups: Vec<String>,
+        /// Missing in the usual case, see `Student::password`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub password: Option<PasswordState>,
+        /// Missing in the usual case, see `Student::removal`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub removal: Option<ChangeState>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub removal_refusal: Option<RemovalRefusal>,
+    }
+
+    /// The accounts of all teachers, sorted by name.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StaffList {
+        pub staff: Vec<StaffAccount>,
+    }
+
+    /// Request to create the account of a teacher.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StaffCreate {
+        /// The account name the school administration chose.
+        pub name: String,
+    }
+
     /// The accounts that can be assigned to groups: everybody who holds
     /// the privilege for web access in some world. Sorted.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -1042,6 +1127,8 @@ pub enum ErrorCode {
     NameTaken,
     /// No free account name turned up.
     NoNames,
+    /// The account name is taken at the school, or was deleted there.
+    AccountTaken,
     /// The link from a mail is unknown, used or too old.
     InvalidToken,
     /// The address already belongs to another account.

@@ -56,6 +56,7 @@ pub async fn order(
     let payload = RemoveAccount {
         account: account.clone(),
         only_unused: !school_admin,
+        staff: false,
         by: by.to_owned(),
     };
     jobs::add_about(
@@ -183,7 +184,23 @@ pub async fn note_removed(
         .bind(JOB_REMOVE_ACCOUNT)
         .execute(&mut *tx)
         .await?;
+    // A teacher is the account of no student, in no group.
+    let student: Option<i64> =
+        sqlx::query_scalar("SELECT 1 FROM students WHERE account = ? COLLATE NOCASE")
+            .bind(account)
+            .fetch_optional(&mut *tx)
+            .await?;
     sqlx::query("DELETE FROM students WHERE account = ? AND world_id = ?")
+        .bind(account)
+        .bind(world_id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM teacher_worlds WHERE account = ? AND world_id = ?")
+        .bind(account)
+        .bind(world_id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM school_admin_worlds WHERE account = ? AND world_id = ?")
         .bind(account)
         .bind(world_id)
         .execute(&mut *tx)
@@ -205,6 +222,11 @@ pub async fn note_removed(
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
+    if student.is_none() {
+        // What is kept about a teacher beyond this world: the address,
+        // the web access, the groups.
+        crate::staff::forget(pool, account).await?;
+    }
     Ok(true)
 }
 

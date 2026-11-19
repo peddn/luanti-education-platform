@@ -26,6 +26,8 @@ pub async fn set_school_admins(
         .bind(world_id)
         .execute(&mut *tx)
         .await?;
+    // The account of a student never counts as school administration.
+    let accounts = crate::staff::without_students(&mut tx, accounts).await?;
     for account in accounts.iter().filter(|name| teachers::is_account(name)) {
         sqlx::query("INSERT OR IGNORE INTO school_admin_worlds (world_id, account) VALUES (?, ?)")
             .bind(world_id)

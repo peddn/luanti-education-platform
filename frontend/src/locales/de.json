@@ -338,6 +338,7 @@
     "forbidden": "Das darfst du nicht.",
     "name_taken": "Eine andere Gruppe heißt schon so.",
     "no_names": "Es fand sich kein freier Name mehr. Versuche es noch einmal.",
+    "account_taken": "Dieser Kontoname ist an der Schule schon vergeben oder wurde gelöscht.",
     "invalid_token": "Dieser Link gilt nicht mehr. Er ist abgelaufen oder wurde schon benutzt.",
     "address_taken": "Diese Adresse gehört schon zu einem anderen Konto.",
     "internal": "Im Backend ist ein Fehler aufgetreten.",

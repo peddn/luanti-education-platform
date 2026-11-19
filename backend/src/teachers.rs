@@ -65,6 +65,8 @@ pub async fn set_holders(pool: &SqlitePool, world_id: &str, accounts: &[String])
         .bind(world_id)
         .execute(&mut *tx)
         .await?;
+    // The account of a student never counts as a teacher here.
+    let accounts = crate::staff::without_students(&mut tx, accounts).await?;
     for account in accounts.iter().filter(|name| is_account(name)) {
         sqlx::query("INSERT OR IGNORE INTO teacher_worlds (world_id, account) VALUES (?, ?)")
             .bind(world_id)
@@ -72,6 +74,8 @@ pub async fn set_holders(pool: &SqlitePool, world_id: &str, accounts: &[String])
             .execute(&mut *tx)
             .await?;
     }
+    // Who is a teacher in no world any more is assigned to no group.
+    crate::staff::drop_stale_assignments(&mut tx).await?;
     tx.commit().await?;
     Ok(())
 }
