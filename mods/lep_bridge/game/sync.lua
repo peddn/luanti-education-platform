@@ -14,6 +14,8 @@ local M = {}
 
 local queue = queue_core.new(store)
 local job_handlers = {}
+-- Kinds of jobs whose function answers later, through a callback.
+local answers_later = {}
 
 local http
 local url = (core.settings:get("lep_bridge_url") or ""):gsub("%s", "")
@@ -144,6 +146,14 @@ function lep_bridge.send(kind, payload)
 	send_next()
 end
 
+--- Removes the waiting events a function picks. For an account that is
+-- removed: nothing about it is sent any more.
+-- @param matches Function(event) returning true for an event to drop.
+-- @return how many events were removed
+function lep_bridge._drop_events(matches)
+	return queue:drop_where(matches)
+end
+
 --------------------------------------------------------------------------
 -- Jobs
 
@@ -162,28 +172,45 @@ function lep_bridge.register_job(kind, handler)
 	job_handlers[kind] = handler
 end
 
-local function run(job)
+--- Registers the function that does jobs of one kind that take a
+-- moment. It gets the payload and a function finish(ok, message), which
+-- it calls once when the job is done. Until then no other job is done.
+function lep_bridge.register_slow_job(kind, handler)
+	lep_bridge.register_job(kind, handler)
+	answers_later[kind] = true
+end
+
+-- Does a job and calls callback(result).
+local function run(job, callback)
 	if done[job.id] then
-		return done[job.id]
+		callback(done[job.id])
+		return
 	end
-	local handler = job_handlers[job.kind]
-	local result
-	if not handler then
-		result = messages.job_result(false, "this world does not know the job '"
-			.. job.kind .. "'")
-	else
-		local no_error, ok, message = pcall(handler, job.payload)
-		if no_error then
-			result = messages.job_result(ok, message)
-		else
-			core.log("error", "[lep_bridge] job " .. job.kind .. " failed: " .. tostring(ok))
-			result = messages.job_result(false, "the job failed in the world")
+	local answered = false
+	local function finish(ok, message)
+		if answered then
+			return
 		end
+		answered = true
+		local result = messages.job_result(ok, message)
+		core.log("action", "[lep_bridge] job " .. job.kind .. " " .. job.id .. ": "
+			.. (result.ok and "done" or "failed") .. " " .. result.message)
+		done[job.id] = result
+		callback(result)
 	end
-	core.log("action", "[lep_bridge] job " .. job.kind .. " " .. job.id .. ": "
-		.. (result.ok and "done" or "failed") .. " " .. result.message)
-	done[job.id] = result
-	return result
+
+	local handler = job_handlers[job.kind]
+	if not handler then
+		finish(false, "this world does not know the job '" .. job.kind .. "'")
+		return
+	end
+	local no_error, ok, message = pcall(handler, job.payload, finish)
+	if not no_error then
+		core.log("error", "[lep_bridge] job " .. job.kind .. " failed: " .. tostring(ok))
+		finish(false, "the job failed in the world")
+	elseif not answers_later[job.kind] then
+		finish(ok, message)
+	end
 end
 
 local poll
@@ -196,10 +223,12 @@ local function work(jobs, index)
 		poll()
 		return
 	end
-	request("POST", "/jobs/" .. job.id .. "/result", run(job), TIMEOUT, function()
-		-- If the report got lost, the backend hands the job out again and
-		-- the remembered result is reported then.
-		work(jobs, index + 1)
+	run(job, function(result)
+		request("POST", "/jobs/" .. job.id .. "/result", result, TIMEOUT, function()
+			-- If the report got lost, the backend hands the job out again
+			-- and the remembered result is reported then.
+			work(jobs, index + 1)
+		end)
 	end)
 end
 

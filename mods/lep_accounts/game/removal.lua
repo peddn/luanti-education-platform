@@ -23,6 +23,17 @@ lep_accounts.REMOVAL_REFUSALS = {
 
 local removing = {}
 
+local dispatcher = lep_core.events.new(function(event_name, err)
+	core.log("error", "[lep_accounts] callback for " .. event_name .. " failed: "
+		.. tostring(err))
+end)
+
+--- Calls listener(account, by) after an account was removed with
+-- everything the world knew about it. by is the account name of who
+-- ordered it, or nil. Who has to delete own data registers with
+-- lep_core.register_on_forget_account instead: this is only the news.
+lep_accounts.register_on_removed = dispatcher:registrar("removed")
+
 --- Returns true while an account is being removed. Nobody may join
 -- under its name then.
 function lep_accounts.is_being_removed(name)
@@ -102,6 +113,7 @@ function lep_accounts.remove(name, options, callback)
 		if done then
 			core.log("action", "[lep_accounts] account " .. name .. " removed"
 				.. (options.by and " by " .. options.by or ""))
+			dispatcher:emit("removed", name, options.by)
 			callback(true)
 		else
 			core.log("error", "[lep_accounts] account " .. name

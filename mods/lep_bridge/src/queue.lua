@@ -109,4 +109,20 @@ function Queue:remove(ids)
 	return removed
 end
 
+--- Removes the waiting events a function picks, wherever they stand.
+-- @param matches Function(event) returning true for an event to drop.
+-- @return how many events were removed
+function Queue:drop_where(matches)
+	local removed = 0
+	for seq = self._head, self._tail - 1 do
+		local event = self._store.get(event_key(seq))
+		if type(event) == "table" and matches(event) then
+			-- The gap is skipped when the queue is read.
+			self._store.set(event_key(seq), nil)
+			removed = removed + 1
+		end
+	end
+	return removed
+end
+
 return queue

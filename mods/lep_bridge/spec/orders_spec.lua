@@ -82,4 +82,18 @@ describe("lep_bridge orders", function()
 		lock.locked = false
 		assert.are.equal("web:set_locked lep_math:math off", orders.describe("set_locked", lock))
 	end)
+
+	it("reads the order to remove an account", function()
+		assert.are.same({ account = "klugeEule", by = "leitung", only_unused = false },
+			orders.parse_remove_account({ account = "klugeEule", by = "leitung",
+				only_unused = false }))
+		assert.is_true(orders.parse_remove_account({ account = "klugeEule", by = "lehrer1",
+			only_unused = true }).only_unused)
+		-- Who may remove what has to be said: nothing is assumed.
+		assert.is_nil(orders.parse_remove_account({ account = "klugeEule", by = "leitung" }))
+		assert.is_nil(orders.parse_remove_account({ account = "kluge Eule", by = "leitung",
+			only_unused = false }))
+		assert.is_nil(orders.parse_remove_account({ account = "klugeEule", only_unused = true }))
+		assert.is_nil(orders.parse_remove_account(nil))
+	end)
 end)

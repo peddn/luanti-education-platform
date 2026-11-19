@@ -112,4 +112,24 @@ describe("lep_bridge queue", function()
 		assert.has_error(function() queue.new({}) end)
 		assert.has_error(function() queue.new(new_store(), { limit = 0 }) end)
 	end)
+
+	it("drops picked events wherever they stand", function()
+		local store = new_store()
+		local q = queue.new(store)
+		for _, id in ipairs({ "a", "b", "c", "d", "e" }) do
+			q:push(event(id))
+		end
+		assert.are.equal(3, q:drop_where(function(entry)
+			return entry.id == "a" or entry.id == "c" or entry.id == "e"
+		end))
+		assert.are.same({ "b", "d" }, ids(q:peek(10)))
+		assert.are.equal(1, q:remove({ "b" }))
+		assert.are.same({ "d" }, ids(q:peek(10)))
+		assert.are.equal(1, q:remove({ "d" }))
+		assert.are.equal(0, q:size())
+
+		-- What is left is still there after a restart.
+		q:push(event("f"))
+		assert.are.same({ "f" }, ids(queue.new(store):peek(10)))
+	end)
 end)
