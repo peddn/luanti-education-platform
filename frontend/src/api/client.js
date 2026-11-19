@@ -532,6 +532,20 @@ export function createClient(options = {}) {
     },
 
     /**
+     * Orders the level new students start a module on. The answer shows
+     * the old level with the change on its way: the world makes it.
+     *
+     * @param {string} id
+     * @param {string} module id of the module
+     * @param {number} level
+     * @returns {Promise<GroupProgress>}
+     */
+    async changeStartLevel(id, module, level) {
+      const path = `/api/web/v1/groups/${encodeURIComponent(id)}/progress/start/${encodeURIComponent(module)}`
+      return /** @type {GroupProgress} */ (await request(path, { level }))
+    },
+
+    /**
      * Orders a new level, a lock or both for a student in a module. The
      * answer shows the old state with the change on its way: the world
      * makes it.

@@ -214,7 +214,10 @@
     "changeHint": "The world makes the change and notes it in the protocol of the teacher's desk. With moving up locked the child stays on their level, even after finishing its workload.",
     "repeatHint": "Repeating empties the workload of this level. Every task counts and is rewarded again. The reward for completing the level is given the first time only.",
     "export": "Download as CSV",
-    "exportHint": "One line per student and module. The file leaves the platform: you answer for it, and the export is noted."
+    "exportHint": "One line per student and module. The file leaves the platform: you answer for it, and the export is noted.",
+    "startTitle": "Start level",
+    "startHint": "Every child who has not done anything in the module yet starts on this level. Who has solved tasks, or was put on a level individually, stays where they are. There is no reward and no trophy for skipped levels.",
+    "startOption": "Level {level} of {levels}"
   },
   "protocols": {
     "titleFor": "Protocols of group {group}",
