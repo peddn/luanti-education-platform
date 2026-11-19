@@ -198,13 +198,13 @@ describe('protocols page', () => {
       [`${BASE}/protocols/rewards`]: [
         200,
         {
-          columns: ['size', 'reason', 'module', 'level', 'task', 'items'],
+          columns: ['effort', 'reason', 'module', 'level', 'task', 'items'],
           entries: [
             {
               id: 9,
               time: 1700000000,
               account: 'klugeEule',
-              fields: { size: 'medium', reason: 'level', module: 'lep_math:math', level: '2', items: 'default:gold_ingot 1' },
+              fields: { effort: 'normal', reason: 'level', module: 'lep_math:math', level: '2', items: 'default:gold_ingot 1' },
             },
           ],
           more: false,
@@ -218,7 +218,7 @@ describe('protocols page', () => {
     expect(mounted.findAll('th').map((head) => head.text())).toEqual([
       'Zeit',
       'Konto',
-      'Größe',
+      'Aufwand',
       'Anlass',
       'Modul',
       'Niveau',
@@ -227,7 +227,7 @@ describe('protocols page', () => {
     ])
     const cells = mounted.get('[data-test=entry]').findAll('td')
     expect(cells.slice(2).map((cell) => cell.text())).toEqual([
-      'mittel',
+      'normal, doppelt',
       'Niveau abgeschlossen',
       'lep_math:math',
       '2',
