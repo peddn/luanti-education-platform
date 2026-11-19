@@ -84,9 +84,15 @@ describe("lep_bridge orders", function()
 	end)
 
 	it("reads the order to remove an account", function()
-		assert.are.same({ account = "klugeEule", by = "leitung", only_unused = false },
+		assert.are.same({ account = "klugeEule", by = "leitung", only_unused = false,
+			staff = false },
 			orders.parse_remove_account({ account = "klugeEule", by = "leitung",
 				only_unused = false }))
+		-- Meant for a teacher.
+		assert.is_true(orders.parse_remove_account({ account = "lehrer2", by = "leitung",
+			only_unused = false, staff = true }).staff)
+		assert.is_nil(orders.parse_remove_account({ account = "lehrer2", by = "leitung",
+			only_unused = false, staff = "yes" }))
 		assert.is_true(orders.parse_remove_account({ account = "klugeEule", by = "lehrer1",
 			only_unused = true }).only_unused)
 		-- Who may remove what has to be said: nothing is assumed.

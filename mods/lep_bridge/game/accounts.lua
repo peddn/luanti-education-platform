@@ -52,12 +52,28 @@ local function build_rooms(names)
 	end)
 end
 
+-- What is done to the accounts of teachers from outside is written
+-- down in the world, under the account that ordered it. It stands
+-- there even if the backend could not be trusted.
+local function record(by, action, target)
+	if core.global_exists("lep_desk") then
+		lep_desk.record(by, action, target)
+	else
+		core.log("action", "[lep_bridge] " .. by .. " used " .. action .. " on " .. target)
+	end
+end
+
 lep_bridge.register_job(reports.JOB_CREATE_ACCOUNTS, function(payload)
-	local list = accounts.parse(payload)
+	local list, teachers_by = accounts.parse(payload)
 	if not list then
 		return false, "the order cannot be read"
 	end
-	local created, refused = lep_accounts.create(list)
+	local created, refused = lep_accounts.create(list, { teacher = teachers_by ~= nil })
+	if teachers_by then
+		for _, name in ipairs(created) do
+			record(teachers_by, "web:create_teacher", name)
+		end
+	end
 	-- The job is done once the accounts exist. The rooms follow in the
 	-- background; a room that is missing is built when it is entered.
 	build_rooms(created)
@@ -69,14 +85,17 @@ lep_bridge.register_job(reports.JOB_CREATE_ACCOUNTS, function(payload)
 end)
 
 lep_bridge.register_job(reports.JOB_SET_PASSWORD, function(payload)
-	local name, password = accounts.parse_password(payload)
+	local name, password, staff_by = accounts.parse_password(payload)
 	if not name then
 		return false, "the order cannot be read"
 	end
-	local ok, why = lep_accounts.set_password(name, password)
+	local ok, why = lep_accounts.set_password(name, password, { staff = staff_by ~= nil })
 	if not ok then
 		-- A fixed word the backend passes on: unknown, staff or invalid.
 		return false, why
+	end
+	if staff_by then
+		record(staff_by, "web:reset_teacher_password", name)
 	end
 	return true, "set"
 end)

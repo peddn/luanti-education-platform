@@ -159,4 +159,43 @@ describe("lep_accounts", function()
 		assert.is_false(accounts.may_join("fremder", false, nil))
 		assert.is_false(accounts.may_join("", false, ""))
 	end)
+	it("sets the password of a teacher only when the order says so", function()
+		local ordinary = { interact = true, shout = true }
+		local teacher = { interact = true, shout = true, lep_view_players = true,
+			lep_web_access = true }
+		assert.is_true(accounts.may_set_password("lehrer1", "wolke-apfel-47", true, teacher,
+			ordinary, true, "tester"))
+		assert.same({ false, accounts.STAFF }, { accounts.may_set_password("lehrer1",
+			"wolke-apfel-47", true, teacher, ordinary, false, "tester") })
+	end)
+
+	it("never touches the admin and the school administration from outside", function()
+		local ordinary = { interact = true, shout = true }
+		-- The admin from the settings, even without any privilege.
+		assert.is_true(accounts.is_protected("tester", {}, "tester"))
+		assert.is_false(accounts.is_protected("lehrer1", { lep_web_access = true }, "tester"))
+		for _, privilege in ipairs({ "lep_manage_school", "privs", "server" }) do
+			local held = { interact = true, [privilege] = true }
+			assert.is_true(accounts.is_protected("leitung", held, "tester"), privilege)
+			assert.same({ false, accounts.STAFF }, { accounts.may_set_password("leitung",
+				"wolke-apfel-47", true, held, ordinary, true, "tester") })
+		end
+		assert.is_false(accounts.may_touch(true, true, true))
+		assert.is_true(accounts.may_touch(true, false, false))
+		assert.is_false(accounts.may_touch(false, false, false))
+		assert.is_true(accounts.may_touch(false, true, false))
+	end)
+
+	it("knows the privileges of the bundle for teachers", function()
+		local set = {}
+		for _, privilege in ipairs(accounts.TEACHER_PRIVILEGES) do
+			set[privilege] = true
+		end
+		assert.is_true(set.lep_view_players and set.lep_web_access)
+		-- Never what makes somebody the school administration or an admin.
+		assert.is_nil(set.lep_manage_school)
+		assert.is_nil(set.privs)
+		assert.is_nil(set.protection_bypass)
+		assert.equal(9, #accounts.TEACHER_PRIVILEGES)
+	end)
 end)

@@ -71,6 +71,50 @@ function accounts.without(privileges, taken)
 	return rest
 end
 
+-- What a teacher gets when the school administration creates their
+-- account: the bundle "teacher" of the concept, section 10.5. Privileges
+-- a world does not know are left out there.
+accounts.TEACHER_PRIVILEGES = {
+	"lep_view_players", "lep_send_players", "lep_watch_players", "lep_set_attention",
+	"lep_set_mode", "lep_set_time", "lep_mute_players", "lep_place_quest_chest",
+	"lep_web_access",
+}
+
+-- Privileges that make an account one nobody touches from outside: the
+-- school administration and whoever runs the server.
+local PROTECTING = { "lep_manage_school", "privs", "server" }
+
+--- Returns true if an account is never touched from outside, whoever
+-- asks: the admin from the settings, the school administration and
+-- whoever can hand out privileges or run the server. The backend stands
+-- in the net; who takes it over shall not get these accounts.
+-- @param admin Name of the admin from the settings, or nil.
+function accounts.is_protected(name, privileges, admin)
+	if type(admin) == "string" and admin ~= "" and name == admin then
+		return true
+	end
+	for _, privilege in ipairs(PROTECTING) do
+		if privileges[privilege] then
+			return true
+		end
+	end
+	return false
+end
+
+--- Decides whether an order from outside may touch an account, as far
+-- as its privileges go.
+-- @param is_ordinary True if it holds nothing but what every new player
+--   gets.
+-- @param staff_allowed True if the order says it is meant for a teacher:
+--   only the school administration gives such orders.
+-- @param is_protected See accounts.is_protected.
+function accounts.may_touch(is_ordinary, staff_allowed, is_protected)
+	if is_protected then
+		return false
+	end
+	return is_ordinary or staff_allowed == true
+end
+
 --- Returns true if an account holds nothing but what every new player
 -- gets. Only such an account may get a password from outside: whoever
 -- holds more is a teacher or an admin, and an order that names them is a
@@ -93,13 +137,17 @@ accounts.INVALID = "invalid"
 
 --- Decides whether the password of an account may be set from outside.
 -- @param exists True if there is exactly this account.
+-- @param staff_allowed True if the order is meant for a teacher.
+-- @param admin Name of the admin from the settings, or nil.
 -- @return true, or false and why not: UNKNOWN, STAFF or INVALID
-function accounts.may_set_password(name, password, exists, privileges, ordinary)
+function accounts.may_set_password(name, password, exists, privileges, ordinary,
+		staff_allowed, admin)
 	if not accounts.is_name(name) or type(password) ~= "string" or password == "" then
 		return false, accounts.INVALID
 	elseif not exists then
 		return false, accounts.UNKNOWN
-	elseif not accounts.is_ordinary(privileges, ordinary) then
+	elseif not accounts.may_touch(accounts.is_ordinary(privileges, ordinary), staff_allowed,
+			accounts.is_protected(name, privileges, admin)) then
 		return false, accounts.STAFF
 	end
 	return true

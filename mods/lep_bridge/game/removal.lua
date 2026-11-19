@@ -23,8 +23,12 @@ lep_bridge.register_slow_job(reports.JOB_REMOVE_ACCOUNT, function(payload, finis
 		finish(false, "the order cannot be read")
 		return
 	end
-	lep_accounts.remove(order.account, { only_unused = order.only_unused, by = order.by },
+	lep_accounts.remove(order.account,
+		{ only_unused = order.only_unused, staff = order.staff, by = order.by },
 		function(ok, why)
+			if ok and order.staff and core.global_exists("lep_desk") then
+				lep_desk.record(order.by, "web:remove_teacher", order.account)
+			end
 			-- A fixed word the backend passes on, see
 			-- lep_accounts.REMOVAL_REFUSALS.
 			finish(ok, ok and "removed" or why)
