@@ -2,36 +2,45 @@
 
 local rewards = {}
 
--- The three sizes of a reward.
-rewards.SMALL = "small"
-rewards.MEDIUM = "medium"
-rewards.LARGE = "large"
-rewards.SIZES = { rewards.SMALL, rewards.MEDIUM, rewards.LARGE }
+-- What a reward is paid for. The table of a world says per occasion
+-- which item and how many.
+rewards.TASK = "task"      -- a solved task
+rewards.LEVEL = "level"    -- a completed level
+rewards.STAGE = "stage"    -- a completed stage
+rewards.MODULE = "module"  -- a completed module
+rewards.OCCASIONS = { rewards.TASK, rewards.LEVEL, rewards.STAGE, rewards.MODULE }
 
 -- Kinds of tasks, as in lep_progress.
 rewards.KIND_TASK = "task"
 rewards.KIND_DAILY = "daily"
 
--- Effort of a daily task and the reward size it earns.
-rewards.SIZE_FOR_EFFORT = {
-	low = rewards.SMALL,
-	normal = rewards.MEDIUM,
-	high = rewards.LARGE,
-}
+-- How hard something was, as in lep_progress, and how often the count
+-- of the table is paid for it. Modules differ in how hard they are; the
+-- table is the same for all of them.
+rewards.EFFORT_LOW = "low"
+rewards.EFFORT_NORMAL = "normal"
+rewards.EFFORT_HIGH = "high"
+rewards.FACTOR = { low = 1, normal = 2, high = 3 }
 
 -- Why a reward was paid, for the protocol.
 rewards.REASON_TASK = "task"
 rewards.REASON_DAILY = "daily"
 rewards.REASON_LEVEL = "level"
 rewards.REASON_STAGE = "stage"
+rewards.REASON_MODULE = "module"
 
--- How many daily tasks are rewarded per day.
-rewards.DEFAULT_DAILY_LIMIT = 5
+-- Limits of what a table may hold.
+rewards.MAX_COUNT = 99
+rewards.MAX_DAILY_LIMIT = 20
 
-rewards.DEFAULT_ITEMS = {
-	small = "default:steel_ingot 1",
-	medium = "default:gold_ingot 1",
-	large = "default:diamond 1",
+-- The table of a world nobody has changed: one item with a count per
+-- occasion, and how many daily tasks are rewarded per player and day.
+rewards.DEFAULT_TABLE = {
+	task = { name = "default:steel_ingot", count = 1 },
+	level = { name = "default:gold_ingot", count = 1 },
+	stage = { name = "default:diamond", count = 1 },
+	module = { name = "default:diamond", count = 3 },
+	daily_limit = 5,
 }
 
 -- Where a reward is put.
@@ -56,13 +65,13 @@ function rewards.destination(reason, carries_survival)
 	return rewards.TO_CHEST
 end
 
---- Returns size and reason of the reward for a reported task, or nil if
--- it earns none.
+--- Returns occasion, reason and effort of the reward for a reported
+-- task, or nil if it earns none.
 --
--- A level task is not repeatable: it earns the small reward only while it
--- counts for the workload of the player's level. A daily task earns a
--- reward every day, sized by its effort, if it is on the player's level or
--- above. The caller applies the daily limit.
+-- A level task is not repeatable: it earns a reward only while it counts
+-- for the workload of the player's level. A daily task earns a reward
+-- every day if it is on the player's level or above. The caller applies
+-- the daily limit. How hard the task was multiplies the count.
 -- @param result Table with solved, level, player_level, kind, counted and
 --   effort.
 function rewards.for_result(result)
@@ -73,49 +82,98 @@ function rewards.for_result(result)
 		if result.level < result.player_level then
 			return nil
 		end
-		local size = rewards.SIZE_FOR_EFFORT[result.effort] or rewards.MEDIUM
-		return size, rewards.REASON_DAILY
+		local effort = rewards.FACTOR[result.effort] and result.effort or rewards.EFFORT_NORMAL
+		return rewards.TASK, rewards.REASON_DAILY, effort
 	end
 	if result.counted ~= true then
 		return nil
 	end
-	return rewards.SMALL, rewards.REASON_TASK
+	local effort = rewards.FACTOR[result.effort] and result.effort or rewards.EFFORT_LOW
+	return rewards.TASK, rewards.REASON_TASK, effort
 end
 
---- Returns size and reason of the reward for a completed level. Only the
--- end of a stage earns the large one.
-function rewards.for_level(is_stage)
-	if is_stage then
-		return rewards.LARGE, rewards.REASON_STAGE
+--- Returns occasion and reason of the reward for a completed level.
+-- There is exactly one, the highest that fits: the last level completes
+-- the module, a level that ends a stage earns the one of the stage.
+function rewards.for_level(is_stage, is_last)
+	if is_last then
+		return rewards.MODULE, rewards.REASON_MODULE
+	elseif is_stage then
+		return rewards.STAGE, rewards.REASON_STAGE
 	end
-	return rewards.MEDIUM, rewards.REASON_LEVEL
+	return rewards.LEVEL, rewards.REASON_LEVEL
 end
 
---- Reads a list of items like "default:steel_ingot 1, default:coal_lump 3".
--- @return list of { name = ..., count = ... }  or  nil, error message
-function rewards.parse_items(text)
-	if type(text) ~= "string" then
-		return nil, "items must be text"
+--- Returns what is paid for an occasion as a list of { name, count }, or
+-- nil for an unknown occasion.
+-- @param effort One of the EFFORT_ constants; low if it is none of them.
+function rewards.items(table_, occasion, effort)
+	local row = table_[occasion]
+	if type(row) ~= "table" then
+		return nil
 	end
-	local items = {}
-	for part in (text .. ","):gmatch("(.-),") do
-		part = part:match("^%s*(.-)%s*$")
-		if part ~= "" then
-			local name, count = part:match("^([%w_]+:[%w_]+)%s*(%d*)$")
-			if not name then
-				return nil, "cannot read item '" .. part .. "'"
-			end
-			count = count == "" and 1 or tonumber(count)
-			if count < 1 then
-				return nil, "count of '" .. name .. "' must be at least 1"
-			end
-			items[#items + 1] = { name = name, count = count }
+	return { { name = row.name, count = row.count * (rewards.FACTOR[effort] or 1) } }
+end
+
+local function whole(value, min, max)
+	return type(value) == "number" and value == math.floor(value)
+		and value >= min and value <= max
+end
+
+--- Checks a table somebody wants to set and returns a clean copy.
+-- @param is_item Function(name) returning true for an item that may be
+--   given out.
+-- @return table  or  nil, what is wrong: the name of the occasion or
+--   "daily_limit"
+function rewards.check_table(candidate, is_item)
+	if type(candidate) ~= "table" then
+		return nil, "table"
+	end
+	local clean = {}
+	for _, occasion in ipairs(rewards.OCCASIONS) do
+		local row = candidate[occasion]
+		if type(row) ~= "table" or type(row.name) ~= "string"
+				or not row.name:match("^[%w_]+:[%w_]+$") or not is_item(row.name)
+				or not whole(row.count, 1, rewards.MAX_COUNT) then
+			return nil, occasion
+		end
+		clean[occasion] = { name = row.name, count = row.count }
+	end
+	if not whole(candidate.daily_limit, 0, rewards.MAX_DAILY_LIMIT) then
+		return nil, "daily_limit"
+	end
+	clean.daily_limit = candidate.daily_limit
+	return clean
+end
+
+--- Returns a copy of the default table.
+function rewards.default_table()
+	local copy = { daily_limit = rewards.DEFAULT_TABLE.daily_limit }
+	for _, occasion in ipairs(rewards.OCCASIONS) do
+		local row = rewards.DEFAULT_TABLE[occasion]
+		copy[occasion] = { name = row.name, count = row.count }
+	end
+	return copy
+end
+
+--- Repairs a table that comes from storage: what cannot be used is
+-- taken from the default, row by row.
+function rewards.normalize_table(stored, is_item)
+	local result = rewards.default_table()
+	if type(stored) ~= "table" then
+		return result
+	end
+	for _, occasion in ipairs(rewards.OCCASIONS) do
+		local row = stored[occasion]
+		if type(row) == "table" and type(row.name) == "string" and is_item(row.name)
+				and whole(row.count, 1, rewards.MAX_COUNT) then
+			result[occasion] = { name = row.name, count = row.count }
 		end
 	end
-	if #items == 0 then
-		return nil, "no items given"
+	if whole(stored.daily_limit, 0, rewards.MAX_DAILY_LIMIT) then
+		result.daily_limit = stored.daily_limit
 	end
-	return items
+	return result
 end
 
 --- Returns the daily allowance of a player who has not earned anything:

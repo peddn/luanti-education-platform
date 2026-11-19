@@ -1,13 +1,4 @@
-# Content of the small reward: for a level task that counts for the
-# workload, or an easy daily task.
-# A list like: default:steel_ingot 1, default:coal_lump 3
-lep_rewards_small (Small reward) string default:steel_ingot 1
-
-# Content of the medium reward: for a daily task or a completed level.
-lep_rewards_medium (Medium reward) string default:gold_ingot 1
-
-# Content of the large reward: for a hard daily task or a completed stage.
-lep_rewards_large (Large reward) string default:diamond 1
-
-# How many daily tasks are rewarded per player and day.
-lep_rewards_daily_limit (Rewarded daily tasks per day) int 5 0 1000
+# The rewards are no longer set here. Each world keeps its own table:
+# an item and a count for a solved task, a completed level, a completed
+# stage and a completed module, and the number of rewarded daily tasks
+# per day. Teachers change it in the web application.

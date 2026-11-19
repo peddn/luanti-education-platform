@@ -7,12 +7,23 @@ local storage = load("game/storage")
 local inventory = load("game/inventory")
 local S = core.get_translator("lep_rewards")
 
+-- The second column held the size of the reward once. Now it says how
+-- hard the task or the module was, which multiplies the count.
 local protocol = lep_core.protocols.open("rewards",
-	{ "account", "size", "reason", "module", "level", "task", "items" })
+	{ "account", "effort", "reason", "module", "level", "task", "items" })
 
-lep_rewards.SMALL = rewards.SMALL
-lep_rewards.MEDIUM = rewards.MEDIUM
-lep_rewards.LARGE = rewards.LARGE
+local dispatcher = lep_core.events.new(function(event_name, err)
+	core.log("error", "[lep_rewards] callback for " .. event_name .. " failed: "
+		.. tostring(err))
+end)
+
+lep_rewards.TASK = rewards.TASK
+lep_rewards.LEVEL = rewards.LEVEL
+lep_rewards.STAGE = rewards.STAGE
+lep_rewards.MODULE = rewards.MODULE
+lep_rewards.OCCASIONS = rewards.OCCASIONS
+lep_rewards.MAX_COUNT = rewards.MAX_COUNT
+lep_rewards.MAX_DAILY_LIMIT = rewards.MAX_DAILY_LIMIT
 
 local function today()
 	return os.date("%Y-%m-%d")
@@ -38,19 +49,45 @@ function lep_rewards.describe_items(items)
 	return table.concat(parts, ", ")
 end
 
---- Returns what a reward size contains, as a list of { name, count }.
--- Learning modules use this to show the reward before the task.
-function lep_rewards.get_reward(size)
-	local items = config.items(size)
-	if not items then
-		return nil
-	end
-	local copy = {}
-	for index, item in ipairs(items) do
-		copy[index] = { name = item.name, count = item.count }
-	end
-	return copy
+--- Returns what is paid for an occasion, as a list of { name, count },
+-- or nil for an unknown occasion.
+-- @param occasion One of lep_rewards.OCCASIONS.
+-- @param effort Optional: "low", "normal" or "high". It multiplies the
+--   count by one, two or three.
+function lep_rewards.get_reward(occasion, effort)
+	return config.items(occasion, effort)
 end
+
+--- Returns the reward table of this world: one { name, count } for each
+-- of lep_rewards.OCCASIONS, and daily_limit.
+function lep_rewards.get_table()
+	return config.table()
+end
+
+--- Sets the reward table of this world. It counts from the next reward
+-- on; what lies in a chest stays. The table is taken as a whole or not
+-- at all.
+-- @return true  or  false, what is wrong: the name of an occasion or
+--   "daily_limit"
+function lep_rewards.set_table(candidate)
+	local ok, why = config.set(candidate)
+	if not ok then
+		return false, why
+	end
+	core.log("action", "[lep_rewards] the reward table was changed")
+	dispatcher:emit("table_changed")
+	return true
+end
+
+--- Puts the default table back.
+function lep_rewards.reset_table()
+	config.reset()
+	core.log("action", "[lep_rewards] the reward table was reset to the default")
+	dispatcher:emit("table_changed")
+end
+
+--- Registers a function() called after the reward table was changed.
+lep_rewards.register_on_table_changed = dispatcher:registrar("table_changed")
 
 --- Returns how many rewarded daily tasks a player has left today, and
 -- the limit per day.
@@ -96,11 +133,13 @@ end
 -- decided by rewards.destination: the reward of a daily task goes into
 -- the inventory of a player in survival, everything else and whatever
 -- does not fit into the reward chest.
--- @param details Optional table with reason, module, level and task.
-function lep_rewards.give(player_name, size, details)
-	local items = config.items(size)
-	assert(items, "lep_rewards.give: unknown size '" .. tostring(size) .. "'")
+-- @param occasion One of lep_rewards.OCCASIONS.
+-- @param details Optional table with reason, effort, module, level and
+--   task.
+function lep_rewards.give(player_name, occasion, details)
 	details = details or {}
+	local items = config.items(occasion, details.effort)
+	assert(items, "lep_rewards.give: unknown occasion '" .. tostring(occasion) .. "'")
 
 	local destination = rewards.destination(details.reason,
 		lep_places.has_survival_inventory(player_name))
@@ -114,15 +153,15 @@ function lep_rewards.give(player_name, size, details)
 
 	protocol:append({
 		account = player_name,
-		size = size,
+		effort = details.effort,
 		reason = details.reason,
 		module = details.module,
 		level = details.level,
 		task = details.task,
 		items = items_as_text(items),
 	})
-	core.log("action", "[lep_rewards] " .. player_name .. " received the " .. size
-		.. " reward (" .. tostring(details.reason) .. ")")
+	core.log("action", "[lep_rewards] " .. player_name .. " received the reward for a "
+		.. occasion .. " (" .. tostring(details.reason) .. ")")
 
 	if not core.get_player_by_name(player_name) then
 		return
@@ -143,8 +182,8 @@ end
 -- Solved tasks. Level tasks are rewarded while they count for the
 -- workload, daily tasks within the daily limit.
 lep_progress.register_on_result(function(result)
-	local size, reason = rewards.for_result(result)
-	if not size then
+	local occasion, reason, effort = rewards.for_result(result)
+	if not occasion then
 		return
 	end
 
@@ -161,8 +200,9 @@ lep_progress.register_on_result(function(result)
 		last_today = left == 0
 	end
 
-	lep_rewards.give(result.player, size, {
+	lep_rewards.give(result.player, occasion, {
 		reason = reason,
+		effort = effort,
 		module = result.module,
 		level = result.level,
 		task = result.task,
@@ -188,24 +228,31 @@ lep_progress.register_task_info(function(player_name, module_id, level, task_id,
 			end
 		end
 	end
-	local size = rewards.for_result({
+	-- A level task is as hard as its module. Of a daily task the effort
+	-- is only known when it is reported; normal is the usual one.
+	local module = lep_progress.get_module(module_id)
+	local occasion, _, effort = rewards.for_result({
 		solved = true, level = level, player_level = info.level, kind = kind,
-		counted = counted, effort = "normal",
+		counted = counted,
+		effort = kind == rewards.KIND_DAILY and rewards.EFFORT_NORMAL or module.effort,
 	})
-	if not size then
+	if not occasion then
 		return S("No reward: you have finished this kind of task.")
 	end
 	if kind == rewards.KIND_DAILY and lep_rewards.get_remaining(player_name) == 0 then
 		return S("No reward: the daily limit is reached.")
 	end
-	return S("Reward: @1", lep_rewards.describe_items(config.items(size)))
+	return S("Reward: @1", lep_rewards.describe_items(config.items(occasion, effort)))
 end)
 
--- Completed levels.
+-- Completed levels. There is exactly one reward: the last level
+-- completes the module and earns the one for that.
 lep_progress.register_on_level_completed(function(player_name, module_id, level, is_stage)
-	local size, reason = rewards.for_level(is_stage)
-	lep_rewards.give(player_name, size, {
+	local module = lep_progress.get_module(module_id)
+	local occasion, reason = rewards.for_level(is_stage, level == module.levels)
+	lep_rewards.give(player_name, occasion, {
 		reason = reason,
+		effort = module.effort,
 		module = module_id,
 		level = level,
 	})
