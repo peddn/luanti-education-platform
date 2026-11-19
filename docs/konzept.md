@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 55 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 56 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -1054,7 +1054,7 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 - Fortschritt pro Gruppe, Schüler und Modul in Prozent des Pensums, Export als CSV.
 - Fragensets hochladen und zuweisen.
 - Belohnungstabellen pro Gruppe.
-- Belohnungs- und Chatprotokoll einsehen.
+- Alle Protokolle der Gruppe einsehen, nach Konto und Zeitraum filtern und als CSV exportieren. Das Protokoll des Pults sieht nur die Schulverwaltung.
 - Jahresabschluss.
 
 ### 11.6 Zuständigkeiten
@@ -1122,7 +1122,10 @@ Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen, Aktionen am Pult und
 - Jedes Protokoll ist eine Datei im Ordner der Welt, an die nur angehängt wird. Eine Zeile ist ein Eintrag mit Zeitpunkt und Kontoname.
 - Die gemeinsame Technik liegt in `lep_core`. Kein Mod baut ein eigenes Protokoll.
 - Alle Protokolle bleiben bis zum Jahresabschluss, also höchstens ein Jahr. Der Jahresabschluss löscht sie vollständig. Eine kürzere eigene Frist gibt es nicht.
-- Einsicht haben nur Lehrkräfte der Gruppe. Schüler sehen ihr eigenes Belohnungsprotokoll.
+- Einsicht haben nur Lehrkräfte der Gruppe, in der Web-Anwendung: alle fünf Protokolle, nach Konto und Zeitraum gefiltert. Schüler sehen ihr eigenes Belohnungsprotokoll.
+- Das Protokoll des Pults zeigt, was Lehrkräfte getan haben. Es sieht nur die Schulverwaltung.
+- Die gefilterte Ansicht lässt sich als CSV-Datei herunterladen, um einen Vorfall weitergeben zu können. Damit verlassen Einträge die Plattform: Wer exportiert, ist für die Datei verantwortlich, und die Löschung beim Jahresabschluss erreicht sie nicht. Das gehört in die Information an Schule und Eltern.
+- Die Ansicht bleibt beim Lesen ruhig. Kommen neue Einträge, sagt sie es in einer Zeile und zeigt sie erst auf Klick.
 - Die Schüler werden darauf hingewiesen, dass der Chat mitgeschrieben wird.
 - Ein Jahr ist lang und muss gegenüber Schule und Eltern begründet werden, etwa mit der Aufklärung von Mobbing-Vorfällen und von Streit um Belohnungen.
 - Das Belohnungsprotokoll zeigt, wann ein Schüler welche Aufgabe gelöst hat. Es ist damit eine Lernhistorie des laufenden Jahres. Auch das gehört in die Information an Schule und Eltern.
