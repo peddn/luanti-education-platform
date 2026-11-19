@@ -24,3 +24,4 @@ pub mod web_access;
 pub mod web_api;
 pub mod world_api;
 pub mod worlds;
+pub mod year_end;

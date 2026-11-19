@@ -470,6 +470,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/year-end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shows what closing the year would delete per group, how far the
+         *     worlds are with the last one, and when the year was closed before.
+         */
+        get: operations["show_year_end"];
+        put?: never;
+        /**
+         * Closes the year for the whole school: deletes all protocols and the
+         *     list of exports in the backend and orders every world to delete its
+         *     own protocols. What students have reached stays. It cannot be undone.
+         */
+        post: operations["close_year"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/world/v1/events": {
         parameters: {
             query?: never;
@@ -578,6 +603,11 @@ export interface components {
          * @enum {string}
          */
         ChangeTopic: "group" | "students" | "progress" | "protocols";
+        /** @description Payload of the job "clear_protocols". */
+        ClearProtocols: {
+            /** @description Account name of who closed the year, for the log of the world. */
+            by: string;
+        };
         /** @description Request to confirm an address with the token from a mail. */
         ConfirmRequest: {
             token: string;
@@ -1203,6 +1233,61 @@ export interface components {
             engine: string;
             /** @description Names of the mods that are loaded. */
             mods: string[];
+        };
+        /** @description What closing the year would delete, and when it was closed last. */
+        YearEnd: {
+            groups: components["schemas"]["YearEndGroup"][];
+            /** @description The years that were closed, newest first. */
+            runs: components["schemas"]["YearEndRun"][];
+        };
+        /**
+         * @description What closing the year would delete for one group, and how far its
+         *     world is with the last one.
+         */
+        YearEndGroup: {
+            /**
+             * Format: int64
+             * @description Entries of the list of exports.
+             */
+            exports: number;
+            id: string;
+            name: string;
+            /**
+             * Format: int64
+             * @description Entries of protocols the backend holds for the group.
+             */
+            protocol_entries: number;
+            world?: components["schemas"]["ChangeState"] | null;
+        };
+        /** @description Request to close the year. */
+        YearEndRequest: {
+            /** @description Has to be "close-the-year". */
+            confirm: string;
+        };
+        /** @description A year that was closed. Kept for good, without any content. */
+        YearEndRun: {
+            /** @description Account name of who did it. */
+            account: string;
+            /**
+             * Format: int64
+             * @description How many entries of the list of exports it deleted.
+             */
+            exports: number;
+            /**
+             * Format: int64
+             * @description How many groups there were.
+             */
+            groups: number;
+            /**
+             * Format: int64
+             * @description How many entries of protocols the backend deleted.
+             */
+            protocol_entries: number;
+            /**
+             * Format: int64
+             * @description When, in seconds since 1970.
+             */
+            time: number;
         };
     };
     responses: never;
@@ -2269,6 +2354,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeacherList"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    show_year_end: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What would be deleted, and the years that were closed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YearEnd"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    close_year: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YearEndRequest"];
+            };
+        };
+        responses: {
+            /** @description The year is closed; the worlds delete as soon as they answer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YearEnd"];
+                };
+            };
+            /** @description The request does not carry the confirmation (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Not logged in (unauthorized) */

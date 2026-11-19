@@ -1543,6 +1543,116 @@
         ]
       }
     },
+    "/api/web/v1/year-end": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Shows what closing the year would delete per group, how far the\nworlds are with the last one, and when the year was closed before.",
+        "operationId": "show_year_end",
+        "responses": {
+          "200": {
+            "description": "What would be deleted, and the years that were closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEnd"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Closes the year for the whole school: deletes all protocols and the\nlist of exports in the backend and orders every world to delete its\nown protocols. What students have reached stays. It cannot be undone.",
+        "operationId": "close_year",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YearEndRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The year is closed; the worlds delete as soon as they answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEnd"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not carry the confirmation (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/world/v1/events": {
       "post": {
         "tags": [
@@ -1804,6 +1914,19 @@
           "progress",
           "protocols"
         ]
+      },
+      "ClearProtocols": {
+        "type": "object",
+        "description": "Payload of the job \"clear_protocols\".",
+        "required": [
+          "by"
+        ],
+        "properties": {
+          "by": {
+            "type": "string",
+            "description": "Account name of who closed the year, for the log of the world."
+          }
+        }
       },
       "ConfirmRequest": {
         "type": "object",
@@ -3141,6 +3264,118 @@
               "type": "string"
             },
             "description": "Names of the mods that are loaded."
+          }
+        }
+      },
+      "YearEnd": {
+        "type": "object",
+        "description": "What closing the year would delete, and when it was closed last.",
+        "required": [
+          "groups",
+          "runs"
+        ],
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearEndGroup"
+            }
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearEndRun"
+            },
+            "description": "The years that were closed, newest first."
+          }
+        }
+      },
+      "YearEndGroup": {
+        "type": "object",
+        "description": "What closing the year would delete for one group, and how far its\nworld is with the last one.",
+        "required": [
+          "id",
+          "name",
+          "protocol_entries",
+          "exports"
+        ],
+        "properties": {
+          "exports": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Entries of the list of exports."
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "protocol_entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Entries of protocols the backend holds for the group."
+          },
+          "world": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeState",
+                "description": "Missing if the world was never asked to delete its protocols,\nor has done so. Pending: it has not answered yet, for example\nbecause it does not run. Refused: it could not."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "YearEndRequest": {
+        "type": "object",
+        "description": "Request to close the year.",
+        "required": [
+          "confirm"
+        ],
+        "properties": {
+          "confirm": {
+            "type": "string",
+            "description": "Has to be \"close-the-year\"."
+          }
+        }
+      },
+      "YearEndRun": {
+        "type": "object",
+        "description": "A year that was closed. Kept for good, without any content.",
+        "required": [
+          "time",
+          "account",
+          "groups",
+          "protocol_entries",
+          "exports"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of who did it."
+          },
+          "exports": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many entries of the list of exports it deleted."
+          },
+          "groups": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many groups there were."
+          },
+          "protocol_entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many entries of protocols the backend deleted."
+          },
+          "time": {
+            "type": "integer",
+            "format": "int64",
+            "description": "When, in seconds since 1970."
           }
         }
       }

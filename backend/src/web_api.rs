@@ -18,7 +18,8 @@ use futures_util::stream::{self, Stream};
 use lep_protocol::web::{
     AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
     DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
-    MailTransport, Me, ProgressChange, ProtocolPage, Status, Students, TeacherList,
+    MailTransport, Me, ProgressChange, ProtocolPage, Status, Students, TeacherList, YearEnd,
+    YearEndRequest, YEAR_END_CONFIRMATION,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -41,6 +42,7 @@ use crate::progress::{self, ChangeError as ChangeProgressError};
 use crate::protocols;
 use crate::students::{self, DraftError};
 use crate::teachers::{self, ConfirmError};
+use crate::year_end;
 use crate::{clock, mail, web_access};
 use serde::Deserialize;
 
@@ -49,6 +51,7 @@ pub const SESSION_COOKIE: &str = "lep_session";
 
 pub fn router(state: &AppState) -> Router<AppState> {
     Router::new()
+        .route("/v1/year-end", get(show_year_end).post(close_year))
         .route("/v1/groups/{id}/changes", get(watch_changes))
         .route("/v1/groups/{id}/protocols/{protocol}", get(show_protocol))
         .route(
@@ -763,6 +766,73 @@ pub async fn display_name_history(
             "no such account that exists in the world",
         )),
     }
+}
+
+/// Lets only the administration of the school through.
+async fn school_admin(state: &AppState, account: &str) -> Result<(), Failure> {
+    if groups::is_school_admin(&state.db, account).await? {
+        Ok(())
+    } else {
+        Err(Failure::forbidden(
+            "only the school administration closes the year",
+        ))
+    }
+}
+
+/// Shows what closing the year would delete per group, how far the
+/// worlds are with the last one, and when the year was closed before.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/year-end",
+    responses(
+        (status = 200, description = "What would be deleted, and the years that were closed", body = YearEnd),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn show_year_end(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+) -> Result<Json<YearEnd>, Failure> {
+    school_admin(&state, &teacher.account).await?;
+    Ok(Json(year_end::overview(&state.db).await?))
+}
+
+/// Closes the year for the whole school: deletes all protocols and the
+/// list of exports in the backend and orders every world to delete its
+/// own protocols. What students have reached stays. It cannot be undone.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/year-end",
+    request_body = YearEndRequest,
+    responses(
+        (status = 200, description = "The year is closed; the worlds delete as soon as they answer", body = YearEnd),
+        (status = 400, description = "The request does not carry the confirmation (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn close_year(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    wanted: Result<Json<YearEndRequest>, JsonRejection>,
+) -> Result<Json<YearEnd>, Failure> {
+    let wanted = body(wanted)?;
+    school_admin(&state, &teacher.account).await?;
+    if wanted.confirm != YEAR_END_CONFIRMATION {
+        return Err(Failure::invalid_request(
+            "the request does not carry the confirmation",
+        ));
+    }
+    let groups = year_end::close(&state.db, clock::now(), &teacher.account).await?;
+    for group in &groups {
+        state.waiters.wake(group);
+        state.changes.tell(group, &[ChangeTopic::Protocols]);
+    }
+    tracing::warn!(account = %teacher.account, groups = groups.len(), "the year was closed: protocols deleted");
+    Ok(Json(year_end::overview(&state.db).await?))
 }
 
 /// What narrows a protocol down, and which part of it is wanted.
