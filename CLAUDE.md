@@ -71,6 +71,7 @@ Für die Anleitung in Schritt 4 gilt:
 - Tests mit Busted in `spec/`, für jeden Kern.
 - Mods sprechen über Anmeldefunktionen miteinander (`register_on_...`), nicht über direkte Aufrufe in fremde Interna.
 - Formspecs werden selbst geschrieben, ohne Fenster-Bibliothek. Jedes Fenster nutzt die Hilfsschicht aus `lep_core`.
+- Alle Fenster sehen gleich aus: Überschrift mit `title`, „Schließen“ mit `close`, hervorgehobene Knöpfe mit `highlight`, Zwischenüberschriften mit `heading`. Farben und Schriftgrößen stehen nur in der Hilfsschicht, kein Fenster setzt eigene. Braucht ein Fenster etwas Neues, kommt es als Baustein in die Hilfsschicht.
 - Eingaben aus Fenstern nie trauen. Rechte beim Absenden erneut prüfen, Zustand pro Spieler auf dem Server halten.
 - Sensible Block-Metadaten als privat markieren.
 - HUD statt Fenster, wenn keine Eingabe nötig ist.
