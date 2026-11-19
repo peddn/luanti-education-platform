@@ -91,6 +91,11 @@ function orders.parse_remove_account(payload)
 		return nil
 	end
 	order.only_unused = payload.only_unused
+	-- Meant for a teacher: only the school administration orders that.
+	if payload.staff ~= nil and type(payload.staff) ~= "boolean" then
+		return nil
+	end
+	order.staff = payload.staff == true
 	return order
 end
 

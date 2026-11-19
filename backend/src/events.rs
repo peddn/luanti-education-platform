@@ -88,6 +88,7 @@ pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<Ev
         EVENT_ACCOUNTS_CREATED => match payload::<AccountsCreated>(event) {
             Some(report) => {
                 students::note_created(pool, world_id, &report).await?;
+                crate::staff::note_created(pool, &report).await?;
                 true
             }
             None => false,

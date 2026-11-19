@@ -3,12 +3,28 @@
 
 local accounts = {}
 
+-- Names arrive from outside and end up in a protocol and in the log.
+local function is_name(value)
+	return type(value) == "string" and value:match("^[%w_-]+$") ~= nil and #value <= 60
+end
+
 --- Reads the payload of the job "create_accounts".
 -- @return List of tables with name and password, or nil if the payload
---   cannot be read. Entries that are no table are left out.
+--   cannot be read. Entries that are no table are left out. The second
+--   value is nil for students; for teachers it is the account name of
+--   the member of the school administration who ordered it.
 function accounts.parse(payload)
 	if type(payload) ~= "table" or type(payload.accounts) ~= "table" then
 		return nil
+	end
+	local by
+	if payload.teacher ~= nil and payload.teacher ~= false then
+		-- Accounts with privileges are only created for somebody who
+		-- can be named.
+		if payload.teacher ~= true or not is_name(payload.by) then
+			return nil
+		end
+		by = payload.by
 	end
 	local list = {}
 	for _, entry in ipairs(payload.accounts) do
@@ -16,17 +32,26 @@ function accounts.parse(payload)
 			list[#list + 1] = { name = entry.name, password = entry.password }
 		end
 	end
-	return list
+	return list, by
 end
 
 --- Reads the payload of the job "set_password".
--- @return name and password, or nil if the payload cannot be read
+-- @return name and password, or nil if the payload cannot be read. The
+--   third value is nil for students; for a teacher it is the account
+--   name of the member of the school administration who ordered it.
 function accounts.parse_password(payload)
 	if type(payload) ~= "table" or type(payload.name) ~= "string" or payload.name == ""
 			or type(payload.password) ~= "string" or payload.password == "" then
 		return nil
 	end
-	return payload.name, payload.password
+	local by
+	if payload.staff ~= nil and payload.staff ~= false then
+		if payload.staff ~= true or not is_name(payload.by) then
+			return nil
+		end
+		by = payload.by
+	end
+	return payload.name, payload.password, by
 end
 
 --- Runs jobs one after the other. A job is a function(done) that calls

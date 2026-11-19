@@ -46,15 +46,19 @@ function lep_accounts.was_used(name)
 	return entry ~= nil and removal.was_used(entry.last_login)
 end
 
--- The privileges that make an account more than an ordinary one. What a
--- student holds only because of the room they are in does not count.
-local function is_ordinary(name)
+-- Returns true if an order from outside may remove this account: an
+-- ordinary one, or a teacher if the order says so. What a student holds
+-- only because of the room they are in does not count. The admin and
+-- the school administration are never removed this way.
+local function may_touch(name, staff_allowed)
 	local privileges = core.get_player_privs(name)
 	if core.global_exists("lep_places") then
 		privileges = accounts.without(privileges, lep_places.get_granted_privileges(name))
 	end
-	return accounts.is_ordinary(privileges,
+	local ordinary = accounts.is_ordinary(privileges,
 		accounts.privilege_set(core.settings:get("default_privs")))
+	return accounts.may_touch(ordinary, staff_allowed,
+		accounts.is_protected(name, privileges, core.settings:get("name")))
 end
 
 -- Deletes everything about an account whose player is not in the game.
@@ -85,6 +89,9 @@ end
 -- @param options Table with:
 --   only_unused  true if only an account nobody ever logged in with may
 --                be removed
+--   staff        true if the order is meant for a teacher: only the
+--                school administration gives it. Nobody removes
+--                themselves.
 --   by           account name of who ordered it, for the log
 -- @param callback Optional function(ok, why). why is one of
 --   lep_accounts.REMOVAL_REFUSALS.
@@ -97,7 +104,9 @@ function lep_accounts.remove(name, options, callback)
 		callback(false, removal.BUSY)
 		return
 	end
-	local ok, why = removal.may_remove(exists, exists and is_ordinary(name),
+	local allowed = exists and options.by ~= name
+		and may_touch(name, options.staff == true)
+	local ok, why = removal.may_remove(exists, allowed,
 		exists and lep_accounts.was_used(name), options.only_unused == true)
 	if not ok then
 		core.log("warning", "[lep_accounts] account " .. tostring(name)

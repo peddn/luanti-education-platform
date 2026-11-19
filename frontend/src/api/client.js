@@ -63,6 +63,7 @@ const BACKEND_CODES = [
   'forbidden',
   'name_taken',
   'no_names',
+  'account_taken',
   'invalid_token',
   'address_taken',
   'internal',

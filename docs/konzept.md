@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 61 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 62 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -194,14 +194,19 @@ Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke 
 - Zwei Wörter und zwei Ziffern, etwa `wolke-apfel-47`. Kinder müssen es abtippen, deshalb ist es leicht statt stark. Sie können es im Spiel ändern. Erzwingen lässt sich das in Luanti nicht.
 - Das Backend zeigt es genau einmal, auf den Zugangszetteln, und bewahrt es nicht auf. Im Auftrag an die Welt steht es, bis die Welt geantwortet hat, dann wird es dort gelöscht. Die Welt speichert nur den Hash.
 - Geht ein Zettel verloren, setzt die Lehrkraft das Passwort in der Web-Anwendung zurück. Sie bekommt einen neuen Zettel mit einem neuen Startpasswort, wieder nur einmal angezeigt. Das alte gilt, bis die Welt das neue übernommen hat. Ein Kind, das gerade spielt, bleibt angemeldet.
-- Die Welt setzt ein Passwort nur für ein gewöhnliches Konto: eines, das nichts hat außer den Privilegien, die jeder neue Spieler bekommt. Für das Konto einer Lehrkraft oder des Admins lehnt sie ab, was auch immer der Auftrag sagt. Was ein Schüler nur wegen seines Orts hat, etwa Fliegen in einem Raum, der es erlaubt, zählt dabei nicht. Die Welt weiß von jedem Konto, welche Privilegien vom Ort kommen, auch wenn der Spieler gerade nicht da ist. Das Backend steht im Netz. Wer es übernimmt, soll damit nicht die Lehrer- und Admin-Konten der Welten bekommen.
+- Die Welt setzt ein Passwort nur für ein gewöhnliches Konto: eines, das nichts hat außer den Privilegien, die jeder neue Spieler bekommt. Für alle anderen Konten lehnt sie ab, außer der Auftrag kommt von der Schulverwaltung und gilt ausdrücklich einer Lehrkraft (siehe unten). Was ein Schüler nur wegen seines Orts hat, etwa Fliegen in einem Raum, der es erlaubt, zählt dabei nicht. Die Welt weiß von jedem Konto, welche Privilegien vom Ort kommen, auch wenn der Spieler gerade nicht da ist. Das Backend steht im Netz. Wer es übernimmt, soll damit nicht die Konten des Admins und der Schulverwaltung bekommen: Für sie nimmt die Welt von außen nie etwas an.
 
 **Geschlossene Welt**
 
 - Eine Welt lässt nur Namen hinein, für die es ein Konto gibt. Wer mit einem unbekannten Namen kommt, wird abgewiesen. Konten entstehen auf Auftrag, nicht durch Hereinkommen.
 - Die Ausnahme ist der Admin aus der Einstellung `name`: Er darf sein Konto durch das erste Anmelden anlegen, sonst käme in eine neue Welt niemand hinein.
 - Das gilt für jede Welt, auch für die Testumgebung. Eine Einstellung zum Offenhalten gibt es nicht.
-- Ein Konto ist ein Konto. Ob jemand Schüler oder Lehrkraft ist, sagen allein die Privilegien. Bis die Schulverwaltung Lehrerkonten anlegen kann (Schritt 7), entsteht eine Lehrkraft, indem der Admin einem angelegten Konto die Privilegien gibt.
+- Was ein Konto im Spiel darf, sagen allein seine Privilegien. Für die Web-Anwendung zählt zusätzlich die Herkunft: Ein Konto, das als Schülerkonto einer Gruppe angelegt wurde, erkennt das Backend nie als Lehrkraft oder Schulverwaltung an, was auch immer eine Welt meldet. Schüler und Lehrkräfte sind damit getrennt, und ein falsch vergebenes Privileg öffnet keinem Kind die Web-Anwendung.
+- Lehrkräfte legt die Schulverwaltung in der Web-Anwendung an. Sie vergibt den Namen selbst. Das Konto entsteht in jeder Welt, mit einem Startpasswort auf einem Zugangszettel und mit den Privilegien des Bündels „Lehrkraft“ (Abschnitt 10.5). Eine Welt, die später dazukommt, bekommt die bestehenden Lehrkräfte mit Schritt 7.
+- Die Schulverwaltung setzt das Passwort einer Lehrkraft zurück und löscht ihr Konto, in allen Welten. Lehrkräfte vergessen Passwörter wie alle anderen, und die Anwendung soll ohne Kommandozeile auskommen. Dafür wurde eine ältere Regel gelockert, nach der die Welt für Lehrkräfte von außen nichts annahm. Der Preis: Wer das Backend übernimmt, kann Lehrkraft-Konten anlegen und übernehmen, aber weiterhin keine Konten des Admins oder der Schulverwaltung.
+- Die Welt schreibt jedes Anlegen, jedes neue Passwort und jedes Löschen einer Lehrkraft ins Protokoll des Pults, unter dem Konto, das es ausgelöst hat. So steht es in der Welt, auch wenn dem Backend nicht zu trauen wäre.
+- Einzelne Privilegien vergibt und nimmt weiterhin der Admin im Spiel. Wer zur Schulverwaltung gehört, bestimmt nur er, mit `lep_manage_school`.
+- Hat ein Konto in keiner Welt mehr das Privileg für den Web-Zugang, verliert es seine Zuordnungen zu Gruppen.
 - Fremde Zusatzmods für Namenslisten werden nicht eingesetzt: Sie führten eine zweite Liste neben den Konten, die mit ihnen im Gleichschritt bleiben müsste.
 
 **Echte Namen**
@@ -1161,7 +1166,7 @@ Verlangen Eltern oder ein Schüler die Löschung, wartet die Schule nicht auf de
 
 - Gelöscht wird ein einzelnes Konto sofort: Kontodaten, Stand und die Einträge des Kontos in den Protokollen, in der Welt und im Backend.
 - Wer löschen darf, hängt davon ab, ob das Konto je benutzt wurde. Ein Konto, mit dem sich noch nie jemand angemeldet hat, löscht die Lehrkraft der Gruppe: Sie hat es angelegt, und es hängen keine Daten eines Kindes daran. Ein benutztes Konto löscht nur die Schulverwaltung. Ob ein Konto benutzt wurde, prüft die Welt selbst. Luanti merkt sich zu jedem Konto die letzte Anmeldung.
-- Gelöscht werden nur gewöhnliche Konten. Das Konto einer Lehrkraft oder des Admins nimmt die Welt auf diesem Weg nicht an, wie beim Zurücksetzen eines Passworts.
+- Gelöscht werden gewöhnliche Konten und, auf Auftrag der Schulverwaltung, Konten von Lehrkräften. Das Konto des Admins oder eines Mitglieds der Schulverwaltung nimmt die Welt auf diesem Weg nie an, wie beim Zurücksetzen eines Passworts. Niemand löscht sich selbst. Mit einer Lehrkraft verschwinden im Backend auch ihre Mailadresse, ihr Web-Zugang und ihre Zuordnungen.
 - Die Welt führt. Sie löscht zuerst und meldet die Löschung als Ereignis. Erst dann löscht das Backend seine Kopien: Konto, Fortschritt, Trophäen, Wunschname und die Protokolleinträge nach derselben Regel wie die Welt. Das gilt auch, wenn das Konto ohne Auftrag des Backends in der Welt gelöscht wurde.
 - Ob ein Konto je benutzt wurde, meldet die Welt bei jeder Anmeldung. Die Schülerliste zeigt es, und die Lehrkraft sieht das Löschen nur bei Konten, die sie selbst löschen darf.
 - Läuft die Welt gerade nicht, wartet der Auftrag. Das Konto ist so lange als wartend markiert, und der Auftrag lässt sich zurücknehmen. Lehnt die Welt ab, steht der Grund beim Konto.

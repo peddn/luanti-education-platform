@@ -63,4 +63,26 @@ describe("lep_bridge accounts", function()
 			function() ended = true end)
 		assert.is_true(ended)
 	end)
+	it("reads orders that are meant for teachers", function()
+		local list, by = accounts.parse({ accounts = { { name = "lehrer2", password = "x" } },
+			teacher = true, by = "leitung" })
+		assert.are.same({ { name = "lehrer2", password = "x" } }, list)
+		assert.are.equal("leitung", by)
+		-- For students nobody is named.
+		list, by = accounts.parse({ accounts = {}, teacher = false })
+		assert.are.same({}, list)
+		assert.is_nil(by)
+		-- Privileges are only handed out for somebody who can be named.
+		assert.is_nil(accounts.parse({ accounts = {}, teacher = true }))
+		assert.is_nil(accounts.parse({ accounts = {}, teacher = true, by = "nobody here" }))
+		assert.is_nil(accounts.parse({ accounts = {}, teacher = "yes", by = "leitung" }))
+
+		local name, password, staff_by = accounts.parse_password({ name = "lehrer2",
+			password = "x", staff = true, by = "leitung" })
+		assert.are.same({ "lehrer2", "x", "leitung" }, { name, password, staff_by })
+		name, password, staff_by = accounts.parse_password({ name = "klugeEule", password = "x" })
+		assert.are.same({ "klugeEule", "x" }, { name, password })
+		assert.is_nil(staff_by)
+		assert.is_nil(accounts.parse_password({ name = "lehrer2", password = "x", staff = true }))
+	end)
 end)

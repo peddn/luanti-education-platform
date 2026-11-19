@@ -42,8 +42,11 @@ end
 -- account that exists with exactly this password counts as created,
 -- because then the same order was done before.
 -- @param list List of tables with name and password.
+-- @param options Optional table. With teacher = true the new accounts
+--   get the privileges of the bundle for teachers on top, as far as this
+--   world knows them. An account that existed before gets nothing.
 -- @return created (list of names), refused (list of names)
-function lep_accounts.create(list)
+function lep_accounts.create(list, options)
 	local to_create, created, refused = accounts.plan(list, {
 		find = lep_accounts.find,
 		has_password = has_password,
@@ -53,9 +56,19 @@ function lep_accounts.create(list)
 		-- The engine gives a new account the default privileges.
 		handler.create_auth(entry.name, core.get_password_hash(entry.name, entry.password))
 		if handler.get_auth(entry.name) then
+			if options and options.teacher then
+				local privileges = core.get_player_privs(entry.name)
+				for _, privilege in ipairs(accounts.TEACHER_PRIVILEGES) do
+					if core.registered_privileges[privilege] then
+						privileges[privilege] = true
+					end
+				end
+				core.set_player_privs(entry.name, privileges)
+			end
 			lep_accounts._release_name(entry.name)
 			created[#created + 1] = entry.name
-			core.log("action", "[lep_accounts] account " .. entry.name .. " created")
+			core.log("action", "[lep_accounts] account " .. entry.name .. " created"
+				.. (options and options.teacher and " as a teacher" or ""))
 		else
 			refused[#refused + 1] = entry.name
 		end
@@ -64,13 +77,14 @@ function lep_accounts.create(list)
 end
 
 --- Sets the password of an ordinary account. An account that holds more
--- than every new player gets, a teacher or an admin, is refused: nobody
--- takes such an account over from outside. Privileges that come from the
--- place a player is in do not count.
+-- than every new player gets is refused, unless the order is meant for
+-- a teacher (options.staff): then only the admin and the school
+-- administration are refused. Nobody takes those over from outside.
+-- Privileges that come from the place a player is in do not count.
 -- Who is in the game stays in; the new password counts from the next
 -- login.
 -- @return true, or false and why not: "unknown", "staff" or "invalid"
-function lep_accounts.set_password(name, password)
+function lep_accounts.set_password(name, password, options)
 	local exists = lep_accounts.exists(name)
 	local privileges = exists and core.get_player_privs(name) or {}
 	if exists and core.global_exists("lep_places") then
@@ -79,7 +93,8 @@ function lep_accounts.set_password(name, password)
 		privileges = accounts.without(privileges, lep_places.get_granted_privileges(name))
 	end
 	local ok, why = accounts.may_set_password(name, password, exists, privileges,
-		ordinary_privileges())
+		ordinary_privileges(), options ~= nil and options.staff == true,
+		core.settings:get("name"))
 	if not ok then
 		core.log("warning", "[lep_accounts] password for " .. tostring(name)
 			.. " not set: " .. why)

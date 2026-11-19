@@ -131,7 +131,7 @@ Der Server lauscht auf Port 30000. Ob die Mods geladen wurden, zeigt die Ausgabe
 
 **Die Welt ist geschlossen.** Nur der Admin kann sein Konto durch Registrieren anlegen. Jeder andere unbekannte Name wird abgewiesen: „Ein Konto mit diesem Namen gibt es nicht.“ Konten, die es in der Welt schon gibt, funktionieren weiter.
 
-Weitere Konten entstehen über die Oberfläche (Abschnitt „Schülerkonten“). Für einen zweiten Spieler ohne Admin-Rechte dort ein Konto anlegen und mit Name und Passwort vom Zugangszettel anmelden. Für eine zweite Lehrkraft gibt der Admin einem solchen Konto im Spiel die Privilegien, zum Beispiel `/grant <name> lep_view_players` und `/grant <name> lep_web_access`. Ob jemand Schüler oder Lehrkraft ist, sagen allein die Privilegien.
+Weitere Konten entstehen über die Oberfläche (Abschnitt „Schülerkonten“). Für einen zweiten Spieler ohne Admin-Rechte dort ein Konto anlegen und mit Name und Passwort vom Zugangszettel anmelden. Eine Lehrkraft legt die Schulverwaltung an (Abschnitt „Lehrkräfte“). Ein Schülerkonto wird im Browser nie Lehrkraft, auch wenn ihm der Admin im Spiel Privilegien gibt.
 
 ### Ohne Server starten
 
@@ -234,6 +234,24 @@ Ohne Browser, und zum Ausprobieren, gibt es drei Debug-Befehle:
 | `/lep_name_wait <konto>` | beendet die Frist von 30 Tagen |
 
 Andere Mods fragen `lep_accounts.get_display_name(name)` und speichern den Namen nie. Mit `lep_accounts.register_on_display_name_changed` erfahren sie von Änderungen.
+
+### Lehrkräfte
+
+Lehrkräfte legt die Schulverwaltung an. Die Seite dazu in der Web-Anwendung folgt; die Schnittstelle gibt es schon:
+
+| Aufruf | Wirkung |
+|---|---|
+| `GET /api/web/v1/staff` | alle Lehrkräfte mit Stand, Web-Zugang und Gruppen |
+| `POST /api/web/v1/staff` mit `{"name": "…"}` | legt das Konto in jeder Welt an und antwortet einmal mit dem Zugangszettel |
+| `POST /api/web/v1/staff/{konto}/password` | neues Startpasswort in jeder Welt, Antwort ist der Zettel |
+| `POST /api/web/v1/staff/{konto}/removal` mit `{"confirm": "<konto>"}` | löscht das Konto in jeder Welt |
+
+- Der Name hat 2 bis 19 Zeichen aus Buchstaben, Ziffern, `_` und `-` und darf an der Schule weder vergeben noch gelöscht worden sein.
+- Die Welt gibt dem neuen Konto die Privilegien des Bündels „Lehrkraft“: `lep_view_players`, `lep_send_players`, `lep_watch_players`, `lep_set_attention`, `lep_set_mode`, `lep_set_time`, `lep_mute_players`, `lep_place_quest_chest` und `lep_web_access`. Die Liste steht in `mods/lep_accounts/src/accounts.lua`. Einzelne Privilegien vergibt und nimmt weiter der Admin im Spiel.
+- Geschützt sind der Admin aus der Einstellung `name` und jedes Konto mit `lep_manage_school`, `privs` oder `server`: Für sie nimmt die Welt von außen weder ein Passwort noch eine Löschung an (`staff`). Im Backend kommt dazu: Niemand ändert das eigene Konto.
+- Die Welt schreibt Anlegen, neues Passwort und Löschen ins Protokoll des Pults (`web:create_teacher`, `web:reset_teacher_password`, `web:remove_teacher`), unter dem Konto der Schulverwaltung.
+- Ein Konto aus einer Schülerliste erkennt das Backend nie als Lehrkraft oder Schulverwaltung an, was auch immer die Welt meldet.
+- Wer in keiner Welt mehr `lep_web_access` hat, verliert seine Zuordnungen zu Gruppen.
 
 ### Konto löschen
 

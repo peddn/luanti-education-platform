@@ -18,8 +18,8 @@ use futures_util::stream::{self, Stream};
 use lep_protocol::web::{
     AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
     DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
-    MailTransport, Me, ProgressChange, ProtocolPage, RemovalRequest, Removals, Status, Students,
-    TeacherList, YearEnd, YearEndRequest, YEAR_END_CONFIRMATION,
+    MailTransport, Me, ProgressChange, ProtocolPage, RemovalRequest, Removals, StaffCreate,
+    StaffList, Status, Students, TeacherList, YearEnd, YearEndRequest, YEAR_END_CONFIRMATION,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -41,6 +41,7 @@ use crate::logins::{self, LoggedIn, SESSION_SECONDS};
 use crate::progress::{self, ChangeError as ChangeProgressError};
 use crate::protocols;
 use crate::removals::{self, OrderError};
+use crate::staff::{self, StaffError};
 use crate::students::{self, DraftError};
 use crate::teachers::{self, ConfirmError};
 use crate::year_end;
@@ -102,6 +103,9 @@ pub fn router(state: &AppState) -> Router<AppState> {
             post(order_removal).delete(take_back_removal),
         )
         .route("/v1/removals", get(list_removals))
+        .route("/v1/staff", get(list_staff).post(create_staff))
+        .route("/v1/staff/{account}/password", post(reset_staff_password))
+        .route("/v1/staff/{account}/removal", post(remove_staff))
         .route("/v1/groups/{id}/progress", get(show_progress))
         .route(
             "/v1/groups/{id}/progress/{account}/{module}",
@@ -808,6 +812,154 @@ pub async fn list_removals(
     Ok(Json(Removals {
         removals: removals::list(&state.db).await?,
     }))
+}
+
+fn staff_failure(error: StaffError) -> Failure {
+    match error {
+        StaffError::InvalidName => {
+            Failure::invalid_request("a name has 2 to 19 characters: letters, digits, _ and -")
+        }
+        StaffError::Taken => Failure::new(
+            StatusCode::CONFLICT,
+            ErrorCode::AccountTaken,
+            "this account name is taken or was deleted",
+        ),
+        StaffError::NoWorld => Failure::invalid_request("there is no world yet"),
+        StaffError::NotFound => Failure::not_found("no such teacher"),
+        StaffError::Protected => Failure::forbidden(
+            "accounts of the school administration and the own account are not changed here",
+        ),
+    }
+}
+
+async fn staff_of(state: &AppState) -> Result<Json<StaffList>, Failure> {
+    Ok(Json(StaffList {
+        staff: staff::list(&state.db).await?,
+    }))
+}
+
+/// Lists the accounts of all teachers, for the school administration.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/staff",
+    responses(
+        (status = 200, description = "The accounts of the teachers", body = StaffList),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn list_staff(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+) -> Result<Json<StaffList>, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    staff_of(&state).await
+}
+
+/// Has every world create the account of a teacher, with the privileges
+/// of the bundle for teachers. The answer carries the slip with the
+/// start password, once: it is stored nowhere.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/staff",
+    request_body = StaffCreate,
+    responses(
+        (status = 200, description = "The access slip of the new teacher", body = AccessSlips),
+        (status = 400, description = "The name cannot be an account name, or there is no world (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+        (status = 409, description = "The name is taken or was deleted (account_taken)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn create_staff(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    wanted: Result<Json<StaffCreate>, JsonRejection>,
+) -> Result<impl IntoResponse, Failure> {
+    let wanted = body(wanted)?;
+    school_admin_only(&state, &teacher.account).await?;
+    let (slip, worlds) = staff::create(&state.db, &wanted.name, &teacher.account)
+        .await?
+        .map_err(staff_failure)?;
+    for world in &worlds {
+        state.waiters.wake(world);
+    }
+    tracing::warn!(account = %teacher.account, teacher = %slip.account, "account of a teacher ordered");
+    let no_store = AppendHeaders([(axum::http::header::CACHE_CONTROL, "no-store")]);
+    Ok((no_store, Json(AccessSlips { slips: vec![slip] })))
+}
+
+/// Has every world set a new start password for a teacher. Accounts of
+/// the school administration are never changed from here.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/staff/{account}/password",
+    params(("account" = String, Path, description = "Account name of the teacher")),
+    responses(
+        (status = 200, description = "The access slip with the new password", body = AccessSlips),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration, or the account is protected (forbidden)", body = ApiError),
+        (status = 404, description = "No such teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn reset_staff_password(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(account): Path<String>,
+) -> Result<impl IntoResponse, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    let (slip, worlds) = staff::reset_password(&state.db, &account, &teacher.account)
+        .await?
+        .map_err(staff_failure)?;
+    for world in &worlds {
+        state.waiters.wake(world);
+    }
+    tracing::warn!(account = %teacher.account, teacher = %slip.account, "new password for a teacher ordered");
+    let no_store = AppendHeaders([(axum::http::header::CACHE_CONTROL, "no-store")]);
+    Ok((no_store, Json(AccessSlips { slips: vec![slip] })))
+}
+
+/// Orders every world to delete the account of a teacher. The backend
+/// deletes address, web access and assignments when the first world
+/// reports that it did. It cannot be undone.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/staff/{account}/removal",
+    params(("account" = String, Path, description = "Account name of the teacher")),
+    request_body = RemovalRequest,
+    responses(
+        (status = 200, description = "The accounts of the teachers, with the order on its way", body = StaffList),
+        (status = 400, description = "The request does not carry the account name as confirmation (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration, or the account is protected (forbidden)", body = ApiError),
+        (status = 404, description = "No such teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn remove_staff(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(account): Path<String>,
+    wanted: Result<Json<RemovalRequest>, JsonRejection>,
+) -> Result<Json<StaffList>, Failure> {
+    let wanted = body(wanted)?;
+    school_admin_only(&state, &teacher.account).await?;
+    if wanted.confirm != account {
+        return Err(Failure::invalid_request(
+            "the request does not carry the account name as confirmation",
+        ));
+    }
+    let worlds = staff::remove(&state.db, &account, &teacher.account)
+        .await?
+        .map_err(staff_failure)?;
+    for world in &worlds {
+        state.waiters.wake(world);
+    }
+    tracing::warn!(account = %teacher.account, teacher = %account, "deleting the account of a teacher ordered");
+    staff_of(&state).await
 }
 
 /// Orders the world to lock or unlock choosing a display name for a

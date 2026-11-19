@@ -128,6 +128,7 @@ const TAKEN: &str = "SELECT 1 FROM students WHERE account = ?1 COLLATE NOCASE
          UNION ALL SELECT 1 FROM teachers WHERE account = ?1 COLLATE NOCASE
          UNION ALL SELECT 1 FROM teacher_worlds WHERE account = ?1 COLLATE NOCASE
          UNION ALL SELECT 1 FROM school_admin_worlds WHERE account = ?1 COLLATE NOCASE
+         UNION ALL SELECT 1 FROM staff_accounts WHERE account = ?1 COLLATE NOCASE
          UNION ALL SELECT 1 FROM account_removals WHERE account = ?1 COLLATE NOCASE
          LIMIT 1";
 
@@ -311,6 +312,8 @@ pub async fn create(
     tx.commit().await?;
 
     let payload = CreateAccounts {
+        teacher: false,
+        by: None,
         accounts: slips
             .iter()
             .map(|slip| NewAccount {
@@ -356,6 +359,8 @@ pub async fn reset_password(
     let payload = SetPassword {
         name: slip.account.clone(),
         password: slip.password.clone(),
+        staff: false,
+        by: None,
     };
     jobs::add_about(
         pool,

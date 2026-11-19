@@ -477,6 +477,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists the accounts of all teachers, for the school administration. */
+        get: operations["list_staff"];
+        put?: never;
+        /**
+         * Has every world create the account of a teacher, with the privileges
+         *     of the bundle for teachers. The answer carries the slip with the
+         *     start password, once: it is stored nowhere.
+         */
+        post: operations["create_staff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/staff/{account}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Has every world set a new start password for a teacher. Accounts of
+         *     the school administration are never changed from here.
+         */
+        post: operations["reset_staff_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/staff/{account}/removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Orders every world to delete the account of a teacher. The backend
+         *     deletes address, web access and assignments when the first world
+         *     reports that it did. It cannot be undone.
+         */
+        post: operations["remove_staff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/status": {
         parameters: {
             query?: never;
@@ -683,6 +746,17 @@ export interface components {
         /** @description Payload of the job "create_accounts". */
         CreateAccounts: {
             accounts: components["schemas"]["NewAccount"][];
+            /**
+             * @description Account name of who ordered it, for accounts of teachers. The
+             *     world writes it into the protocol of the desk.
+             */
+            by?: string | null;
+            /**
+             * @description True if the accounts are for teachers: the world gives them
+             *     the privileges of the bundle for teachers. Only the school
+             *     administration orders that.
+             */
+            teacher?: boolean;
         };
         /** @description Request to lock or unlock choosing a display name. */
         DisplayLock: {
@@ -759,7 +833,7 @@ export interface components {
          *     the language of the user.
          * @enum {string}
          */
-        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "forbidden" | "name_taken" | "no_names" | "invalid_token" | "address_taken" | "internal";
+        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "forbidden" | "name_taken" | "no_names" | "account_taken" | "invalid_token" | "address_taken" | "internal";
         /** @description One thing that happened in a world. */
         Event: {
             /**
@@ -1140,6 +1214,11 @@ export interface components {
              *     The world checks that itself.
              */
             only_unused: boolean;
+            /**
+             * @description True if the order is meant for a teacher. The world still
+             *     refuses the admin and the school administration.
+             */
+            staff?: boolean;
         };
         /**
          * @description Payload of the job "remove_display_name". The world writes it
@@ -1201,10 +1280,53 @@ export interface components {
          *     player gets.
          */
         SetPassword: {
+            /** @description Account name of who ordered it, for accounts of teachers. */
+            by?: string | null;
             name: string;
             /** @description The new start password. The world stores only its hash. */
             password: string;
+            /**
+             * @description True if the order is meant for a teacher. The world still
+             *     refuses the admin and the school administration.
+             */
+            staff?: boolean;
         };
+        /** @description The account of a teacher, as the school administration sees it. */
+        StaffAccount: {
+            account: string;
+            /** @description Names of the groups the teacher is assigned to, sorted. */
+            groups: string[];
+            /**
+             * @description True if the account holds the privilege for web access in at
+             *     least one world.
+             */
+            holder: boolean;
+            password?: components["schemas"]["PasswordState"] | null;
+            removal?: components["schemas"]["ChangeState"] | null;
+            removal_refusal?: components["schemas"]["RemovalRefusal"] | null;
+            /**
+             * @description True if it belongs to the school administration. Such an
+             *     account is never changed from here.
+             */
+            school_admin: boolean;
+            state?: components["schemas"]["StaffState"] | null;
+            web_access: components["schemas"]["WebAccessState"];
+        };
+        /** @description Request to create the account of a teacher. */
+        StaffCreate: {
+            /** @description The account name the school administration chose. */
+            name: string;
+        };
+        /** @description The accounts of all teachers, sorted by name. */
+        StaffList: {
+            staff: components["schemas"]["StaffAccount"][];
+        };
+        /**
+         * @description How far the account of a teacher is that the school
+         *     administration ordered.
+         * @enum {string}
+         */
+        StaffState: "creating" | "active" | "refused";
         /**
          * @description State of the backend with its details, for teachers who are
          *     logged in.
@@ -1333,6 +1455,11 @@ export interface components {
             /** @description The address, for the action "set" only. */
             email?: string | null;
         };
+        /**
+         * @description How the web access of a teacher stands.
+         * @enum {string}
+         */
+        WebAccessState: "none" | "pending" | "confirmed";
         /**
          * @description Payload of the job "web_access_status": how the web access of a
          *     teacher stands. Addresses are shortened, the world never gets a
@@ -2565,6 +2692,217 @@ export interface operations {
             };
             /** @description Not the school administration (forbidden) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    list_staff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The accounts of the teachers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffList"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_staff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffCreate"];
+            };
+        };
+        responses: {
+            /** @description The access slip of the new teacher */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessSlips"];
+                };
+            };
+            /** @description The name cannot be an account name, or there is no world (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The name is taken or was deleted (account_taken) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    reset_staff_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account name of the teacher */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The access slip with the new password */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessSlips"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration, or the account is protected (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    remove_staff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account name of the teacher */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemovalRequest"];
+            };
+        };
+        responses: {
+            /** @description The accounts of the teachers, with the order on its way */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffList"];
+                };
+            };
+            /** @description The request does not carry the account name as confirmation (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration, or the account is protected (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such teacher (not_found) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

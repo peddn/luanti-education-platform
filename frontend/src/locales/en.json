@@ -372,6 +372,7 @@
     "forbidden": "You may not do this.",
     "name_taken": "Another group already has this name.",
     "no_names": "No free name turned up. Please try again.",
+    "account_taken": "This account name is taken at the school or was deleted.",
     "invalid_token": "This link no longer works. It is too old or was used already.",
     "address_taken": "This address already belongs to another account.",
     "internal": "The backend ran into an error.",
