@@ -96,8 +96,7 @@
     "create": "Create no accounts | Create one account | Create {count} accounts",
     "creating": "Creating …",
     "refusedHint": "Refused names exist in the world already. Roll them again or remove them.",
-    "pendingHint": "The world creates the accounts as soon as it is connected. Reload the page to see how far it is.",
-    "reload": "Reload",
+    "pendingHint": "The world creates the accounts as soon as it is connected. The list updates by itself.",
     "reset": "Reset password",
     "resetConfirm": "The old password will no longer work.",
     "resetYes": "Yes, new password",
@@ -153,8 +152,7 @@
     "intro": "The table shows what the world reported last. Click a field to see the tasks of the level. There you also set a level or lock moving up.",
     "back": "To the group",
     "loading": "Loading progress …",
-    "reload": "Reload",
-    "pendingHint": "A change is waiting for the world. Reload to see where it stands.",
+    "pendingHint": "A change is waiting for the world. The table updates by itself.",
     "noModules": "The world of this group has not reported any learning modules yet.",
     "noStudents": "This group has no accounts yet that exist in the world.",
     "account": "Account",
@@ -186,6 +184,9 @@
     "repeat": "Repeat level",
     "changeHint": "The world makes the change and notes it in the protocol of the teacher's desk. With moving up locked the child stays on their level, even after finishing its workload.",
     "repeatHint": "Repeating empties the workload of this level. Every task counts and is rewarded again. The reward for completing the level is given the first time only."
+  },
+  "live": {
+    "offline": "The connection to the backend is lost. The page shows the last state and updates again as soon as the connection is back."
   },
   "health": {
     "title": "Status",

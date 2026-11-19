@@ -4,6 +4,8 @@ import { RouterLink } from 'vue-router'
 
 import { api, errorCode } from '@/api/client'
 import ErrorNote from '@/components/ErrorNote.vue'
+import LiveNote from '@/components/LiveNote.vue'
+import { useGroupChanges } from '@/composables/groupChanges'
 
 /** @typedef {import('@/api/client').Group} Group */
 /** @typedef {import('@/api/client').GroupProgress} GroupProgress */
@@ -55,6 +57,20 @@ async function load() {
 }
 
 onMounted(load)
+
+// Loads the table again after the backend said it changed. What is open
+// stays open, and a lost connection leaves the table as it is.
+async function refresh() {
+  try {
+    progress.value = await api.progress(props.id)
+  } catch (err) {
+    if (errorCode(err) !== 'network') {
+      loadError.value = errorCode(err)
+    }
+  }
+}
+
+const { live } = useGroupChanges(props.id, ['progress'], refresh)
 
 /**
  * @param {string} account
@@ -122,18 +138,8 @@ async function order(change) {
         <p class="mt-1 max-w-3xl text-slate-600">{{ $t('progress.intro') }}</p>
       </div>
 
-      <div class="flex items-center gap-4 text-sm">
-        <button
-          type="button"
-          data-test="reload"
-          class="rounded border border-emerald-700 px-3 py-1.5 font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
-          :disabled="busy"
-          @click="load"
-        >
-          {{ $t('progress.reload') }}
-        </button>
-        <span v-if="anyPending" data-test="pending-hint" class="text-amber-700">{{ $t('progress.pendingHint') }}</span>
-      </div>
+      <LiveNote :live="live" />
+      <p v-if="anyPending" data-test="pending-hint" class="text-sm text-amber-700">{{ $t('progress.pendingHint') }}</p>
 
       <ErrorNote v-if="error" :code="error" />
 

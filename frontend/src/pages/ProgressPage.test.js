@@ -5,6 +5,7 @@ import { createMemoryHistory } from 'vue-router'
 
 import { createLepI18n } from '@/i18n'
 import { createLepRouter } from '@/router'
+import { fakeEventSource, settled } from '@/test/fakeEventSource'
 
 import ProgressPage from './ProgressPage.vue'
 
@@ -176,11 +177,12 @@ describe('progress page', () => {
     const field = page.findAll('[data-test=cell]')[0]
     expect(field.text()).toContain('Niveau 2 von 3')
     expect(field.get('[data-test=change]').text()).toBe('Änderung wartet auf die Welt')
-    expect(page.get('[data-test=pending-hint]').text()).toContain('Lade neu')
+    expect(page.get('[data-test=pending-hint]').text()).toContain('aktualisiert sich von selbst')
   })
 
   it('locks and unlocks moving up', async () => {
     let locked = false
+    const opened = fakeEventSource()
     const send = backend({
       [`GET ${BASE}`]: [200, GROUP],
       [`GET ${BASE}/progress`]: () => [200, progress({ locked })],
@@ -193,9 +195,12 @@ describe('progress page', () => {
     await flushPromises()
     expect(ordered(send)).toEqual([{ locked: true }])
 
-    // The world has done it; after a reload the button offers the way back.
+    // The world has done it and the backend says so: the table loads
+    // again by itself, the open field stays open, and the button offers
+    // the way back.
     locked = true
-    await page.get('[data-test=reload]').trigger('click')
+    opened[0].change('progress')
+    await settled()
     await flushPromises()
     expect(page.get('[data-test=set-locked]').text()).toBe('Aufstieg freigeben')
     await page.get('[data-test=set-locked]').trigger('click')
@@ -244,6 +249,35 @@ describe('progress page', () => {
     expect(page.text()).toContain('Die Anfrage war fehlerhaft.')
     // The table stays as it was.
     expect(page.findAll('[data-test=student]')).toHaveLength(2)
+  })
+
+  it('keeps the table when the connection is lost and says so', async () => {
+    const opened = fakeEventSource()
+    let down = false
+    const send = backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/progress`]: () => (down ? [502, { code: 'network', message: 'backend is down' }] : [200, progress()]),
+    })
+    const page = await show()
+    expect(opened.map((source) => source.url)).toEqual([`${BASE}/changes`])
+    expect(page.find('[data-test=offline]').exists()).toBe(false)
+
+    down = true
+    opened[0].lose()
+    await settled()
+    expect(page.get('[data-test=offline]').text()).toContain('Verbindung zum Backend ist unterbrochen')
+    // A signal that still gets through cannot empty the table.
+    opened[0].change('progress')
+    await settled()
+    await flushPromises()
+    expect(page.findAll('[data-test=student]')).toHaveLength(2)
+
+    down = false
+    opened[0].open()
+    await settled()
+    await flushPromises()
+    expect(page.find('[data-test=offline]').exists()).toBe(false)
+    expect(send.mock.calls.filter(([path]) => path === `${BASE}/progress`).length).toBeGreaterThanOrEqual(3)
   })
 
   it('explains an empty table', async () => {

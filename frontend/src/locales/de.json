@@ -96,8 +96,7 @@
     "create": "Keine Konten anlegen | Ein Konto anlegen | {count} Konten anlegen",
     "creating": "Wird angelegt …",
     "refusedHint": "Abgelehnte Namen gibt es in der Welt schon. Würfle sie neu oder entferne sie.",
-    "pendingHint": "Die Welt legt die Konten an, sobald sie verbunden ist. Lade die Seite neu, um den Stand zu sehen.",
-    "reload": "Neu laden",
+    "pendingHint": "Die Welt legt die Konten an, sobald sie verbunden ist. Die Liste aktualisiert sich von selbst.",
     "reset": "Passwort zurücksetzen",
     "resetConfirm": "Das alte Passwort gilt dann nicht mehr.",
     "resetYes": "Ja, neues Passwort",
@@ -153,8 +152,7 @@
     "intro": "Die Tabelle zeigt, was die Welt zuletzt gemeldet hat. Ein Klick auf ein Feld zeigt die Aufgaben des Niveaus. Dort setzt du auch ein Niveau oder sperrst den Aufstieg.",
     "back": "Zur Gruppe",
     "loading": "Fortschritt wird geladen …",
-    "reload": "Neu laden",
-    "pendingHint": "Eine Änderung wartet auf die Welt. Lade neu, um den Stand zu sehen.",
+    "pendingHint": "Eine Änderung wartet auf die Welt. Die Tabelle aktualisiert sich von selbst.",
     "noModules": "Die Welt dieser Gruppe hat noch keine Lernmodule gemeldet.",
     "noStudents": "Diese Gruppe hat noch keine Konten, die in der Welt angelegt sind.",
     "account": "Konto",
@@ -186,6 +184,9 @@
     "repeat": "Niveau wiederholen",
     "changeHint": "Die Welt führt die Änderung aus und hält sie im Protokoll des Lehrerpults fest. Mit gesperrtem Aufstieg bleibt das Kind auf seinem Niveau, auch wenn es das Pensum geschafft hat.",
     "repeatHint": "Wiederholen leert das Pensum dieses Niveaus. Jede Aufgabe zählt und wird wieder belohnt. Die Belohnung für den Abschluss gibt es nur beim ersten Mal."
+  },
+  "live": {
+    "offline": "Die Verbindung zum Backend ist unterbrochen. Die Seite zeigt den letzten Stand und aktualisiert sich wieder, sobald die Verbindung steht."
   },
   "health": {
     "title": "Zustand",

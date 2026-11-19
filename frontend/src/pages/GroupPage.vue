@@ -5,6 +5,8 @@ import { RouterLink } from 'vue-router'
 import { api, errorCode } from '@/api/client'
 import ErrorNote from '@/components/ErrorNote.vue'
 import LastSeen from '@/components/LastSeen.vue'
+import LiveNote from '@/components/LiveNote.vue'
+import { useGroupChanges } from '@/composables/groupChanges'
 import { useAuthStore } from '@/stores/auth'
 
 /** @typedef {import('@/api/client').Group} Group */
@@ -56,6 +58,31 @@ onMounted(async () => {
   }
 })
 
+// Loads the group again after the backend said it changed. A form that
+// somebody is filling in is left alone.
+async function refresh() {
+  try {
+    const fresh = await api.group(props.id)
+    const old = group.value
+    const untouched =
+      old !== null &&
+      name.value === old.name &&
+      address.value === (old.address ?? '') &&
+      [...chosen.value].sort().join() === [...old.teachers].sort().join()
+    if (untouched && !saving.value) {
+      show(fresh)
+    } else {
+      group.value = fresh
+    }
+  } catch (err) {
+    if (errorCode(err) !== 'network') {
+      loadError.value = errorCode(err)
+    }
+  }
+}
+
+const { live } = useGroupChanges(props.id, ['group'], refresh)
+
 async function save() {
   saved.value = false
   saveError.value = null
@@ -96,6 +123,7 @@ async function save() {
         <h1 data-test="name" class="text-2xl font-bold">{{ group.name }}</h1>
         <p class="mt-1 text-sm text-slate-600"><LastSeen :at="group.last_seen_at ?? undefined" /></p>
       </div>
+      <LiveNote :live="live" />
 
       <RouterLink
         :to="{ name: 'students', params: { id } }"
