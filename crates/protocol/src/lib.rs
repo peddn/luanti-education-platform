@@ -71,6 +71,12 @@ pub mod world {
     pub const EVENT_ACCOUNTS_CREATED: &str = "accounts_created";
     /// Kind of the event that carries the display name of one account.
     pub const EVENT_DISPLAY_NAME: &str = "display_name";
+    /// Kind of the event that says somebody has logged in with an
+    /// account. A world may say it as often as it likes.
+    pub const EVENT_ACCOUNT_USED: &str = "account_used";
+    /// Kind of the event that says a world has deleted an account with
+    /// everything it knew about it.
+    pub const EVENT_ACCOUNT_REMOVED: &str = "account_removed";
     /// Kind of the job that only checks the way to the world and back.
     pub const JOB_PING: &str = "ping";
     /// Kind of the job that makes a world send its whole state again.
@@ -94,6 +100,10 @@ pub mod world {
     /// Kind of the job that makes a world lock or unlock choosing a
     /// display name for a student.
     pub const JOB_SET_DISPLAY_LOCKED: &str = "set_display_locked";
+
+    /// Kind of the job that makes a world delete an account with
+    /// everything it knows about it: deleting on request.
+    pub const JOB_REMOVE_ACCOUNT: &str = "remove_account";
 
     /// Kind of the job that makes a world delete all its protocols: the
     /// end of the year.
@@ -394,6 +404,37 @@ pub mod world {
         pub by: String,
     }
 
+    /// Payload of the job "remove_account". The world answers with a
+    /// fixed word: "removed", or why not, see `web::RemovalRefusal`.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct RemoveAccount {
+        /// Account name of the student.
+        pub account: String,
+        /// True if the account may only be deleted when nobody ever
+        /// logged in with it: a teacher takes back what they created.
+        /// The world checks that itself.
+        pub only_unused: bool,
+        /// Account name of who ordered it.
+        pub by: String,
+    }
+
+    /// Payload of the event "account_used".
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct AccountUsed {
+        pub account: String,
+    }
+
+    /// Payload of the event "account_removed". The backend deletes its
+    /// copies when it arrives and keeps a note for good.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct AccountRemoved {
+        pub account: String,
+        /// Account name of who ordered it. Missing if nobody did from
+        /// outside.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub by: Option<String>,
+    }
+
     /// Payload of the job "clear_protocols".
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct ClearProtocols {
@@ -586,6 +627,65 @@ pub mod web {
         /// its lock is on its way.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub display_change: Option<ChangeState>,
+        /// True if somebody has ever logged in with the account, as far
+        /// as the world has said.
+        #[serde(default)]
+        pub used: bool,
+        /// Missing in the usual case: nobody has ordered to delete the
+        /// account. Pending while the world has not answered; the
+        /// account disappears from the list once it has deleted it.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub removal: Option<ChangeState>,
+        /// Why the world refused to delete the account.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub removal_refusal: Option<RemovalRefusal>,
+    }
+
+    /// Why a world did not delete an account.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum RemovalRefusal {
+        /// Somebody has logged in with it: only the school
+        /// administration deletes it.
+        Used,
+        /// It is the account of a teacher or an admin.
+        Staff,
+        /// The world has no such account.
+        Unknown,
+        /// Something could not be deleted. The account is still there
+        /// and the order can be given again.
+        Incomplete,
+        /// Anything else, for example a world that is older than this
+        /// backend.
+        Failed,
+    }
+
+    /// Request to delete the account of a student for good.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct RemovalRequest {
+        /// The account name, typed in once more.
+        pub confirm: String,
+    }
+
+    /// The note that an account was deleted. It carries no content and
+    /// is kept for good.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Removal {
+        /// When the world reported it, in seconds since 1970.
+        pub time: i64,
+        pub account: String,
+        /// Name of the group the account belonged to.
+        pub group: String,
+        /// Account name of who ordered it. Missing if it was done in the
+        /// world itself.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub by: Option<String>,
+    }
+
+    /// The accounts that were deleted on request, newest first.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Removals {
+        pub removals: Vec<Removal>,
     }
 
     /// The word a request to close the year has to carry, so that no

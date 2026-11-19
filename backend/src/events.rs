@@ -3,8 +3,9 @@
 use anyhow::Result;
 use lep_protocol::web::ChangeTopic;
 use lep_protocol::world::{
-    AccountsCreated, DisplayName, Event, EventOutcome, Modules, Progress, ProtocolEntry, Teachers,
-    Trophies, WebAccessRequest, WorldStarted, EVENT_ACCOUNTS_CREATED, EVENT_DISPLAY_NAME,
+    AccountRemoved, AccountUsed, AccountsCreated, DisplayName, Event, EventOutcome, Modules,
+    Progress, ProtocolEntry, Teachers, Trophies, WebAccessRequest, WorldStarted,
+    EVENT_ACCOUNTS_CREATED, EVENT_ACCOUNT_REMOVED, EVENT_ACCOUNT_USED, EVENT_DISPLAY_NAME,
     EVENT_MODULES, EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_TEACHERS, EVENT_TROPHIES,
     EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
 };
@@ -12,7 +13,7 @@ use serde::de::DeserializeOwned;
 
 use crate::app::AppState;
 use crate::display_names::{self, Stored};
-use crate::{clock, state, students, web_access, worlds};
+use crate::{clock, removals, state, students, web_access, worlds};
 
 /// Reads the payload of an event as the type its kind asks for.
 ///
@@ -107,6 +108,20 @@ pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<Ev
             }
             None => false,
         },
+        EVENT_ACCOUNT_USED => match payload::<AccountUsed>(event) {
+            Some(used) => removals::note_used(pool, world_id, &used).await?,
+            None => false,
+        },
+        EVENT_ACCOUNT_REMOVED => match payload::<AccountRemoved>(event) {
+            Some(removed) => {
+                let done = removals::note_removed(pool, world_id, event.time, &removed).await?;
+                if done {
+                    tracing::warn!(world = %world_id, account = %removed.account, "an account was deleted on request");
+                }
+                done
+            }
+            None => false,
+        },
         EVENT_WEB_ACCESS => match payload::<WebAccessRequest>(event) {
             Some(request) => web_access::handle(app, world_id, &request).await?,
             None => false,
@@ -136,6 +151,12 @@ fn topics_of(kind: &str) -> &'static [ChangeTopic] {
         EVENT_DISPLAY_NAME | EVENT_ACCOUNTS_CREATED => {
             &[ChangeTopic::Students, ChangeTopic::Progress]
         }
+        EVENT_ACCOUNT_USED => &[ChangeTopic::Students],
+        EVENT_ACCOUNT_REMOVED => &[
+            ChangeTopic::Students,
+            ChangeTopic::Progress,
+            ChangeTopic::Protocols,
+        ],
         EVENT_TEACHERS | EVENT_WEB_ACCESS | EVENT_WORLD_STARTED => &[ChangeTopic::Group],
         EVENT_PROTOCOL => &[ChangeTopic::Protocols],
         _ => &[],

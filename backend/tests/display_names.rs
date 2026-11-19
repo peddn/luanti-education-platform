@@ -195,7 +195,7 @@ async fn a_new_name_reaches_the_list_and_the_teachers_of_the_group() {
     let (_, json) = setup.web(Method::GET, &path, &teacher, None).await;
     assert_eq!(
         json["students"],
-        json!([{ "account": "klugeEule", "state": "active", "display_locked": false }])
+        json!([{ "account": "klugeEule", "state": "active", "display_locked": false, "used": false }])
     );
 
     let results = setup
@@ -210,7 +210,7 @@ async fn a_new_name_reaches_the_list_and_the_teachers_of_the_group() {
     assert_eq!(
         json["students"][0],
         json!({ "account": "klugeEule", "state": "active", "display_name": "Lena Maier",
-            "display_changed_at": 1700000000, "display_locked": false })
+            "display_changed_at": 1700000000, "display_locked": false, "used": false })
     );
     // The progress of the group names it too.
     let (_, json) = setup
@@ -300,7 +300,7 @@ async fn a_teacher_takes_a_name_away_and_locks_choosing() {
     let (_, json) = setup.web(Method::GET, &path, &teacher, None).await;
     assert_eq!(
         json["students"][0],
-        json!({ "account": "klugeEule", "state": "active", "display_locked": false })
+        json!({ "account": "klugeEule", "state": "active", "display_locked": false, "used": false })
     );
     assert_eq!(setup.state.mailer.kept().len(), 1);
 
