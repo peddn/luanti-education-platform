@@ -99,6 +99,46 @@ async fn changes_of(
     Ok(changes)
 }
 
+/// Name under which an export of the progress stands in the list of
+/// exports, next to the names of the protocols.
+pub const EXPORT_NAME: &str = "progress";
+
+/// Returns where the students of a group stand as a CSV file, one line
+/// per student and module, and how many lines there are. It is the
+/// state the page shows, without the single kinds of tasks. Cells are
+/// separated by semicolons and guarded like the ones of the protocols:
+/// display names are typed by students.
+pub async fn export(pool: &SqlitePool, world_id: &str) -> Result<(String, i64)> {
+    let group = of_group(pool, world_id).await?;
+    let yes_no = |value: bool| if value { "yes" } else { "no" };
+    let mut file = String::from(
+        "\u{feff}account;display_name;module;level;levels;percent;completed;locked\r\n",
+    );
+    let mut lines = 0;
+    for student in &group.students {
+        for progress in &student.modules {
+            let module = group
+                .modules
+                .iter()
+                .find(|module| module.id == progress.module);
+            let cells = [
+                crate::protocols::cell(&student.account),
+                crate::protocols::cell(student.display_name.as_deref().unwrap_or_default()),
+                crate::protocols::cell(module.map_or(progress.module.as_str(), |m| &m.title)),
+                progress.level.to_string(),
+                module.map(|m| m.levels.to_string()).unwrap_or_default(),
+                progress.percent.to_string(),
+                yes_no(progress.completed).to_owned(),
+                yes_no(progress.locked).to_owned(),
+            ];
+            file.push_str(&cells.join(";"));
+            file.push_str("\r\n");
+            lines += 1;
+        }
+    }
+    Ok((file, lines))
+}
+
 /// Returns where the students of a group stand. Listed are the accounts
 /// that exist in the world, in the order of the list of students. A
 /// student the world has reported nothing about stands at the start.
@@ -374,6 +414,39 @@ mod tests {
             };
             jobs::finish(pool, world, &job.id, &result).await.unwrap();
         }
+    }
+
+    #[tokio::test]
+    async fn exports_one_line_per_student_and_module() {
+        let (pool, world) = setup().await;
+        report(&pool, &world, "frohesReh", 2, 3).await;
+        // A display name a spreadsheet would take for a formula.
+        sqlx::query(
+            "INSERT INTO display_names (world_id, account, name, reported_at)
+             VALUES (?, 'klugeEule', '=SUM(A1)', 0)",
+        )
+        .bind(&world)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let (file, lines) = export(&pool, &world).await.unwrap();
+        assert_eq!(lines, 2, "the draft is not listed");
+        let rows: Vec<&str> = file.trim_start_matches('\u{feff}').split("\r\n").collect();
+        assert_eq!(
+            rows,
+            [
+                "account;display_name;module;level;levels;percent;completed;locked",
+                // Nothing reported yet: at the start of level 1.
+                "klugeEule;'=SUM(A1);Kopfrechnen;1;2;0;no;no",
+                "frohesReh;;Kopfrechnen;2;2;60;no;yes",
+                "",
+            ]
+        );
+        assert!(
+            file.starts_with('\u{feff}'),
+            "spreadsheets need the mark for umlauts"
+        );
     }
 
     #[tokio::test]

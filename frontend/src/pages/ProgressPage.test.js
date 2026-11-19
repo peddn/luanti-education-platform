@@ -101,6 +101,27 @@ describe('progress page', () => {
   beforeEach(() => setActivePinia(createPinia()))
   afterEach(() => vi.unstubAllGlobals())
 
+  it('offers the progress as a file and says what that means', async () => {
+    backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/progress`]: [200, progress()],
+    })
+    const page = await show()
+    const link = page.get('[data-test=export]')
+    expect(link.text()).toBe('Als CSV herunterladen')
+    expect(link.attributes('href')).toBe(`${BASE}/progress/export`)
+    expect(page.text()).toContain('der Export wird festgehalten')
+  })
+
+  it('offers no file while there is nobody in the list', async () => {
+    backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/progress`]: [200, { modules: progress().modules, students: [] }],
+    })
+    const page = await show()
+    expect(page.find('[data-test=export]').exists()).toBe(false)
+  })
+
   it('shows level, workload and trophies per student', async () => {
     backend({
       [`GET ${BASE}`]: [200, GROUP],

@@ -139,6 +139,18 @@ async function order(change) {
       </div>
 
       <LiveNote :live="live" />
+
+      <p v-if="progress && progress.students.length > 0" class="max-w-3xl text-sm text-slate-600">
+        <a
+          :href="api.progressExportUrl(id)"
+          data-test="export"
+          download
+          class="font-semibold text-emerald-700 underline"
+        >
+          {{ $t('progress.export') }}
+        </a>
+        {{ $t('progress.exportHint') }}
+      </p>
       <p v-if="anyPending" data-test="pending-hint" class="text-sm text-amber-700">{{ $t('progress.pendingHint') }}</p>
 
       <ErrorNote v-if="error" :code="error" />

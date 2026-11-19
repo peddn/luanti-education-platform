@@ -509,6 +509,17 @@ export function createClient(options = {}) {
     },
 
     /**
+     * Returns the address the progress of a group can be downloaded from
+     * as a CSV file.
+     *
+     * @param {string} id
+     * @returns {string}
+     */
+    progressExportUrl(id) {
+      return `/api/web/v1/groups/${encodeURIComponent(id)}/progress/export`
+    },
+
+    /**
      * Returns where the students of a group stand, as the world reported
      * it last.
      *

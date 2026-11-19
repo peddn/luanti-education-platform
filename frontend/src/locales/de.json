@@ -212,7 +212,9 @@
     "unlock": "Aufstieg freigeben",
     "repeat": "Niveau wiederholen",
     "changeHint": "Die Welt führt die Änderung aus und hält sie im Protokoll des Lehrerpults fest. Mit gesperrtem Aufstieg bleibt das Kind auf seinem Niveau, auch wenn es das Pensum geschafft hat.",
-    "repeatHint": "Wiederholen leert das Pensum dieses Niveaus. Jede Aufgabe zählt und wird wieder belohnt. Die Belohnung für den Abschluss gibt es nur beim ersten Mal."
+    "repeatHint": "Wiederholen leert das Pensum dieses Niveaus. Jede Aufgabe zählt und wird wieder belohnt. Die Belohnung für den Abschluss gibt es nur beim ersten Mal.",
+    "export": "Als CSV herunterladen",
+    "exportHint": "Eine Zeile je Schüler und Modul. Die Datei verlässt die Plattform: Du bist für sie verantwortlich, und der Export wird festgehalten."
   },
   "protocols": {
     "titleFor": "Protokolle der Gruppe {group}",
@@ -226,7 +228,8 @@
       "rewards": "Belohnungen",
       "names": "Wunschnamen",
       "desk": "Lehrerpult",
-      "exports": "Exporte"
+      "exports": "Exporte",
+      "progress": "Fortschritt"
     },
     "account": "Konto",
     "period": "Zeitraum",

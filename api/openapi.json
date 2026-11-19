@@ -382,6 +382,63 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/progress/export": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Returns where the students of a group stand as a CSV file to\ndownload: one line per student and module, cells separated by\nsemicolons. The file leaves the platform: who exports it answers for\nit, and the export is written into the protocol \"exports\".",
+        "operationId": "export_progress",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The progress as a CSV file",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or not one of the teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/progress/{account}/{module}": {
       "post": {
         "tags": [

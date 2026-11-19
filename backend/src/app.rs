@@ -92,6 +92,7 @@ impl AppState {
         web_api::show_protocol,
         web_api::export_protocol,
         web_api::show_progress,
+        web_api::export_progress,
         web_api::remove_display_name,
         web_api::order_removal,
         web_api::take_back_removal,
