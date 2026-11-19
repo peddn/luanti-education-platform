@@ -801,9 +801,9 @@ async fn protocol_of(
     if protocols::columns(protocol).is_none() {
         return Err(Failure::not_found("no such protocol"));
     }
-    if protocol == protocols::DESK && !groups::is_school_admin(&state.db, account).await? {
+    if protocols::is_restricted(protocol) && !groups::is_school_admin(&state.db, account).await? {
         return Err(Failure::forbidden(
-            "only the school administration reads the protocol of the desk",
+            "only the school administration reads what teachers did",
         ));
     }
     Ok(group)
@@ -816,7 +816,7 @@ async fn protocol_of(
     path = "/api/web/v1/groups/{id}/protocols/{protocol}",
     params(
         ("id" = String, Path, description = "Identifier of the group"),
-        ("protocol" = String, Path, description = "chat, signs, rewards, desk or names"),
+        ("protocol" = String, Path, description = "chat, signs, rewards, names, desk or exports"),
         ("account" = Option<String>, Query, description = "Only entries of this account"),
         ("since" = Option<i64>, Query, description = "Only entries from this time on, in seconds since 1970"),
         ("before" = Option<i64>, Query, description = "Only entries older than the one with this id: the next page"),
@@ -825,7 +825,7 @@ async fn protocol_of(
     responses(
         (status = 200, description = "A part of the protocol", body = ProtocolPage),
         (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
-        (status = 403, description = "The protocol of the desk, and not the school administration (forbidden)", body = ApiError),
+        (status = 403, description = "The protocol of the desk or of the exports, and not the school administration (forbidden)", body = ApiError),
         (status = 404, description = "No such group, not one of the teacher, or no such protocol (not_found)", body = ApiError),
     ),
     security(("session" = []))
@@ -850,20 +850,21 @@ pub async fn show_protocol(
 
 /// Returns the filtered entries of a protocol as a CSV file to download,
 /// oldest first, with times in UTC and cells separated by semicolons.
-/// The file leaves the platform: who exports it answers for it.
+/// The file leaves the platform: who exports it answers for it, and
+/// every export is written into the protocol "exports".
 #[utoipa::path(
     get,
     path = "/api/web/v1/groups/{id}/protocols/{protocol}/export",
     params(
         ("id" = String, Path, description = "Identifier of the group"),
-        ("protocol" = String, Path, description = "chat, signs, rewards, desk or names"),
+        ("protocol" = String, Path, description = "chat, signs, rewards, names, desk or exports"),
         ("account" = Option<String>, Query, description = "Only entries of this account"),
         ("since" = Option<i64>, Query, description = "Only entries from this time on, in seconds since 1970"),
     ),
     responses(
         (status = 200, description = "The entries as a CSV file", content_type = "text/csv", body = String),
         (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
-        (status = 403, description = "The protocol of the desk, and not the school administration (forbidden)", body = ApiError),
+        (status = 403, description = "The protocol of the desk or of the exports, and not the school administration (forbidden)", body = ApiError),
         (status = 404, description = "No such group, not one of the teacher, or no such protocol (not_found)", body = ApiError),
     ),
     security(("session" = []))
@@ -876,9 +877,22 @@ pub async fn export_protocol(
 ) -> Result<Response, Failure> {
     let group = protocol_of(&state, &teacher.account, &id, &protocol).await?;
     let filter = query.filter();
-    let file = protocols::export(&state.db, &id, &protocol, &filter)
+    let (file, entries) = protocols::export(&state.db, &id, &protocol, &filter)
         .await?
         .ok_or_else(|| Failure::not_found("no such protocol"))?;
+    // The file leaves the platform: that it was made is written down,
+    // also when the file is this very list.
+    protocols::record_export(
+        &state.db,
+        &id,
+        clock::now(),
+        &teacher.account,
+        &protocol,
+        &filter,
+        entries,
+    )
+    .await?;
+    state.changes.tell(&id, &[ChangeTopic::Protocols]);
     // The name of the group goes into the file name, without anything a
     // header or a file system could trip over.
     let group_name: String = group

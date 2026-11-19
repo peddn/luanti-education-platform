@@ -13,9 +13,17 @@ pub const PAGE: i64 = 100;
 /// The most entries one export holds.
 pub const MAX_EXPORT: i64 = 50_000;
 
-/// The protocol that shows what teachers did. Only the administration
-/// of the school may read it.
+/// The protocol that shows what teachers did in the world.
 pub const DESK: &str = "desk";
+/// The protocol of the files teachers downloaded. The backend writes it
+/// itself, see `record_export`.
+pub const EXPORTS: &str = "exports";
+
+/// Says whether only the administration of the school may read a
+/// protocol: the ones that show what teachers did.
+pub fn is_restricted(protocol: &str) -> bool {
+    protocol == DESK || protocol == EXPORTS
+}
 
 /// Returns the columns of a protocol besides time and account, in the
 /// order to show them, or `None` for a name that is no protocol.
@@ -26,6 +34,7 @@ pub fn columns(protocol: &str) -> Option<&'static [&'static str]> {
         "rewards" => &["size", "reason", "module", "level", "task", "items"],
         "desk" => &["action", "targets"],
         "names" => &["action", "name", "by"],
+        EXPORTS => &["protocol", "filter_account", "filter_since", "entries"],
         _ => return None,
     })
 }
@@ -51,18 +60,33 @@ pub enum Part {
 }
 
 fn select(world_id: &str, protocol: &str, filter: &Filter) -> QueryBuilder<Sqlite> {
-    let mut query = QueryBuilder::new(
+    // The exports have a table of their own. They are read in the shape
+    // of the entries the worlds write, so everything else is the same.
+    let mut query = QueryBuilder::new(if protocol == EXPORTS {
+        "SELECT entries.id, entries.time, entries.account,
+                json_object('protocol', entries.protocol,
+                            'filter_account', COALESCE(entries.filter_account, ''),
+                            'filter_since', COALESCE(CAST(entries.filter_since AS TEXT), ''),
+                            'entries', CAST(entries.entries AS TEXT)) AS fields,
+                display_names.name AS display_name
+         FROM exports AS entries
+         LEFT JOIN display_names ON display_names.world_id = entries.world_id
+                                AND display_names.account = entries.account
+         WHERE entries.world_id = "
+    } else {
         "SELECT entries.id, entries.time, entries.account, entries.fields,
                 display_names.name AS display_name
          FROM protocol_entries AS entries
          LEFT JOIN display_names ON display_names.world_id = entries.world_id
                                 AND display_names.account = entries.account
-         WHERE entries.world_id = ",
-    );
+         WHERE entries.world_id = "
+    });
     query.push_bind(world_id.to_owned());
-    query
-        .push(" AND entries.protocol = ")
-        .push_bind(protocol.to_owned());
+    if protocol != EXPORTS {
+        query
+            .push(" AND entries.protocol = ")
+            .push_bind(protocol.to_owned());
+    }
     if let Some(account) = &filter.account {
         query
             .push(" AND entries.account = ")
@@ -165,16 +189,46 @@ fn cell(text: &str) -> String {
     }
 }
 
+/// Notes that a teacher downloaded a protocol as a file: who, when,
+/// which protocol, with which filters and how many entries. Not what
+/// was in the file.
+pub async fn record_export(
+    pool: &SqlitePool,
+    world_id: &str,
+    time: i64,
+    account: &str,
+    protocol: &str,
+    filter: &Filter,
+    entries: i64,
+) -> Result<()> {
+    sqlx::query(
+        "INSERT INTO exports
+             (world_id, time, account, protocol, filter_account, filter_since, entries)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(world_id)
+    .bind(time)
+    .bind(account)
+    .bind(protocol)
+    .bind(&filter.account)
+    .bind(filter.since)
+    .bind(entries)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// Returns the filtered entries of a protocol as a CSV file, oldest
-/// first, or `None` for a name that is no protocol. Cells are separated
-/// by semicolons, as the spreadsheets in schools here expect, and the
-/// file starts with a mark that makes them read umlauts.
+/// first, and how many there are, or `None` for a name that is no
+/// protocol. Cells are separated by semicolons, as the spreadsheets in
+/// schools here expect, and the file starts with a mark that makes them
+/// read umlauts.
 pub async fn export(
     pool: &SqlitePool,
     world_id: &str,
     protocol: &str,
     filter: &Filter,
-) -> Result<Option<String>> {
+) -> Result<Option<(String, i64)>> {
     let Some(columns) = columns(protocol) else {
         return Ok(None);
     };
@@ -197,12 +251,17 @@ pub async fn export(
         file.push(';');
         file.push_str(&cell(row.display_name.as_deref().unwrap_or_default()));
         for column in columns {
+            let value = row.fields.get(*column).map_or("", String::as_str);
             file.push(';');
-            file.push_str(&cell(row.fields.get(*column).map_or("", String::as_str)));
+            // The one column that holds a time is written like the others.
+            match value.parse::<i64>() {
+                Ok(time) if *column == "filter_since" => file.push_str(&utc(time)),
+                _ => file.push_str(&cell(value)),
+            }
         }
         file.push_str("\r\n");
     }
-    Ok(Some(file))
+    Ok(Some((file, rows.len() as i64)))
 }
 
 #[cfg(test)]
@@ -465,7 +524,8 @@ mod tests {
         )
         .await;
         let all = Filter::default();
-        let file = export(&pool, &world, "chat", &all).await.unwrap().unwrap();
+        let (file, entries) = export(&pool, &world, "chat", &all).await.unwrap().unwrap();
+        assert_eq!(entries, 2);
         assert_eq!(
             file,
             "\u{feff}time_utc;account;display_name;kind;recipient;text\r\n\
@@ -476,8 +536,89 @@ mod tests {
             account: Some("frohesReh".to_owned()),
             since: None,
         };
-        let file = export(&pool, &world, "chat", &one).await.unwrap().unwrap();
+        let (file, entries) = export(&pool, &world, "chat", &one).await.unwrap().unwrap();
+        assert_eq!(entries, 1);
         assert_eq!(file.lines().count(), 2);
         assert_eq!(export(&pool, &world, "nonsense", &all).await.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn keeps_who_exported_what_and_shows_it_like_a_protocol() {
+        let (pool, world) = setup().await;
+        let (other, _) = worlds::add(&pool, "8a").await.unwrap();
+        let narrowed = Filter {
+            account: Some("klugeEule".to_owned()),
+            since: Some(1_700_000_000),
+        };
+        let all = Filter::default();
+        record_export(
+            &pool,
+            &world,
+            1_700_000_500,
+            "lehrer1",
+            "chat",
+            &narrowed,
+            12,
+        )
+        .await
+        .unwrap();
+        record_export(&pool, &world, 1_700_000_600, "leitung", "desk", &all, 3)
+            .await
+            .unwrap();
+        record_export(&pool, &other.id, 1_700_000_700, "lehrer3", "chat", &all, 1)
+            .await
+            .unwrap();
+        assert!(is_restricted(EXPORTS));
+        assert!(is_restricted(DESK));
+        assert!(!is_restricted("chat"));
+
+        let shown = page(&pool, &world, EXPORTS, &all, Part::Newest)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            shown.columns,
+            ["protocol", "filter_account", "filter_since", "entries"]
+        );
+        assert_eq!(shown.entries.len(), 2);
+        let newest = &shown.entries[0];
+        assert_eq!(
+            (newest.account.as_str(), newest.time),
+            ("leitung", 1_700_000_600)
+        );
+        assert_eq!(newest.fields["protocol"], "desk");
+        assert_eq!(newest.fields["filter_account"], "");
+        assert_eq!(newest.fields["filter_since"], "");
+        assert_eq!(newest.fields["entries"], "3");
+        let older = &shown.entries[1];
+        assert_eq!(older.fields["filter_account"], "klugeEule");
+        assert_eq!(older.fields["filter_since"], "1700000000");
+        assert_eq!(older.fields["entries"], "12");
+
+        // Narrowed down by who exported, and paged like every protocol.
+        let by_teacher = Filter {
+            account: Some("lehrer1".to_owned()),
+            since: None,
+        };
+        let only = page(&pool, &world, EXPORTS, &by_teacher, Part::Newest)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(only.entries.len(), 1);
+        let after = page(&pool, &world, EXPORTS, &all, Part::After(older.id))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(after.entries.len(), 1);
+
+        // And it can be exported itself, with the time of the filter as text.
+        let (file, entries) = export(&pool, &world, EXPORTS, &all).await.unwrap().unwrap();
+        assert_eq!(entries, 2);
+        assert_eq!(
+            file,
+            "\u{feff}time_utc;account;display_name;protocol;filter_account;filter_since;entries\r\n\
+             2023-11-14 22:21:40;lehrer1;;chat;klugeEule;2023-11-14 22:13:20;12\r\n\
+             2023-11-14 22:23:20;leitung;;desk;;;3\r\n"
+        );
     }
 }

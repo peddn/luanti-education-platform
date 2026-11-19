@@ -198,7 +198,8 @@
       "signs": "Schilder",
       "rewards": "Belohnungen",
       "names": "Wunschnamen",
-      "desk": "Lehrerpult"
+      "desk": "Lehrerpult",
+      "exports": "Exporte"
     },
     "account": "Konto",
     "period": "Zeitraum",
@@ -210,7 +211,7 @@
     },
     "apply": "Anzeigen",
     "export": "Als CSV herunterladen",
-    "exportHint": "Die Datei enthält die gefilterten Einträge. Sie verlässt die Plattform: Für die Datei bist du verantwortlich, und der Jahresabschluss löscht sie nicht.",
+    "exportHint": "Die Datei enthält die gefilterten Einträge. Sie verlässt die Plattform: Für die Datei bist du verantwortlich, und der Jahresabschluss löscht sie nicht. Jeder Download wird festgehalten und ist für die Schulverwaltung sichtbar.",
     "waiting": "{n} neuen Eintrag anzeigen | {n} neue Einträge anzeigen",
     "waitingMany": "Viele neue Einträge anzeigen",
     "empty": "Es gibt keine Einträge, die dazu passen.",
@@ -231,7 +232,11 @@
       "action": "Aktion",
       "targets": "Ziele",
       "name": "Name",
-      "by": "Durch"
+      "by": "Durch",
+      "protocol": "Protokoll",
+      "filter_account": "Gefiltert nach Konto",
+      "filter_since": "Einträge ab",
+      "entries": "Einträge"
     },
     "values": {
       "kind": {

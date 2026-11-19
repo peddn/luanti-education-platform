@@ -198,7 +198,8 @@
       "signs": "Signs",
       "rewards": "Rewards",
       "names": "Display names",
-      "desk": "Teacher's desk"
+      "desk": "Teacher's desk",
+      "exports": "Exports"
     },
     "account": "Account",
     "period": "Period",
@@ -210,7 +211,7 @@
     },
     "apply": "Show",
     "export": "Download as CSV",
-    "exportHint": "The file holds the filtered entries. It leaves the platform: you answer for the file, and the end of the school year does not delete it.",
+    "exportHint": "The file holds the filtered entries. It leaves the platform: you answer for the file, and the end of the school year does not delete it. Every download is written down and visible to the school administration.",
     "waiting": "Show {n} new entry | Show {n} new entries",
     "waitingMany": "Show many new entries",
     "empty": "There are no entries that match.",
@@ -231,7 +232,11 @@
       "action": "Action",
       "targets": "Targets",
       "name": "Name",
-      "by": "By"
+      "by": "By",
+      "protocol": "Protocol",
+      "filter_account": "Narrowed to account",
+      "filter_since": "Entries from",
+      "entries": "Entries"
     },
     "values": {
       "kind": {

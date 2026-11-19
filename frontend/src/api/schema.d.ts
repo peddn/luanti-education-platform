@@ -182,7 +182,8 @@ export interface paths {
         /**
          * Returns the filtered entries of a protocol as a CSV file to download,
          *     oldest first, with times in UTC and cells separated by semicolons.
-         *     The file leaves the platform: who exports it answers for it.
+         *     The file leaves the platform: who exports it answers for it, and
+         *     every export is written into the protocol "exports".
          */
         get: operations["export_protocol"];
         put?: never;
@@ -1572,7 +1573,7 @@ export interface operations {
             path: {
                 /** @description Identifier of the group */
                 id: string;
-                /** @description chat, signs, rewards, desk or names */
+                /** @description chat, signs, rewards, names, desk or exports */
                 protocol: string;
             };
             cookie?: never;
@@ -1597,7 +1598,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The protocol of the desk, and not the school administration (forbidden) */
+            /** @description The protocol of the desk or of the exports, and not the school administration (forbidden) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1629,7 +1630,7 @@ export interface operations {
             path: {
                 /** @description Identifier of the group */
                 id: string;
-                /** @description chat, signs, rewards, desk or names */
+                /** @description chat, signs, rewards, names, desk or exports */
                 protocol: string;
             };
             cookie?: never;
@@ -1654,7 +1655,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The protocol of the desk, and not the school administration (forbidden) */
+            /** @description The protocol of the desk or of the exports, and not the school administration (forbidden) */
             403: {
                 headers: {
                     [name: string]: unknown;

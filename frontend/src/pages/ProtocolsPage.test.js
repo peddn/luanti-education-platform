@@ -137,10 +137,57 @@ describe('protocols page', () => {
     const send = backend(answers)
     mounted = await show({ startProtocol: 'desk' })
     expect(asked(send)).toEqual([`${BASE}/protocols/chat`])
+    const again = backend(answers)
+    mounted = await show({ startProtocol: 'exports' })
+    expect(asked(again)).toEqual([`${BASE}/protocols/chat`])
 
     backend(answers)
     mounted = await show({ schoolAdmin: true })
-    expect(tabs()).toEqual(['Chat', 'Schilder', 'Belohnungen', 'Wunschnamen', 'Lehrerpult'])
+    expect(tabs()).toEqual(['Chat', 'Schilder', 'Belohnungen', 'Wunschnamen', 'Lehrerpult', 'Exporte'])
+  })
+
+  it('shows the school administration who exported what', async () => {
+    backend({
+      [BASE]: [200, GROUP],
+      [`${BASE}/students`]: [200, STUDENTS],
+      [`${BASE}/protocols/exports`]: [
+        200,
+        {
+          columns: ['protocol', 'filter_account', 'filter_since', 'entries'],
+          entries: [
+            { id: 2, time: 1700000600, account: 'leitung', fields: { protocol: 'exports', filter_account: '', filter_since: '', entries: '1' } },
+            {
+              id: 1,
+              time: 1700000500,
+              account: 'lehrer1',
+              fields: { protocol: 'chat', filter_account: 'klugeEule', filter_since: '1700000000', entries: '12' },
+            },
+          ],
+          more: false,
+        },
+      ],
+    })
+    const mounted = await show({ schoolAdmin: true, startProtocol: 'exports' })
+    expect(mounted.findAll('th').map((head) => head.text())).toEqual([
+      'Zeit',
+      'Konto',
+      'Protokoll',
+      'Gefiltert nach Konto',
+      'Einträge ab',
+      'Einträge',
+    ])
+    const rows = mounted.findAll('[data-test=entry]')
+    expect(rows[0].findAll('td').slice(1).map((cell) => cell.text())).toEqual(['leitung', 'Exporte', '', '', '1'])
+    expect(rows[1].findAll('td').slice(1).map((cell) => cell.text())).toEqual([
+      'lehrer1',
+      'Chat',
+      'klugeEule',
+      expect.stringContaining('14.11.2023'),
+      '12',
+    ])
+    // This list can be downloaded like the others.
+    expect(mounted.get('[data-test=export]').attributes('href')).toBe(`${BASE}/protocols/exports/export`)
+    expect(mounted.text()).toContain('Jeder Download wird festgehalten')
   })
 
   it('switches between protocols and shows their own columns', async () => {

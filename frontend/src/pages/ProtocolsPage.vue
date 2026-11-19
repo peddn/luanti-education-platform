@@ -25,10 +25,14 @@ const props = defineProps({
 const { locale, t, te } = useI18n()
 const auth = useAuthStore()
 
-// The protocol of the desk shows what teachers did. Only the school
-// administration reads it; the backend checks that again.
+// The protocols of the desk and of the exports show what teachers did.
+// Only the school administration reads them; the backend checks that
+// again.
+const RESTRICTED = ['desk', 'exports']
 const names = computed(() =>
-  ['chat', 'signs', 'rewards', 'names', 'desk'].filter((name) => name !== 'desk' || auth.me?.school_admin === true),
+  ['chat', 'signs', 'rewards', 'names', 'desk', 'exports'].filter(
+    (name) => !RESTRICTED.includes(name) || auth.me?.school_admin === true,
+  ),
 )
 const PERIODS = ['all', 'today', 'week', 'month']
 // Columns whose values are fixed words that have a translation.
@@ -164,6 +168,13 @@ function time(at) {
 function shown(column, value) {
   if (value === undefined || value === '') {
     return ''
+  }
+  // In the list of exports: which protocol, and from when on.
+  if (column === 'protocol') {
+    return te(`protocols.tabs.${value}`) ? t(`protocols.tabs.${value}`) : value
+  }
+  if (column === 'filter_since') {
+    return time(Number(value))
   }
   const key = `protocols.values.${column}.${value}`
   return WORDS.includes(column) && te(key) ? t(key) : value

@@ -497,7 +497,7 @@
           {
             "name": "protocol",
             "in": "path",
-            "description": "chat, signs, rewards, desk or names",
+            "description": "chat, signs, rewards, names, desk or exports",
             "required": true,
             "schema": {
               "type": "string"
@@ -565,7 +565,7 @@
             }
           },
           "403": {
-            "description": "The protocol of the desk, and not the school administration (forbidden)",
+            "description": "The protocol of the desk or of the exports, and not the school administration (forbidden)",
             "content": {
               "application/json": {
                 "schema": {
@@ -597,7 +597,7 @@
         "tags": [
           "web_api"
         ],
-        "summary": "Returns the filtered entries of a protocol as a CSV file to download,\noldest first, with times in UTC and cells separated by semicolons.\nThe file leaves the platform: who exports it answers for it.",
+        "summary": "Returns the filtered entries of a protocol as a CSV file to download,\noldest first, with times in UTC and cells separated by semicolons.\nThe file leaves the platform: who exports it answers for it, and\nevery export is written into the protocol \"exports\".",
         "operationId": "export_protocol",
         "parameters": [
           {
@@ -612,7 +612,7 @@
           {
             "name": "protocol",
             "in": "path",
-            "description": "chat, signs, rewards, desk or names",
+            "description": "chat, signs, rewards, names, desk or exports",
             "required": true,
             "schema": {
               "type": "string"
@@ -660,7 +660,7 @@
             }
           },
           "403": {
-            "description": "The protocol of the desk, and not the school administration (forbidden)",
+            "description": "The protocol of the desk or of the exports, and not the school administration (forbidden)",
             "content": {
               "application/json": {
                 "schema": {

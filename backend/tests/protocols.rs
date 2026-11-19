@@ -408,3 +408,95 @@ async fn an_open_page_hears_of_new_entries() {
         "event: change\ndata: protocols\n\n"
     );
 }
+
+#[tokio::test]
+async fn every_export_is_written_down_for_the_administration() {
+    let setup = Setup::new().await;
+    let teacher = log_in(&setup.state.db, "lehrer1").await;
+    let administration = log_in(&setup.state.db, "leitung").await;
+    setup
+        .write(&[
+            (
+                "chat",
+                1700000000,
+                "klugeEule",
+                json!({ "kind": "chat", "text": "eins" }),
+            ),
+            (
+                "chat",
+                1700000060,
+                "klugeEule",
+                json!({ "kind": "chat", "text": "zwei" }),
+            ),
+        ])
+        .await;
+    let chat = setup.protocol(&setup.first, "chat");
+    let exports = setup.protocol(&setup.first, "exports");
+
+    // Reading writes nothing down, exporting does.
+    setup.web(Method::GET, &chat, &teacher, None).await;
+    let (_, page) = setup
+        .web(Method::GET, &exports, &administration, None)
+        .await;
+    assert_eq!(page["entries"], json!([]));
+    let (status, _, _) = setup
+        .download(
+            &format!("{chat}/export?account=klugeEule&since=1700000050"),
+            &teacher,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, page) = setup
+        .web(Method::GET, &exports, &administration, None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        page["columns"],
+        json!(["protocol", "filter_account", "filter_since", "entries"])
+    );
+    assert_eq!(page["entries"].as_array().unwrap().len(), 1);
+    assert_eq!(page["entries"][0]["account"], "lehrer1");
+    assert_eq!(
+        page["entries"][0]["fields"],
+        json!({ "protocol": "chat", "filter_account": "klugeEule",
+            "filter_since": "1700000050", "entries": "1" })
+    );
+
+    // The teacher who exported does not read the list, and cannot export it.
+    for path in [exports.clone(), format!("{exports}/export")] {
+        let (status, json) = setup.web(Method::GET, &path, &teacher, None).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{path}");
+        assert_eq!(json["code"], "forbidden");
+    }
+    // An export that was refused is not written down.
+    let (_, page) = setup
+        .web(Method::GET, &exports, &administration, None)
+        .await;
+    assert_eq!(page["entries"].as_array().unwrap().len(), 1);
+
+    // The export of the list itself lands in the list.
+    let (status, _, file) = setup
+        .download(&format!("{exports}/export"), &administration)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(file.lines().count(), 2);
+    assert!(file.contains("lehrer1;;chat;klugeEule;2023-11-14 22:14:10;1"));
+    let (_, page) = setup
+        .web(Method::GET, &exports, &administration, None)
+        .await;
+    assert_eq!(page["entries"].as_array().unwrap().len(), 2);
+    assert_eq!(page["entries"][0]["account"], "leitung");
+    assert_eq!(page["entries"][0]["fields"]["protocol"], "exports");
+    assert_eq!(page["entries"][0]["fields"]["entries"], "1");
+    // The other group knows nothing of it.
+    let (_, page) = setup
+        .web(
+            Method::GET,
+            &setup.protocol(&setup.second, "exports"),
+            &administration,
+            None,
+        )
+        .await;
+    assert_eq!(page["entries"], json!([]));
+}
