@@ -31,20 +31,32 @@ local function explain(why, from)
 	return S("Only letters, digits, and single spaces and hyphens between them are allowed.")
 end
 
+-- A window that only says why nothing can be changed now. Offering a
+-- field and buttons that will not work would only confuse.
+local function show_closed(player_name, reason)
+	local fs = formspec.new(WIDTH, 3.9)
+	fs:label(0.5, 0.6, S("Your display name"))
+	fs:label(0.5, 1.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
+	-- A text area without a name only shows its text, and breaks lines.
+	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "", formspec.escape(reason))
+	fs:button_exit(WIDTH - 2, 2.7, 1.5, 0.8, "close", S("Close"))
+	open[player_name] = true
+	core.show_formspec(player_name, FORM, fs:build())
+end
+
 local function show(player_name, typed, message)
 	local state = lep_accounts.get_display_state(player_name)
+	if state.locked then
+		return show_closed(player_name, explain(REFUSALS.LOCKED))
+	elseif state.next_change then
+		return show_closed(player_name, explain(REFUSALS.WAIT, state.next_change))
+	end
+
 	local fs = formspec.new(WIDTH, HEIGHT)
 	fs:label(0.5, 0.6, S("Your display name"))
 	fs:label(0.5, 1.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
-
-	local hint
-	if state.locked then
-		hint = explain(REFUSALS.LOCKED)
-	elseif state.next_change then
-		hint = explain(REFUSALS.WAIT, state.next_change)
-	else
-		hint = S("You can choose a new name once in 30 days. Your teachers see every name.")
-	end
+	local hint = S("You can choose a new name once in 30 days.") .. " "
+		.. S("Until then nothing can be changed. Your teachers see every name.")
 	-- A text area without a name only shows its text, and breaks lines.
 	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "",
 		formspec.escape(message or hint))
@@ -88,14 +100,20 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 	-- When the change is made the window closes, and the chat says what
 	-- counts now. It stays open only to say why a name does not fit.
 	if fields.give_up then
-		lep_accounts.give_up_display_name(player_name)
-		close(player_name, S("You are shown under your account name again."))
+		local ok, why, from = lep_accounts.give_up_display_name(player_name)
+		if ok then
+			close(player_name, S("You are shown under your account name again."))
+		else
+			show_closed(player_name, explain(why, from))
+		end
 	elseif fields.apply or fields.key_enter_field == "name" then
 		local typed = type(fields.name) == "string" and fields.name:sub(1, 200) or ""
 		local ok, why, from = lep_accounts.choose_display_name(player_name, typed)
 		if ok then
 			close(player_name, S("Your display name is now: @1",
 				lep_accounts.get_display_name(player_name)))
+		elseif why == REFUSALS.LOCKED or why == REFUSALS.WAIT then
+			show_closed(player_name, explain(why, from))
 		else
 			show(player_name, typed, explain(why, from))
 		end
