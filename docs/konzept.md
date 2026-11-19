@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 53 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 54 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -221,8 +221,8 @@ Der Grundsatz: Schüler bekommen die Möglichkeit, sich richtig zu verhalten. Ni
 1. Der Schüler setzt im Spiel seinen Wunschnamen, am Türschild seines Lobby-Raums.
 2. Die Welt prüft die Regeln unten. Passt der Name, gilt er sofort, auch wenn das Backend gerade nicht erreichbar ist.
 3. Die Welt schreibt die Änderung in ein Protokoll und sagt sie allen, die gerade im Spiel sind und das Pult benutzen dürfen.
-4. Die Welt meldet den Namen über die Brücke ans Backend. Die Web-Anwendung zeigt ihn bei dem Schüler und markiert Namen, die neu sind.
-5. Das Backend schreibt den Lehrkräften der Gruppe eine E-Mail, dass es neue Wunschnamen gibt. So erfahren sie es auch in den Ferien, wenn lange keine Lehrkraft im Spiel ist.
+4. Die Welt meldet den Namen über die Brücke ans Backend. Die Web-Anwendung zeigt bei jedem Schüler den Namen, der gerade gilt, mit dem Tag der Änderung. Den Verlauf zeigt sie auf Wunsch.
+5. Das Backend schreibt den Lehrkräften der Gruppe bei jedem neuen Wunschnamen sofort eine E-Mail. So erfahren sie es auch in den Ferien, wenn lange keine Lehrkraft im Spiel ist.
 6. Die Lehrkraft der Gruppe kann einen Namen in der Web-Anwendung entfernen und dem Schüler das Ändern sperren. Beides ist ein Auftrag an die Welt.
 
 Regeln:
@@ -231,14 +231,16 @@ Regeln:
 - Eindeutig pro Welt, mit einer einfachen Regel: Ein Name ist vergeben, wenn es ihn schon als Kontonamen oder als Wunschnamen gibt. Groß- und Kleinschreibung macht dabei keinen Unterschied. Ähnlichkeit wird nicht geprüft.
 - Für alle Konten gilt dasselbe. Auch Lehrkräfte setzen einen Wunschnamen, mit denselben Regeln und derselben Frist. Entfernt oder gesperrt werden nur die Namen von Schülern: Lehrkräften wird vertraut. Ob die Schulverwaltung den Wunschnamen einer Lehrkraft löschen können soll, wird mit Schritt 7 entschieden.
 - 2 bis 16 Zeichen: Buchstaben, auch Umlaute und ß, Ziffern, dazu einzelne Leerzeichen und Bindestriche in der Mitte.
-- Ein Schüler kann seinen Namen einmal im Monat ändern. Zum Kontonamen zurück kann er jederzeit.
+- Ein Schüler kann seinen Namen einmal im Monat ändern. Solange die Frist läuft oder das Wählen gesperrt ist, zeigt das Fenster kein Eingabefeld, nur den Grund.
+- Den Kontonamen wiederherstellen kann er jederzeit, auch während der Frist und bei gesperrtem Wählen. Das Fenster bietet es als eigene, abgesetzte Möglichkeit an. Die Frist verkürzt das nicht.
 - Hat die Lehrkraft einen Namen entfernt, darf der Schüler sofort einen neuen setzen, wenn er nicht gesperrt ist.
 - Eine Sperre gilt, bis die Lehrkraft sie aufhebt. Sie entfernt den Namen nicht von selbst.
 - Das Protokoll hält fest, wer wann welchen Namen gesetzt hat und welche Lehrkraft einen Namen entfernt oder gesperrt hat. Es gehört zu den Protokollen der Welt und wird mit ihnen gelöscht.
 - Entfernen und Sperren gibt es zunächst nur in der Web-Anwendung. Das Pult im Spiel kann es später bekommen.
 - Der Wunschname liegt in der Welt und bleibt mit dem Konto erhalten. Beim Jahresabschluss wird nur das Protokoll der Wunschnamen gelöscht.
 - Die E-Mail nennt die Gruppe, das Konto und den neuen Wunschnamen. Lehrkräfte nutzen die Plattform mit ihrer dienstlichen Adresse.
-- Je Gruppe geht höchstens eine solche E-Mail am Tag hinaus, an die Lehrkräfte der Gruppe mit bestätigter Adresse. Sie nennt alle Änderungen seit der letzten.
+- Die E-Mail geht ohne Sammeln hinaus, eine je neuem Namen, an die Lehrkräfte der Gruppe mit bestätigter Adresse. Die Menge bleibt klein, weil jedes Konto nur einmal im Monat wechseln kann. Geht ein Schüler zum Kontonamen zurück oder entfernt eine Lehrkraft den Namen, gibt es keine E-Mail.
+- Der Verlauf in der Web-Anwendung kommt aus dem Protokoll der Wunschnamen. Er verschwindet deshalb mit dem Jahresabschluss.
 - Genau eine Funktion „Anzeigename dieses Spielers“ bedient alle Stellen: Name über der Figur, Chat, Türschild, Pult.
 - Im Spiel steht überall nur der Wunschname, für Schüler wie für Lehrkräfte. Welches Konto dahintersteht, zeigt die Web-Anwendung: Die Liste der Schüler lässt sich nach Wunschname und Kontoname durchsuchen.
 - Eine Ausnahme ist die Nachricht über eine Änderung an die Lehrkräfte im Spiel. Sie nennt Konto und neuen Namen.
@@ -1045,7 +1047,7 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 ### 11.5 Funktionen
 
 - Konten für Schüler anlegen, Namen neu würfeln, Zugangszettel drucken. Die Namen der Kinder bleiben dabei im Browser (Abschnitt 6.1).
-- Wunschnamen sehen, entfernen und das Ändern sperren. Neue Namen sind markiert. Die Liste der Schüler lässt sich nach Wunschname und Kontoname durchsuchen.
+- Wunschnamen sehen, entfernen und das Ändern sperren, dazu auf Wunsch der Verlauf der Namen eines Schülers. Die Liste der Schüler lässt sich nach Wunschname und Kontoname durchsuchen.
 - Passwörter zurücksetzen.
 - Schüler in eine andere Gruppe verschieben.
 - Niveau pro Schüler und Modul setzen, Startniveau pro Gruppe festlegen, automatischen Aufstieg sperren.

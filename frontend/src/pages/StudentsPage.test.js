@@ -64,10 +64,17 @@ describe('students page', () => {
     const page = await show()
     expect(page.get('h1').text()).toBe('Schülerkonten der Gruppe 7b')
     const rows = page.findAll('[data-test=student]')
-    expect(rows.map((row) => row.findAll('td')[1].text())).toEqual(['angelegt', 'wird in der Welt angelegt'])
-    // An account that exists can get a new password, nothing else. One
-    // that is on its way offers nothing.
-    expect(rows[0].findAll('button').map((button) => button.text())).toEqual(['Passwort zurücksetzen'])
+    expect(rows.map((row) => row.findAll('td')[2].text())).toEqual(['angelegt', 'wird in der Welt angelegt'])
+    // An account that exists can get a new password, and its display
+    // name can be locked and looked up. One that is on its way offers
+    // nothing.
+    expect(rows[0].findAll('button').map((button) => button.text())).toEqual([
+      'Passwort zurücksetzen',
+      'Wählen sperren',
+      'Verlauf',
+    ])
+    expect(rows[0].get('[data-test=display-name]').text()).toBe('keiner')
+    expect(rows[1].get('[data-test=display-name]').text()).toBe('')
     expect(rows[1].findAll('button')).toHaveLength(0)
     expect(page.find('[data-test=create]').exists()).toBe(false)
     expect(page.text()).toContain('sobald sie verbunden ist')
@@ -213,6 +220,137 @@ describe('students page', () => {
     await page.get('[data-test=done]').trigger('click')
     await flushPromises()
     expect(page.html()).not.toContain('tal-zelt-11')
+  })
+
+  it('shows the display name with its day and lets it be removed', async () => {
+    const named = {
+      account: 'klugeEule',
+      state: 'active',
+      display_name: 'Lena Maier',
+      display_changed_at: 1700000000,
+      display_locked: false,
+    }
+    const send = backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: [200, { students: [named, { account: 'frohesReh', state: 'active' }] }],
+      [`DELETE ${BASE}/students/klugeEule/display-name`]: [
+        200,
+        { students: [{ ...named, display_change: 'pending' }, { account: 'frohesReh', state: 'active' }] },
+      ],
+    })
+    const page = await show()
+    const rows = page.findAll('[data-test=student]')
+    const cell = rows[0].get('[data-test=display-name]')
+    expect(cell.text()).toContain('Lena Maier')
+    expect(cell.text()).toContain('seit 14.11.2023')
+    expect(rows[0].find('[data-test=display-locked]').exists()).toBe(false)
+    // Without a name there is nothing to remove.
+    expect(rows[1].find('[data-test=display-remove]').exists()).toBe(false)
+
+    await rows[0].get('[data-test=display-remove]').trigger('click')
+    await flushPromises()
+    expect(calls(send)).toContain(`DELETE ${BASE}/students/klugeEule/display-name`)
+    // The page shows what the backend says: the name is still there, the
+    // order is on its way.
+    const after = page.findAll('[data-test=student]')[0]
+    expect(after.get('[data-test=display-name]').text()).toContain('Lena Maier')
+    expect(after.get('[data-test=display-change]').text()).toBe('Änderung wartet auf die Welt')
+  })
+
+  it('locks and unlocks choosing a display name', async () => {
+    let locked = false
+    const list = () => ({ students: [{ account: 'klugeEule', state: 'active', display_locked: locked }] })
+    const send = backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: () => [200, list()],
+      [`POST ${BASE}/students/klugeEule/display-name/lock`]: () => {
+        locked = !locked
+        return [200, list()]
+      },
+    })
+    const page = await show()
+    expect(page.get('[data-test=display-lock]').text()).toBe('Wählen sperren')
+    await page.get('[data-test=display-lock]').trigger('click')
+    await flushPromises()
+    expect(page.get('[data-test=display-locked]').text()).toBe('Wählen gesperrt')
+    expect(page.get('[data-test=display-lock]').text()).toBe('Wählen freigeben')
+    await page.get('[data-test=display-lock]').trigger('click')
+    await flushPromises()
+    expect(page.find('[data-test=display-locked]').exists()).toBe(false)
+    const bodies = send.mock.calls
+      .filter(([path]) => String(path).endsWith('/display-name/lock'))
+      .map(([, init]) => JSON.parse(String(init?.body)))
+    expect(bodies).toEqual([{ locked: true }, { locked: false }])
+  })
+
+  it('shows the history of the display names on request', async () => {
+    const send = backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: [200, students([['klugeEule', 'active'], ['frohesReh', 'active']])],
+      [`GET ${BASE}/students/klugeEule/display-names`]: [
+        200,
+        {
+          entries: [
+            { time: 1700200000, action: 'locked', by: 'lehrer1' },
+            { time: 1700100000, action: 'removed', name: 'Lena Maier', by: 'lehrer1' },
+            { time: 1700000000, action: 'chosen', name: 'Lena Maier', by: 'klugeEule' },
+          ],
+        },
+      ],
+      [`GET ${BASE}/students/frohesReh/display-names`]: [200, { entries: [] }],
+    })
+    const page = await show()
+    expect(page.find('[data-test=history]').exists()).toBe(false)
+    expect(calls(send)).not.toContain(`GET ${BASE}/students/klugeEule/display-names`)
+
+    await page.findAll('[data-test=display-history]')[0].trigger('click')
+    await flushPromises()
+    const history = page.get('[data-test=history]')
+    expect(history.get('h2').text()).toBe('Wunschnamen von klugeEule')
+    expect(history.findAll('li').map((entry) => entry.text())).toEqual([
+      '17.11.2023: Wählen gesperrt von lehrer1',
+      '16.11.2023: „Lena Maier“ entfernt von lehrer1',
+      '14.11.2023: „Lena Maier“ gewählt',
+    ])
+    expect(history.text()).toContain('mit dem Jahresabschluss gelöscht')
+
+    // Another account takes its place, a second click closes it.
+    await page.findAll('[data-test=display-history]')[1].trigger('click')
+    await flushPromises()
+    expect(page.findAll('[data-test=history]')).toHaveLength(1)
+    expect(page.get('[data-test=history]').text()).toContain('Es gibt noch keine Einträge.')
+    await page.findAll('[data-test=display-history]')[1].trigger('click')
+    expect(page.find('[data-test=history]').exists()).toBe(false)
+  })
+
+  it('narrows the list to a part of an account or display name', async () => {
+    backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: [
+        200,
+        {
+          students: [
+            { account: 'klugeEule', state: 'active', display_name: 'Lena Maier' },
+            { account: 'frohesReh', state: 'active', display_name: 'Jörg' },
+            { account: 'stillerBach', state: 'draft' },
+          ],
+        },
+      ],
+    })
+    const page = await show()
+    const names = () => page.findAll('[data-test=student]').map((row) => row.findAll('td')[0].text())
+    expect(names()).toEqual(['klugeEule', 'frohesReh', 'stillerBach'])
+    await page.get('input[name=search]').setValue('  maier ')
+    expect(names()).toEqual(['klugeEule'])
+    await page.get('input[name=search]').setValue('JÖRG')
+    expect(names()).toEqual(['frohesReh'])
+    await page.get('input[name=search]').setValue('bach')
+    expect(names()).toEqual(['stillerBach'])
+    await page.get('input[name=search]').setValue('niemand')
+    expect(names()).toEqual([])
+    expect(page.get('[data-test=no-match]').text()).toBe('Kein Konto passt zur Suche.')
+    await page.get('input[name=search]').setValue('')
+    expect(names()).toHaveLength(3)
   })
 
   it('offers no reset for accounts that do not exist in the world', async () => {

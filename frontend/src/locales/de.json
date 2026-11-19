@@ -105,7 +105,31 @@
     "password": {
       "pending": "neues Passwort wartet auf die Welt",
       "refused": "neues Passwort von der Welt abgelehnt, das alte gilt weiter"
-    }
+    },
+    "search": "Suchen nach Konto oder Wunschname",
+    "noMatch": "Kein Konto passt zur Suche.",
+    "displayName": "Wunschname",
+    "noDisplayName": "keiner",
+    "displaySince": "seit {day}",
+    "displayLocked": "Wählen gesperrt",
+    "displayChange": {
+      "pending": "Änderung wartet auf die Welt",
+      "refused": "Änderung von der Welt abgelehnt"
+    },
+    "displayRemove": "Wunschname entfernen",
+    "displayLock": "Wählen sperren",
+    "displayUnlock": "Wählen freigeben",
+    "history": "Verlauf",
+    "historyTitle": "Wunschnamen von {account}",
+    "historyEmpty": "Es gibt noch keine Einträge.",
+    "historyActions": {
+      "chosen": "{day}: „{name}“ gewählt",
+      "given_up": "{day}: zurück zum Kontonamen, vorher „{name}“",
+      "removed": "{day}: „{name}“ entfernt von {by}",
+      "locked": "{day}: Wählen gesperrt von {by}",
+      "unlocked": "{day}: Wählen freigegeben von {by}"
+    },
+    "historyHint": "Der Verlauf stammt aus dem Protokoll der Welt und wird mit dem Jahresabschluss gelöscht."
   },
   "slips": {
     "title": "Zugangszettel",

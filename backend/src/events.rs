@@ -2,13 +2,15 @@
 
 use anyhow::Result;
 use lep_protocol::world::{
-    AccountsCreated, Event, EventOutcome, Modules, Progress, ProtocolEntry, Teachers, Trophies,
-    WebAccessRequest, WorldStarted, EVENT_ACCOUNTS_CREATED, EVENT_MODULES, EVENT_PROGRESS,
-    EVENT_PROTOCOL, EVENT_TEACHERS, EVENT_TROPHIES, EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
+    AccountsCreated, DisplayName, Event, EventOutcome, Modules, Progress, ProtocolEntry, Teachers,
+    Trophies, WebAccessRequest, WorldStarted, EVENT_ACCOUNTS_CREATED, EVENT_DISPLAY_NAME,
+    EVENT_MODULES, EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_TEACHERS, EVENT_TROPHIES,
+    EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
 };
 use serde::de::DeserializeOwned;
 
 use crate::app::AppState;
+use crate::display_names::{self, Stored};
 use crate::{clock, state, students, web_access, worlds};
 
 /// Reads the payload of an event as the type its kind asks for.
@@ -85,6 +87,22 @@ pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<Ev
             Some(report) => {
                 students::note_created(pool, world_id, &report).await?;
                 true
+            }
+            None => false,
+        },
+        EVENT_DISPLAY_NAME => match payload::<DisplayName>(event) {
+            Some(reported) => {
+                match display_names::store(pool, world_id, event.time, &reported).await? {
+                    Stored::Invalid => false,
+                    Stored::Kept => true,
+                    Stored::NewName => {
+                        // Nobody approves names: the teachers hear of each.
+                        let name = reported.name.as_deref().unwrap_or_default();
+                        display_names::tell_teachers(app, world_id, &reported.account, name)
+                            .await?;
+                        true
+                    }
+                }
             }
             None => false,
         },

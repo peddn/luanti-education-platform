@@ -156,7 +156,12 @@ async function order(change) {
         <tbody>
           <template v-for="student in progress.students" :key="student.account">
             <tr data-test="student" class="border-b border-slate-100 align-top">
-              <td class="px-4 py-2 font-mono font-semibold">{{ student.account }}</td>
+              <td class="px-4 py-2">
+                <span class="block font-mono font-semibold">{{ student.account }}</span>
+                <span v-if="student.display_name" data-test="display-name" class="block text-sm text-slate-600">
+                  {{ student.display_name }}
+                </span>
+              </td>
               <td v-for="(cell, index) in student.modules" :key="cell.module" class="px-4 py-2">
                 <button
                   type="button"

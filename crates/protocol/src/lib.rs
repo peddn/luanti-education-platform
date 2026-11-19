@@ -69,6 +69,8 @@ pub mod world {
     pub const EVENT_WEB_ACCESS: &str = "web_access";
     /// Kind of the event that says which accounts a world has created.
     pub const EVENT_ACCOUNTS_CREATED: &str = "accounts_created";
+    /// Kind of the event that carries the display name of one account.
+    pub const EVENT_DISPLAY_NAME: &str = "display_name";
     /// Kind of the job that only checks the way to the world and back.
     pub const JOB_PING: &str = "ping";
     /// Kind of the job that makes a world send its whole state again.
@@ -85,6 +87,14 @@ pub mod world {
     /// account.
     pub const JOB_SET_PASSWORD: &str = "set_password";
 
+    /// Kind of the job that makes a world take the display name of a
+    /// student away.
+    pub const JOB_REMOVE_DISPLAY_NAME: &str = "remove_display_name";
+
+    /// Kind of the job that makes a world lock or unlock choosing a
+    /// display name for a student.
+    pub const JOB_SET_DISPLAY_LOCKED: &str = "set_display_locked";
+
     /// Kind of the job that makes a world set the level of a student in
     /// a module.
     pub const JOB_SET_LEVEL: &str = "set_level";
@@ -95,7 +105,7 @@ pub mod world {
 
     /// The protocols a world keeps. Their entries are deleted with the end
     /// of the school year.
-    pub const PROTOCOLS: [&str; 4] = ["rewards", "chat", "signs", "desk"];
+    pub const PROTOCOLS: [&str; 5] = ["rewards", "chat", "signs", "desk", "names"];
 
     /// Reads a list or a map that may arrive as `null`. A Lua table without
     /// entries cannot say what it is, so the worlds send `null` for it.
@@ -340,6 +350,46 @@ pub mod world {
         pub password: String,
     }
 
+    /// Payload of the event "display_name": what an account is shown
+    /// under in the world. Always the whole state of the account.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct DisplayName {
+        pub account: String,
+        /// The name the player chose. Missing or null while the account
+        /// name is shown.
+        #[serde(default)]
+        pub name: Option<String>,
+        /// When the player chose a name last, in seconds since 1970.
+        /// Missing or null if never, or after a teacher took it away.
+        #[serde(default)]
+        pub changed_at: Option<i64>,
+        /// True if a teacher has locked choosing a name.
+        #[serde(default)]
+        pub locked: bool,
+    }
+
+    /// Payload of the job "remove_display_name". The world writes it
+    /// into the protocol of the names, under the account of the teacher.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct RemoveDisplayName {
+        /// Account name of the student.
+        pub account: String,
+        /// Account name of the teacher who ordered it.
+        pub by: String,
+    }
+
+    /// Payload of the job "set_display_locked". The world writes it into
+    /// the protocol of the names, under the account of the teacher.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetDisplayLocked {
+        /// Account name of the student.
+        pub account: String,
+        /// True to lock choosing a name, false to unlock it.
+        pub locked: bool,
+        /// Account name of the teacher who ordered it.
+        pub by: String,
+    }
+
     /// Payload of the job "set_level". The world writes the change into
     /// the protocol of the desk, under the account of the teacher.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -511,6 +561,64 @@ pub mod web {
         /// last is the one that counts.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub password: Option<PasswordState>,
+        /// The name the student chose to be shown under in the world.
+        /// Missing while the account name is shown.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub display_name: Option<String>,
+        /// When the student chose that name, in seconds since 1970.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub display_changed_at: Option<i64>,
+        /// True if a teacher has locked choosing a name.
+        #[serde(default)]
+        pub display_locked: bool,
+        /// Missing in the usual case: no change to the display name or
+        /// its lock is on its way.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub display_change: Option<ChangeState>,
+    }
+
+    /// Request to lock or unlock choosing a display name.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct DisplayLock {
+        pub locked: bool,
+    }
+
+    /// One entry of the history of the display names of a student.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct DisplayNameEntry {
+        /// When it happened, in seconds since 1970.
+        pub time: i64,
+        /// What happened.
+        pub action: DisplayNameAction,
+        /// The name that was chosen, given up or taken away. Missing for
+        /// a lock.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub name: Option<String>,
+        /// Account name of who did it: the student, or a teacher.
+        pub by: String,
+    }
+
+    /// What can happen to a display name.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum DisplayNameAction {
+        /// The student chose the name.
+        Chosen,
+        /// The student went back to the account name.
+        GivenUp,
+        /// A teacher took the name away.
+        Removed,
+        /// A teacher locked choosing a name.
+        Locked,
+        /// A teacher unlocked choosing a name.
+        Unlocked,
+    }
+
+    /// The history of the display names of a student, newest first. It
+    /// comes from a protocol of the world and is deleted with it.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct DisplayNameHistory {
+        pub entries: Vec<DisplayNameEntry>,
     }
 
     /// The accounts of the students of a group, in the order they were
@@ -609,6 +717,9 @@ pub mod web {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct StudentProgress {
         pub account: String,
+        /// The name the student chose to be shown under in the world.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub display_name: Option<String>,
         pub modules: Vec<ModuleProgress>,
         pub trophies: Vec<EarnedTrophy>,
     }

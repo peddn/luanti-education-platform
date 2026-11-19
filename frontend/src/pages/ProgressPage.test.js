@@ -39,7 +39,12 @@ function progress(first = {}) {
   return {
     modules: [MATH],
     students: [
-      { account: 'klugeEule', modules: [cell(first)], trophies: [{ title: 'Rechenpokal', material: 'silver' }] },
+      {
+        account: 'klugeEule',
+        display_name: 'Lena',
+        modules: [cell(first)],
+        trophies: [{ title: 'Rechenpokal', material: 'silver' }],
+      },
       {
         account: 'frohesReh',
         modules: [cell({ started: false, level: 1, percent: 0, tasks: [] })],
@@ -114,6 +119,9 @@ describe('progress page', () => {
     expect(rows[1].get('[data-test=cell]').text()).toContain('Niveau 1 von 3')
     expect(rows[1].get('[data-test=cell]').text()).toContain('noch nicht begonnen')
     expect(rows[1].find('[data-test=locked]').exists()).toBe(false)
+    // The display name stands below the account, where there is one.
+    expect(rows[0].get('[data-test=display-name]').text()).toBe('Lena')
+    expect(rows[1].find('[data-test=display-name]').exists()).toBe(false)
     expect(rows[1].text()).toContain('keine')
     expect(page.find('[data-test=detail]').exists()).toBe(false)
     expect(page.find('[data-test=pending-hint]').exists()).toBe(false)

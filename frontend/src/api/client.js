@@ -11,6 +11,7 @@
 /** @typedef {Schemas['Student']} Student */
 /** @typedef {Schemas['AccessSlip']} AccessSlip */
 /** @typedef {Schemas['GroupProgress']} GroupProgress */
+/** @typedef {Schemas['DisplayNameEntry']} DisplayNameEntry */
 /** @typedef {Schemas['ModuleProgress']} ModuleProgress */
 /** @typedef {Schemas['ProgressChange']} ProgressChange */
 /** @typedef {Schemas['ErrorCode']} BackendErrorCode */
@@ -318,6 +319,47 @@ export function createClient(options = {}) {
       const path = `${studentsPath(id)}/${encodeURIComponent(account)}/password`
       const answer = /** @type {Schemas['AccessSlips']} */ (await request(path, undefined, false, 'POST'))
       return answer.slips
+    },
+
+    /**
+     * Orders the world to take the display name of a student away. The
+     * answer shows the list with the order on its way.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @returns {Promise<Student[]>}
+     */
+    async removeDisplayName(id, account) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}/display-name`
+      return studentsOf(await request(path, undefined, false, 'DELETE'))
+    },
+
+    /**
+     * Orders the world to lock or unlock choosing a display name for a
+     * student.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @param {boolean} locked
+     * @returns {Promise<Student[]>}
+     */
+    async lockDisplayName(id, account, locked) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}/display-name/lock`
+      return studentsOf(await request(path, { locked }))
+    },
+
+    /**
+     * Returns what happened to the display name of a student, newest
+     * first.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @returns {Promise<DisplayNameEntry[]>}
+     */
+    async displayNameHistory(id, account) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}/display-names`
+      const answer = /** @type {Schemas['DisplayNameHistory']} */ (await request(path))
+      return answer.entries
     },
 
     /**

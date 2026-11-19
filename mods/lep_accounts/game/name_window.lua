@@ -5,7 +5,9 @@ local S = core.get_translator("lep_accounts")
 local formspec = lep_core.formspec
 
 local FORM = "lep_accounts:name"
-local WIDTH, HEIGHT = 9, 6.2
+local WIDTH = 9
+local PAD = formspec.PADDING
+local TOP = formspec.CONTENT_TOP
 local REFUSALS = lep_accounts.NAME_REFUSALS
 
 -- Players who have the window open. Fields from anybody else are ignored.
@@ -31,33 +33,66 @@ local function explain(why, from)
 	return S("Only letters, digits, and single spaces and hyphens between them are allowed.")
 end
 
-local function show(player_name, typed, message)
-	local state = lep_accounts.get_display_state(player_name)
-	local fs = formspec.new(WIDTH, HEIGHT)
-	fs:label(0.5, 0.6, S("Your display name"))
-	fs:label(0.5, 1.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
+-- Going back to the account name is always possible. It is another
+-- matter than choosing a name, so it stands apart: below a line, with a
+-- sentence of its own and a button in another colour.
+local function add_restore(fs, y)
+	fs:separator(y)
+	fs:label(PAD, y + 0.45, S("You can go back to your account name at any time:"))
+	fs:element("style", "give_up", "bgcolor=#B05A2A")
+	fs:button(PAD, y + 0.8, 4.4, 0.8, "give_up", S("Restore account name"))
+end
 
-	local hint
-	if state.locked then
-		hint = explain(REFUSALS.LOCKED)
-	elseif state.next_change then
-		hint = explain(REFUSALS.WAIT, state.next_change)
-	else
-		hint = S("You can choose a new name once in 30 days. Your teachers see every name.")
-	end
+-- Starts a window: the title, who the player is shown as, and a text.
+-- Returns the builder and where the rest starts.
+local function start(player_name, height, text)
+	local fs = formspec.new(WIDTH, height)
+	fs:title(S("Your display name"))
+	fs:label(PAD, TOP + 0.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
 	-- A text area without a name only shows its text, and breaks lines.
-	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "",
-		formspec.escape(message or hint))
+	fs:element("textarea", { PAD, TOP + 0.6 }, { WIDTH - 2 * PAD, 1.1 }, "", "",
+		formspec.escape(text))
+	return fs, TOP + 1.9
+end
 
-	fs:field(0.5, 3.3, WIDTH - 1, 0.8, "name", S("New name"), typed or state.display or "")
-	fs:submit_on_enter("name")
-	fs:button(0.5, 4.5, 2.5, 0.8, "apply", S("Apply"))
-	if state.display then
-		fs:button(3.2, 4.5, 3.6, 0.8, "give_up", S("Back to account name"))
-	end
-	fs:button_exit(WIDTH - 2, 4.5, 1.5, 0.8, "close", S("Close"))
+local function finish(player_name, fs, height)
+	fs:button_exit(WIDTH - PAD - 1.5, height - PAD - 0.8, 1.5, 0.8, "close", S("Close"))
 	open[player_name] = true
 	core.show_formspec(player_name, FORM, fs:build())
+end
+
+-- A window that says why no name can be chosen now. It has no field
+-- and no button for choosing: they would not work and only confuse.
+local function show_closed(player_name, reason)
+	local restore = lep_accounts.get_display_state(player_name).display ~= nil
+	local height = TOP + (restore and 5 or 3.1)
+	local fs, y = start(player_name, height, reason)
+	if restore then
+		add_restore(fs, y)
+	end
+	finish(player_name, fs, height)
+end
+
+local function show(player_name, typed, message)
+	local state = lep_accounts.get_display_state(player_name)
+	if state.locked then
+		return show_closed(player_name, explain(REFUSALS.LOCKED))
+	elseif state.next_change then
+		return show_closed(player_name, explain(REFUSALS.WAIT, state.next_change))
+	end
+
+	local height = TOP + (state.display and 7.1 or 5)
+	local hint = S("You can choose a new name once in 30 days.") .. " "
+		.. S("Your teachers see every name.")
+	local fs, y = start(player_name, height, message or hint)
+	fs:field(PAD, y + 0.4, WIDTH - 2 * PAD, 0.8, "name", S("New name"),
+		typed or state.display or "")
+	fs:submit_on_enter("name")
+	fs:button(PAD, y + 1.5, 2.5, 0.8, "apply", S("Apply"))
+	if state.display then
+		add_restore(fs, y + 2.7)
+	end
+	finish(player_name, fs, height)
 end
 
 local function close(player_name, message)
@@ -96,6 +131,8 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 		if ok then
 			close(player_name, S("Your display name is now: @1",
 				lep_accounts.get_display_name(player_name)))
+		elseif why == REFUSALS.LOCKED or why == REFUSALS.WAIT then
+			show_closed(player_name, explain(why, from))
 		else
 			show(player_name, typed, explain(why, from))
 		end

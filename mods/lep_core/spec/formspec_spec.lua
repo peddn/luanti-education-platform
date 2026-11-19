@@ -11,6 +11,22 @@ describe("lep_core formspec", function()
 		assert.are.equal("formspec_version[6]size[10.5,9]", formspec.new(10.5, 9):build())
 	end)
 
+	it("adds a title that stands out, with a line below it", function()
+		local fs = formspec.new(9, 5):title("Hi; [you]"):label(0.375, 2, "text"):build()
+		assert.are.equal("formspec_version[6]size[9,5]"
+			.. "style_type[label;font=bold;font_size=*1.3]"
+			.. "label[0.375,0.6;Hi\\; \\[you\\]]"
+			.. "style_type[label;font=normal;font_size=*1]"
+			.. "box[0.375,1.05;8.25,0.03;#FFFFFF80]"
+			.. "label[0.375,2;text]", fs)
+		assert.is_true(formspec.CONTENT_TOP > 1.05)
+	end)
+
+	it("adds a line across the window", function()
+		local fs = formspec.new(6, 5):separator(3):build()
+		assert.is_truthy(fs:find("box[0.375,3;5.25,0.03;#FFFFFF80]", 1, true))
+	end)
+
 	it("joins the parts of an element", function()
 		local fs = formspec.new(4, 3):element("box", { 0, 0 }, { 4, 3 }, "#000000"):build()
 		assert.are.equal("formspec_version[6]size[4,3]box[0,0;4,3;#000000]", fs)

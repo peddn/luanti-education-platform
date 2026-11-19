@@ -122,6 +122,20 @@ function names.next_change(state, now)
 	return nil
 end
 
+--- Says whether a player may choose a name now.
+-- @return true  or  false, why not (LOCKED or WAIT), and for WAIT the
+--   time from which a change is possible
+function names.may_change(state, now)
+	if state.locked then
+		return false, names.LOCKED
+	end
+	local from = names.next_change(state, now)
+	if from then
+		return false, names.WAIT, from
+	end
+	return true
+end
+
 --- Lets a player choose a name.
 -- @param name A name that passed names.check.
 -- @param is_taken Function(folded) returning true if another account
@@ -129,12 +143,9 @@ end
 -- @return new state  or  nil, why not (TAKEN, LOCKED or WAIT), and for
 --   WAIT the time from which a change is possible
 function names.choose(state, name, now, is_taken)
-	if state.locked then
-		return nil, names.LOCKED
-	end
-	local from = names.next_change(state, now)
-	if from then
-		return nil, names.WAIT, from
+	local ok, why, from = names.may_change(state, now)
+	if not ok then
+		return nil, why, from
 	end
 	if is_taken(names.fold(name)) then
 		return nil, names.TAKEN
@@ -143,7 +154,8 @@ function names.choose(state, name, now, is_taken)
 end
 
 --- Lets a player go back to the account name. That is always possible,
--- but it does not shorten the wait for the next name.
+-- also during the wait and while choosing is locked, but it does not
+-- shorten the wait for the next name.
 function names.give_up(state)
 	return { changed_at = state.changed_at, locked = state.locked }
 end

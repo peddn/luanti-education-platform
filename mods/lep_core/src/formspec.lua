@@ -13,6 +13,12 @@ formspec.VERSION = 6
 formspec.PADDING = 0.375
 formspec.SLOT = 1
 formspec.SLOT_GAP = 0.25
+-- Where the content of a window starts below its title, see Builder:title.
+formspec.CONTENT_TOP = 1.45
+
+-- Colour of the lines that set parts of a window apart.
+local LINE = "#FFFFFF80"
+local LINE_HEIGHT = 0.03
 
 local ESCAPES = { ["\\"] = "\\\\", ["["] = "\\[", ["]"] = "\\]", [";"] = "\\;", [","] = "\\," }
 
@@ -34,11 +40,29 @@ function formspec.new(width, height)
 	assert(type(width) == "number" and type(height) == "number",
 		"formspec.new: width and height must be numbers")
 	return setmetatable({
+		_width = width,
 		_parts = {
 			"formspec_version[" .. formspec.VERSION .. "]",
 			"size[" .. width .. "," .. height .. "]",
 		},
 	}, Builder)
+end
+
+--- Adds the title of the window: larger and bold, in the top left
+-- corner, with a line below it across the window. Every window says
+-- with it what it is about. What follows starts at formspec.CONTENT_TOP.
+-- The text is escaped here.
+function Builder:title(text)
+	self:element("style_type", "label", "font=bold;font_size=*1.3")
+	self:label(formspec.PADDING, 0.6, text)
+	self:element("style_type", "label", "font=normal;font_size=*1")
+	return self:separator(1.05)
+end
+
+--- Adds a line across the window that sets apart what follows.
+function Builder:separator(y)
+	return self:element("box", { formspec.PADDING, y },
+		{ self._width - 2 * formspec.PADDING, LINE_HEIGHT }, LINE)
 end
 
 --- Adds any element. Parts are joined with ";", a table part with ",".
