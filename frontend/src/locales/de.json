@@ -214,7 +214,10 @@
     "changeHint": "Die Welt führt die Änderung aus und hält sie im Protokoll des Lehrerpults fest. Mit gesperrtem Aufstieg bleibt das Kind auf seinem Niveau, auch wenn es das Pensum geschafft hat.",
     "repeatHint": "Wiederholen leert das Pensum dieses Niveaus. Jede Aufgabe zählt und wird wieder belohnt. Die Belohnung für den Abschluss gibt es nur beim ersten Mal.",
     "export": "Als CSV herunterladen",
-    "exportHint": "Eine Zeile je Schüler und Modul. Die Datei verlässt die Plattform: Du bist für sie verantwortlich, und der Export wird festgehalten."
+    "exportHint": "Eine Zeile je Schüler und Modul. Die Datei verlässt die Plattform: Du bist für sie verantwortlich, und der Export wird festgehalten.",
+    "startTitle": "Startniveau",
+    "startHint": "Auf diesem Niveau beginnt jedes Kind, das in dem Modul noch nichts getan hat. Wer schon Aufgaben gelöst hat oder einzeln auf ein Niveau gesetzt wurde, bleibt, wo er ist. Für übersprungene Niveaus gibt es weder Belohnung noch Trophäe.",
+    "startOption": "Niveau {level} von {levels}"
   },
   "protocols": {
     "titleFor": "Protokolle der Gruppe {group}",

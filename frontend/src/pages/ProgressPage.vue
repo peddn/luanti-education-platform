@@ -102,6 +102,27 @@ function orderLevel() {
 }
 
 /**
+ * Orders the level new students start a module on.
+ *
+ * @param {string} module id of the module
+ * @param {Event} event the change of the select
+ */
+async function orderStartLevel(module, event) {
+  const level = Number(/** @type {HTMLSelectElement} */ (event.target).value)
+  busy.value = true
+  error.value = null
+  try {
+    progress.value = await api.changeStartLevel(props.id, module, level)
+  } catch (err) {
+    error.value = errorCode(err)
+    // The select goes back to what counts.
+    await refresh()
+  } finally {
+    busy.value = false
+  }
+}
+
+/**
  * Orders a change from the world and shows what the backend answers:
  * the old state, with the change on its way.
  *
@@ -158,10 +179,47 @@ async function order(change) {
       <p v-if="progress.modules.length === 0" data-test="no-modules" class="text-slate-500">
         {{ $t('progress.noModules') }}
       </p>
-      <p v-else-if="progress.students.length === 0" data-test="no-students" class="text-slate-500">
+      <div v-else class="max-w-3xl space-y-3 rounded border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">{{ $t('progress.startTitle') }}</h2>
+        <p class="text-sm text-slate-500">{{ $t('progress.startHint') }}</p>
+        <div
+          v-for="module in progress.modules"
+          :key="module.id"
+          data-test="start-level"
+          class="flex flex-wrap items-center gap-3"
+        >
+          <label class="flex items-center gap-3">
+            <span class="w-40 text-sm text-slate-600">{{ module.title }}</span>
+            <select
+              :value="module.start_level"
+              :name="`start-${module.id}`"
+              class="rounded border border-slate-300 bg-white px-3 py-2"
+              :disabled="busy || module.start_change === 'pending'"
+              @change="orderStartLevel(module.id, $event)"
+            >
+              <option v-for="level in module.levels" :key="level" :value="level">
+                {{ $t('progress.startOption', { level, levels: module.levels }) }}
+              </option>
+            </select>
+          </label>
+          <span
+            v-if="module.start_change"
+            data-test="start-change"
+            class="text-sm"
+            :class="module.start_change === 'refused' ? 'text-red-800' : 'text-amber-700'"
+          >
+            {{ $t(`progress.change.${module.start_change}`) }}
+          </span>
+        </div>
+      </div>
+
+      <p v-if="progress.modules.length > 0 && progress.students.length === 0" data-test="no-students" class="text-slate-500">
         {{ $t('progress.noStudents') }}
       </p>
-      <table v-else class="w-full border-collapse rounded border border-slate-200 bg-white text-left">
+      <table
+        v-if="progress.modules.length > 0 && progress.students.length > 0"
+        class="w-full border-collapse rounded border border-slate-200 bg-white text-left"
+      >
         <thead class="border-b border-slate-200 text-sm text-slate-500">
           <tr>
             <th class="px-4 py-2 font-semibold">{{ $t('progress.account') }}</th>

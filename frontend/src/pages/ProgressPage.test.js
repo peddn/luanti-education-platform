@@ -11,7 +11,7 @@ import ProgressPage from './ProgressPage.vue'
 
 const GROUP = { id: 'id-7b', name: '7b', teachers: ['lehrer1'] }
 const BASE = '/api/web/v1/groups/id-7b'
-const MATH = { id: 'lep_math:math', title: 'Kopfrechnen', levels: 3 }
+const MATH = { id: 'lep_math:math', title: 'Kopfrechnen', levels: 3, start_level: 1 }
 const CELL_PATH = `${BASE}/progress/klugeEule/lep_math%3Amath`
 
 /**
@@ -101,6 +101,94 @@ describe('progress page', () => {
   beforeEach(() => setActivePinia(createPinia()))
   afterEach(() => vi.unstubAllGlobals())
 
+  describe('start level', () => {
+    const START = `${BASE}/progress/start/lep_math%3Amath`
+
+    /** @param {Record<string, unknown>} module changes to the module */
+    function withModule(module) {
+      return { ...progress(), modules: [{ ...MATH, ...module }] }
+    }
+
+    it('shows the start level of each module and orders another one', async () => {
+      const send = backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/progress`]: [200, progress()],
+        [`POST ${START}`]: [200, withModule({ start_change: 'pending' })],
+      })
+      const page = await show()
+      const row = page.get('[data-test=start-level]')
+      expect(row.text()).toContain('Kopfrechnen')
+      const select = row.get('select')
+      expect(/** @type {HTMLSelectElement} */ (select.element).value).toBe('1')
+      expect(row.findAll('option').map((option) => option.text())).toEqual([
+        'Niveau 1 von 3',
+        'Niveau 2 von 3',
+        'Niveau 3 von 3',
+      ])
+      expect(page.text()).toContain('weder Belohnung noch Trophäe')
+
+      await select.setValue('3')
+      await flushPromises()
+      const [, init] = send.mock.calls.find(([path]) => path === START) ?? []
+      expect(JSON.parse(String(init?.body))).toEqual({ level: 3 })
+      // The world has not answered: the old level counts, and nothing
+      // else can be ordered meanwhile.
+      const waiting = page.get('[data-test=start-level]')
+      expect(waiting.get('[data-test=start-change]').text()).toBe('Änderung wartet auf die Welt')
+      expect(/** @type {HTMLSelectElement} */ (waiting.get('select').element).value).toBe('1')
+      expect(waiting.get('select').attributes('disabled')).toBeDefined()
+    })
+
+    it('shows the new level once the world has reported it', async () => {
+      const opened = fakeEventSource()
+      let answer = withModule({ start_change: 'pending' })
+      backend({ [`GET ${BASE}`]: [200, GROUP], [`GET ${BASE}/progress`]: () => [200, answer] })
+      const page = await show()
+      answer = withModule({ start_level: 3 })
+      opened[0].change('progress')
+      await settled()
+      await flushPromises()
+      const row = page.get('[data-test=start-level]')
+      expect(/** @type {HTMLSelectElement} */ (row.get('select').element).value).toBe('3')
+      expect(row.find('[data-test=start-change]').exists()).toBe(false)
+    })
+
+    it('says so when the world refused, and lets it be tried again', async () => {
+      backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/progress`]: [200, withModule({ start_change: 'refused' })],
+      })
+      const page = await show()
+      const row = page.get('[data-test=start-level]')
+      expect(row.get('[data-test=start-change]').text()).toBe('Änderung von der Welt abgelehnt')
+      expect(row.get('select').attributes('disabled')).toBeUndefined()
+    })
+
+    it('can be set before there are students', async () => {
+      backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/progress`]: [200, { modules: [MATH], students: [] }],
+      })
+      const page = await show()
+      expect(page.find('[data-test=start-level]').exists()).toBe(true)
+      expect(page.find('[data-test=no-students]').exists()).toBe(true)
+      expect(page.find('table').exists()).toBe(false)
+    })
+
+    it('goes back to what counts when the backend says no', async () => {
+      backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/progress`]: [200, progress()],
+        [`POST ${START}`]: [400, { code: 'invalid_request', message: 'no such level' }],
+      })
+      const page = await show()
+      await page.get('[data-test=start-level] select').setValue('3')
+      await flushPromises()
+      expect(page.get('[role=alert]').text()).toContain('Die Anfrage war fehlerhaft.')
+      expect(/** @type {HTMLSelectElement} */ (page.get('[data-test=start-level] select').element).value).toBe('1')
+    })
+  })
+
   it('offers the progress as a file and says what that means', async () => {
     backend({
       [`GET ${BASE}`]: [200, GROUP],
@@ -189,7 +277,7 @@ describe('progress page', () => {
     })
     const page = await show()
     await page.findAll('[data-test=cell]')[0].trigger('click')
-    await page.get('select').setValue('3')
+    await page.get('select[name=level]').setValue('3')
     await page.get('form').trigger('submit')
     await flushPromises()
 
@@ -264,7 +352,7 @@ describe('progress page', () => {
     expect(change.classes()).toContain('text-red-800')
 
     await page.findAll('[data-test=cell]')[0].trigger('click')
-    await page.get('select').setValue('1')
+    await page.get('select[name=level]').setValue('1')
     await page.get('form').trigger('submit')
     await flushPromises()
     expect(page.text()).toContain('Die Anfrage war fehlerhaft.')
