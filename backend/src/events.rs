@@ -1,6 +1,7 @@
 //! Events from the worlds: taking each one in exactly once.
 
 use anyhow::Result;
+use lep_protocol::web::ChangeTopic;
 use lep_protocol::world::{
     AccountsCreated, DisplayName, Event, EventOutcome, Modules, Progress, ProtocolEntry, Teachers,
     Trophies, WebAccessRequest, WorldStarted, EVENT_ACCOUNTS_CREATED, EVENT_DISPLAY_NAME,
@@ -122,7 +123,23 @@ pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<Ev
         .bind(clock::now())
         .execute(pool)
         .await?;
+    app.changes.tell(world_id, topics_of(&event.kind));
     Ok(EventOutcome::Accepted)
+}
+
+/// Returns the parts of a group an event of a kind changes, for the
+/// pages that are open in browsers.
+fn topics_of(kind: &str) -> &'static [ChangeTopic] {
+    match kind {
+        EVENT_MODULES | EVENT_PROGRESS | EVENT_TROPHIES => &[ChangeTopic::Progress],
+        // A display name stands in the list and next to the progress.
+        EVENT_DISPLAY_NAME | EVENT_ACCOUNTS_CREATED => {
+            &[ChangeTopic::Students, ChangeTopic::Progress]
+        }
+        EVENT_TEACHERS | EVENT_WEB_ACCESS | EVENT_WORLD_STARTED => &[ChangeTopic::Group],
+        // Entries of protocols are shown on request only.
+        _ => &[],
+    }
 }
 
 #[cfg(test)]

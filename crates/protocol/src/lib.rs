@@ -577,6 +577,32 @@ pub mod web {
         pub display_change: Option<ChangeState>,
     }
 
+    /// A part of a group that changed. The way
+    /// `/api/web/v1/groups/{id}/changes` sends it as the data of an event
+    /// named "change"; a page then loads that part again.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum ChangeTopic {
+        /// Name, teachers or address of the group.
+        Group,
+        /// The list of students: accounts, passwords on their way,
+        /// display names.
+        Students,
+        /// Levels, workload, locks and trophies.
+        Progress,
+    }
+
+    impl ChangeTopic {
+        /// The word the topic is sent as.
+        pub fn as_str(self) -> &'static str {
+            match self {
+                Self::Group => "group",
+                Self::Students => "students",
+                Self::Progress => "progress",
+            }
+        }
+    }
+
     /// Request to lock or unlock choosing a display name.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct DisplayLock {
