@@ -66,3 +66,23 @@ core.register_chatcommand("lep_name_wait", {
 		return true, account .. " can choose a display name again."
 	end,
 })
+
+core.register_chatcommand("lep_account_remove", {
+	params = "<account> [unused]",
+	description = "Debug: remove an account and everything the world knows about it. "
+		.. "With 'unused' only if nobody ever logged in with it.",
+	privs = { lep_debug = true },
+	func = function(player_name, param)
+		local account, mode = param:match("^%s*(%S+)%s*(%S*)%s*$")
+		if not account or (mode ~= "" and mode ~= "unused") then
+			return false, "Usage: /lep_account_remove <account> [unused]"
+		end
+		lep_accounts.remove(account, { only_unused = mode == "unused", by = player_name },
+			function(ok, why)
+				core.chat_send_player(player_name, ok
+					and "Account " .. account .. " removed."
+					or "Account " .. account .. " not removed: " .. tostring(why))
+			end)
+		return true
+	end,
+})

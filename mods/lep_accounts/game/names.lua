@@ -182,6 +182,18 @@ function lep_accounts._reset_display_wait(account)
 	storage.save(account, states[account])
 end
 
+-- Forgets everything about the display name of an account that is being
+-- removed. Nothing is written into the protocol and nobody is told: the
+-- account is on its way out.
+function lep_accounts._forget_display_name(account)
+	local state = states[account]
+	if state and state.display and owners[names.fold(state.display)] == account then
+		owners[names.fold(state.display)] = nil
+	end
+	states[account] = nil
+	storage.remove(account)
+end
+
 --- Calls listener(account, action) after something happened to the
 -- display name of an account. action is one of lep_accounts.NAME_...;
 -- lep_accounts.get_display_name gives the name that counts now.
