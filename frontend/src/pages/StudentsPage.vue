@@ -8,6 +8,7 @@ import AccessSlips from '@/components/AccessSlips.vue'
 import ErrorNote from '@/components/ErrorNote.vue'
 import LiveNote from '@/components/LiveNote.vue'
 import { useGroupChanges } from '@/composables/groupChanges'
+import { useAuthStore } from '@/stores/auth'
 
 /** @typedef {import('@/api/client').Group} Group */
 /** @typedef {import('@/api/client').Student} Student */
@@ -41,6 +42,16 @@ const search = ref('')
 // The account whose history of display names is shown, with the history.
 const history = ref(/** @type {{ account: string, entries: DisplayNameEntry[] } | null} */ (null))
 
+// The account that is about to be deleted, and what was typed to
+// confirm it.
+const removing = ref(/** @type {string | null} */ (null))
+const typed = ref('')
+
+const auth = useAuthStore()
+// What the page offers follows the role. The backend and the world
+// check it again.
+const schoolAdmin = computed(() => auth.me?.school_admin === true)
+
 const { locale } = useI18n()
 
 const shown = computed(() => {
@@ -72,6 +83,21 @@ const anyCreating = computed(() => students.value.some((student) => student.stat
 function changeable(student) {
   return student.state === 'draft' || student.state === 'refused'
 }
+
+/**
+ * A teacher takes back an account nobody ever logged in with. A used
+ * one only the school administration deletes.
+ *
+ * @param {Student} student
+ */
+function removable(student) {
+  return student.state === 'active' && student.removal !== 'pending' && (schoolAdmin.value || !student.used)
+}
+
+// True if the list holds accounts this teacher may not delete.
+const anyKept = computed(
+  () => !schoolAdmin.value && students.value.some((student) => student.state === 'active' && student.used),
+)
 
 async function load() {
   try {
@@ -146,6 +172,29 @@ function removeDisplayName(account) {
  */
 function lockDisplayName(account, locked) {
   apply(() => api.lockDisplayName(props.id, account, locked))
+}
+
+/** @param {string} account */
+function askRemoval(account) {
+  removing.value = removing.value === account ? null : account
+  typed.value = ''
+}
+
+async function orderRemoval() {
+  const account = removing.value
+  if (account === null || typed.value.trim() !== account) {
+    return
+  }
+  await apply(() => api.orderRemoval(props.id, account))
+  if (error.value === null) {
+    removing.value = null
+    typed.value = ''
+  }
+}
+
+/** @param {string} account */
+function takeBackRemoval(account) {
+  apply(() => api.takeBackRemoval(props.id, account))
 }
 
 /** @param {string} account */
@@ -308,6 +357,19 @@ function closeSlips() {
                 </td>
                 <td class="px-4 py-2" :class="student.state === 'refused' ? 'text-red-800' : 'text-slate-600'">
                   {{ $t(`students.states.${student.state}`) }}
+                  <span v-if="student.state === 'active' && !student.used" data-test="unused" class="block text-sm">
+                    {{ $t('students.unused') }}
+                  </span>
+                  <span v-if="student.removal === 'pending'" data-test="removal-state" class="block text-sm text-amber-700">
+                    {{ $t('students.removalPending') }}
+                  </span>
+                  <span
+                    v-else-if="student.removal === 'refused'"
+                    data-test="removal-state"
+                    class="block text-sm text-red-800"
+                  >
+                    {{ $t(`students.removalRefusals.${student.removal_refusal ?? 'failed'}`) }}
+                  </span>
                   <span
                     v-if="student.password"
                     data-test="password-state"
@@ -380,6 +442,27 @@ function closeSlips() {
                     >
                       {{ $t('students.protocols') }}
                     </RouterLink>
+                    <button
+                      v-if="student.removal === 'pending'"
+                      type="button"
+                      data-test="removal-take-back"
+                      class="text-emerald-700 underline"
+                      :disabled="busy"
+                      @click="takeBackRemoval(student.account)"
+                    >
+                      {{ $t('students.removalTakeBack') }}
+                    </button>
+                    <button
+                      v-else-if="removable(student)"
+                      type="button"
+                      data-test="removal"
+                      class="text-red-800 underline"
+                      :disabled="busy"
+                      :aria-expanded="removing === student.account"
+                      @click="askRemoval(student.account)"
+                    >
+                      {{ $t('students.removal') }}
+                    </button>
                   </template>
                   <template v-if="changeable(student)">
                     <button
@@ -399,6 +482,54 @@ function closeSlips() {
                       {{ $t('students.remove') }}
                     </button>
                   </template>
+                </td>
+              </tr>
+              <tr
+                v-if="removing === student.account && removable(student)"
+                data-test="removal-form"
+                class="border-b border-slate-200 bg-red-50"
+              >
+                <td colspan="4" class="px-4 py-4 text-sm">
+                  <form class="max-w-3xl space-y-3" novalidate @submit.prevent="orderRemoval">
+                    <h2 class="font-semibold text-red-800">
+                      {{ $t('students.removalTitle', { account: student.account }) }}
+                    </h2>
+                    <p>{{ $t('students.removalIntro') }}</p>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      <div class="rounded border border-slate-200 bg-white p-3">
+                        <h3 class="font-semibold">{{ $t('students.removalDeletedTitle') }}</h3>
+                        <p class="mt-1 text-slate-600">{{ $t('students.removalDeleted') }}</p>
+                      </div>
+                      <div class="rounded border border-slate-200 bg-white p-3">
+                        <h3 class="font-semibold">{{ $t('students.removalKeptTitle') }}</h3>
+                        <p class="mt-1 text-slate-600">{{ $t('students.removalKept') }}</p>
+                      </div>
+                    </div>
+                    <p class="text-slate-600">{{ $t('students.removalNote') }}</p>
+                    <label class="block space-y-1">
+                      <span class="block text-slate-600">{{ $t('students.removalType', { account: student.account }) }}</span>
+                      <input
+                        v-model="typed"
+                        type="text"
+                        name="confirm"
+                        autocomplete="off"
+                        class="block w-64 rounded border border-slate-300 bg-white px-3 py-2 font-mono"
+                      />
+                    </label>
+                    <div class="space-x-3">
+                      <button
+                        type="submit"
+                        data-test="removal-yes"
+                        class="rounded bg-red-700 px-4 py-2 font-semibold text-white hover:bg-red-800 disabled:opacity-40"
+                        :disabled="busy || typed.trim() !== student.account"
+                      >
+                        {{ $t('students.removalYes') }}
+                      </button>
+                      <button type="button" class="text-slate-600 underline" @click="askRemoval(student.account)">
+                        {{ $t('students.resetNo') }}
+                      </button>
+                    </div>
+                  </form>
                 </td>
               </tr>
               <tr
@@ -432,6 +563,9 @@ function closeSlips() {
         </table>
       </template>
 
+      <p v-if="anyKept" data-test="kept-hint" class="max-w-2xl text-sm text-slate-600">
+        {{ $t('students.removalKeptHint') }}
+      </p>
       <p v-if="anyRefused" data-test="refused-hint" class="max-w-2xl text-sm text-red-800">
         {{ $t('students.refusedHint') }}
       </p>
