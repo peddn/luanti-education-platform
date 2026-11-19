@@ -13,7 +13,8 @@
     "overview": "Übersicht",
     "groups": "Gruppen",
     "yearEnd": "Jahresabschluss",
-    "health": "Zustand"
+    "health": "Zustand",
+    "removals": "Löschungen"
   },
   "login": {
     "title": "Anmelden",
@@ -131,7 +132,28 @@
       "unlocked": "{day}: Wählen freigegeben von {by}"
     },
     "historyHint": "Der Verlauf stammt aus dem Protokoll der Welt und wird mit dem Jahresabschluss gelöscht.",
-    "protocols": "Protokolle"
+    "protocols": "Protokolle",
+    "unused": "noch nie angemeldet",
+    "removal": "Konto löschen",
+    "removalPending": "Löschung wartet auf die Welt",
+    "removalTakeBack": "Löschung zurücknehmen",
+    "removalRefusals": {
+      "used": "Löschung abgelehnt: Das Konto wurde schon benutzt. Nur die Schulverwaltung kann es löschen.",
+      "staff": "Löschung abgelehnt: Das ist das Konto einer Lehrkraft.",
+      "unknown": "Löschung abgelehnt: Die Welt kennt dieses Konto nicht.",
+      "incomplete": "Löschung nicht abgeschlossen: Die Welt konnte nicht alles löschen. Das Konto besteht noch, versuche es noch einmal.",
+      "failed": "Löschung fehlgeschlagen. Vielleicht ist die Welt älter als diese Anwendung."
+    },
+    "removalTitle": "Konto {account} endgültig löschen",
+    "removalIntro": "Das ist für den Fall gedacht, dass Eltern oder ein Kind die Löschung verlangen, und für Konten, die nie gebraucht wurden. Es lässt sich nicht rückgängig machen.",
+    "removalDeletedTitle": "Wird gelöscht",
+    "removalDeleted": "Zugang und Passwort, Wunschname, Fortschritt, Trophäen, der Inhalt der Belohnungstruhe, Inventar, das Zimmer in der Lobby, die Lernräume und alle Einträge des Kontos in den Protokollen, auch private Nachrichten an das Konto. In der Welt und hier.",
+    "removalKeptTitle": "Kann nicht gelöscht werden",
+    "removalKept": "Was das Kind in der Survival-Welt gebaut hat, seine Schilder, Bücher und geschützten Bereiche: Sie stehen in der Karte und verschwinden erst mit der Welt. Die Logdatei des Spielservers. Dateien, die jemand aus den Protokollen exportiert hat. Zeilen anderer in den Protokollen, die das Konto nur nennen, bleiben bis zum Jahresabschluss.",
+    "removalNote": "Ist das Kind gerade im Spiel, wird es getrennt. Läuft die Welt nicht, wartet die Löschung, bis sie sich meldet. Dauerhaft vermerkt wird nur, wer wann welches Konto gelöscht hat.",
+    "removalType": "Tippe zur Bestätigung den Kontonamen {account} ein.",
+    "removalYes": "Endgültig löschen",
+    "removalKeptHint": "Konten, mit denen sich schon jemand angemeldet hat, löscht nur die Schulverwaltung."
   },
   "slips": {
     "title": "Zugangszettel",
@@ -293,6 +315,18 @@
     "runsTitle": "Bisherige Jahresabschlüsse",
     "noRuns": "Es gab noch keinen.",
     "run": "{day}: durch {account}, {entries} Einträge in Protokollen und {exports} in der Exportliste gelöscht, {groups} Gruppen"
+  },
+  "removals": {
+    "title": "Löschungen",
+    "loading": "Löschungen werden geladen …",
+    "intro": "Konten, die auf Verlangen gelöscht wurden. Von ihnen ist nichts mehr gespeichert außer diesem Vermerk: wer, wann, welches Konto, in welcher Gruppe.",
+    "empty": "Bisher wurde kein Konto gelöscht.",
+    "time": "Zeitpunkt",
+    "account": "Konto",
+    "group": "Gruppe",
+    "by": "Ausgelöst von",
+    "inWorld": "in der Welt selbst",
+    "hint": "Diese Vermerke bleiben dauerhaft, auch über den Jahresabschluss. Ein gelöschter Kontoname wird nicht wieder vergeben."
   },
   "live": {
     "offline": "Die Verbindung zum Backend ist unterbrochen. Die Seite zeigt den letzten Stand und aktualisiert sich wieder, sobald die Verbindung steht."

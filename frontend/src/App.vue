@@ -10,7 +10,7 @@ const router = useRouter()
 
 // Closing the year is for the school administration only; the backend
 // checks that again.
-const pages = computed(() => ['overview', 'groups', ...(auth.me?.school_admin ? ['yearEnd'] : []), 'health'])
+const pages = computed(() => ['overview', 'groups', ...(auth.me?.school_admin ? ['yearEnd', 'removals'] : []), 'health'])
 
 // On a public page nobody has asked yet who is logged in.
 onMounted(() => auth.load())

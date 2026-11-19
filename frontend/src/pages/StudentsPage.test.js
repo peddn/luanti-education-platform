@@ -5,6 +5,7 @@ import { createMemoryHistory } from 'vue-router'
 
 import { createLepI18n } from '@/i18n'
 import { createLepRouter } from '@/router'
+import { useAuthStore } from '@/stores/auth'
 import { fakeEventSource, settled } from '@/test/fakeEventSource'
 
 import StudentsPage from './StudentsPage.vue'
@@ -14,7 +15,8 @@ const BASE = '/api/web/v1/groups/id-7b'
 
 /** @param {[string, string][]} pairs account and state */
 function students(pairs) {
-  return { students: pairs.map(([account, state]) => ({ account, state })) }
+  // Accounts that exist count as used, unless a test says otherwise.
+  return { students: pairs.map(([account, state]) => ({ account, state, used: state === 'active' })) }
 }
 
 /**
@@ -452,5 +454,169 @@ describe('students page', () => {
     const page = await show()
     expect(page.get('[role=alert]').text()).toContain('Das gibt es nicht.')
     expect(page.find('form').exists()).toBe(false)
+  })
+
+  describe('deleting an account', () => {
+    /** @param {boolean} schoolAdmin */
+    function logIn(schoolAdmin) {
+      useAuthStore().me = {
+        account: schoolAdmin ? 'leitung' : 'lehrer1',
+        email: 'anna@schule.example',
+        worlds: ['7b'],
+        expires_at: 1700043200,
+        school_admin: schoolAdmin,
+      }
+    }
+
+    /** @param {Record<string, unknown>[]} list */
+    function accounts(list) {
+      return { students: list.map((entry) => ({ state: 'active', used: false, ...entry })) }
+    }
+
+    const LIST = accounts([{ account: 'frohesReh', used: true }, { account: 'klugeEule' }])
+
+    it('lets a teacher take back only accounts nobody used', async () => {
+      logIn(false)
+      backend({ [`GET ${BASE}`]: [200, GROUP], [`GET ${BASE}/students`]: [200, LIST] })
+      const page = await show()
+      const rows = page.findAll('[data-test=student]')
+      expect(rows[0].find('[data-test=removal]').exists()).toBe(false)
+      expect(rows[0].find('[data-test=unused]').exists()).toBe(false)
+      expect(rows[1].get('[data-test=removal]').text()).toBe('Konto löschen')
+      expect(rows[1].get('[data-test=unused]').text()).toBe('noch nie angemeldet')
+      expect(page.get('[data-test=kept-hint]').text()).toContain('löscht nur die Schulverwaltung')
+    })
+
+    it('lets the school administration delete used accounts as well', async () => {
+      logIn(true)
+      backend({ [`GET ${BASE}`]: [200, GROUP], [`GET ${BASE}/students`]: [200, LIST] })
+      const page = await show()
+      expect(page.findAll('[data-test=removal]')).toHaveLength(2)
+      expect(page.find('[data-test=kept-hint]').exists()).toBe(false)
+    })
+
+    it('says what goes and what stays, and asks for the account name', async () => {
+      logIn(true)
+      const send = backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/students`]: [200, LIST],
+        [`POST ${BASE}/students/frohesReh/removal`]: [
+          200,
+          accounts([{ account: 'frohesReh', used: true, removal: 'pending' }, { account: 'klugeEule' }]),
+        ],
+      })
+      const page = await show()
+      expect(page.find('[data-test=removal-form]').exists()).toBe(false)
+      await page.findAll('[data-test=removal]')[0].trigger('click')
+
+      const form = page.get('[data-test=removal-form]')
+      expect(form.get('h2').text()).toBe('Konto frohesReh endgültig löschen')
+      expect(form.text()).toContain('Kann nicht gelöscht werden')
+      expect(form.text()).toContain('Sie stehen in der Karte')
+      expect(form.text()).toContain('Die Logdatei des Spielservers')
+      const yes = form.get('[data-test=removal-yes]')
+      expect(yes.attributes('disabled')).toBeDefined()
+
+      // Another name, and the right one in another letter case: no.
+      await form.get('input[name=confirm]').setValue('klugeEule')
+      expect(yes.attributes('disabled')).toBeDefined()
+      await form.get('input[name=confirm]').setValue('frohesreh')
+      await form.get('form').trigger('submit')
+      await flushPromises()
+      expect(calls(send)).not.toContain(`POST ${BASE}/students/frohesReh/removal`)
+
+      await form.get('input[name=confirm]').setValue(' frohesReh ')
+      expect(yes.attributes('disabled')).toBeUndefined()
+      await form.get('form').trigger('submit')
+      await flushPromises()
+      const [, init] = send.mock.calls.find(([path, sent]) => sent?.method === 'POST' && path.endsWith('/removal')) ?? []
+      expect(JSON.parse(String(init?.body))).toEqual({ confirm: 'frohesReh' })
+
+      // The order is on its way: the form is gone, the account waits.
+      expect(page.find('[data-test=removal-form]').exists()).toBe(false)
+      const row = page.findAll('[data-test=student]')[0]
+      expect(row.get('[data-test=removal-state]').text()).toBe('Löschung wartet auf die Welt')
+      expect(row.find('[data-test=removal]').exists()).toBe(false)
+      expect(row.get('[data-test=removal-take-back]').text()).toBe('Löschung zurücknehmen')
+    })
+
+    it('closes the form again without deleting', async () => {
+      logIn(true)
+      const send = backend({ [`GET ${BASE}`]: [200, GROUP], [`GET ${BASE}/students`]: [200, LIST] })
+      const page = await show()
+      await page.findAll('[data-test=removal]')[1].trigger('click')
+      await page.get('input[name=confirm]').setValue('klugeEule')
+      await page.get('[data-test=removal-form]').findAll('button')[1].trigger('click')
+      expect(page.find('[data-test=removal-form]').exists()).toBe(false)
+      // What was typed is forgotten.
+      await page.findAll('[data-test=removal]')[1].trigger('click')
+      expect(/** @type {HTMLInputElement} */ (page.get('input[name=confirm]').element).value).toBe('')
+      expect(calls(send).filter((call) => call.startsWith('POST'))).toEqual([])
+    })
+
+    it('keeps the form open and says so when the backend refuses', async () => {
+      logIn(false)
+      backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/students`]: [200, LIST],
+        [`POST ${BASE}/students/klugeEule/removal`]: [403, { code: 'forbidden', message: 'used' }],
+      })
+      const page = await show()
+      await page.get('[data-test=removal]').trigger('click')
+      await page.get('input[name=confirm]').setValue('klugeEule')
+      await page.get('[data-test=removal-form] form').trigger('submit')
+      await flushPromises()
+      expect(page.get('[role=alert]').text()).toContain('Das darfst du nicht.')
+      expect(page.find('[data-test=removal-form]').exists()).toBe(true)
+    })
+
+    it('takes an order back that waits', async () => {
+      logIn(true)
+      const send = backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/students`]: [200, accounts([{ account: 'klugeEule', removal: 'pending' }])],
+        [`DELETE ${BASE}/students/klugeEule/removal`]: [200, accounts([{ account: 'klugeEule' }])],
+      })
+      const page = await show()
+      await page.get('[data-test=removal-take-back]').trigger('click')
+      await flushPromises()
+      expect(calls(send)).toContain(`DELETE ${BASE}/students/klugeEule/removal`)
+      expect(page.find('[data-test=removal-state]').exists()).toBe(false)
+      expect(page.get('[data-test=removal]').text()).toBe('Konto löschen')
+    })
+
+    it('shows why the world refused and offers to try again', async () => {
+      logIn(true)
+      backend({
+        [`GET ${BASE}`]: [200, GROUP],
+        [`GET ${BASE}/students`]: [
+          200,
+          accounts([
+            { account: 'frohesReh', removal: 'refused', removal_refusal: 'incomplete' },
+            { account: 'klugeEule', removal: 'refused' },
+          ]),
+        ],
+      })
+      const page = await show()
+      const states = page.findAll('[data-test=removal-state]').map((state) => state.text())
+      expect(states[0]).toContain('Die Welt konnte nicht alles löschen')
+      expect(states[1]).toContain('Löschung fehlgeschlagen')
+      expect(page.findAll('[data-test=removal]')).toHaveLength(2)
+    })
+
+    it('drops the account from the list when the world has deleted it', async () => {
+      logIn(true)
+      const source = fakeEventSource()
+      let list = accounts([{ account: 'frohesReh', removal: 'pending' }, { account: 'klugeEule' }])
+      backend({ [`GET ${BASE}`]: [200, GROUP], [`GET ${BASE}/students`]: () => [200, list] })
+      const page = await show()
+      expect(page.findAll('[data-test=student]')).toHaveLength(2)
+
+      list = accounts([{ account: 'klugeEule' }])
+      source[0].open()
+      source[0].change('students')
+      await settled()
+      expect(page.findAll('[data-test=student]').map((row) => row.get('td').text())).toEqual(['klugeEule'])
+    })
   })
 })

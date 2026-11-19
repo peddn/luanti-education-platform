@@ -1182,7 +1182,8 @@ Verlangen Eltern oder ein Schüler die Löschung, wartet die Schule nicht auf de
 - Dasselbe gilt für eine archivierte Welt, in der das Konto liegt: Sie wird endgültig gelöscht.
 - Die Web-Anwendung zeigt vorher an, welche Sicherungen und welche archivierten Welten dabei verschwinden.
 - Das ist die Ausnahme. Der gewöhnliche Weg bleibt der Jahresabschluss.
-- Gebaut sind der Teil in der Welt, der Auftrag, das Löschen im Backend und der Vermerk. Die Seite in der Web-Anwendung folgt. Das Löschen der Sicherungen und der archivierten Welten kommt mit dem Agenten in Schritt 7.
+- In der Web-Anwendung steht das Löschen in der Schülerliste. Vor der Bestätigung zeigt ein Feld, was gelöscht wird und was nicht gelöscht werden kann. Bestätigt wird durch Eintippen des Kontonamens. Die Vermerke stehen auf der Seite „Löschungen“.
+- Gebaut ist alles bis auf das Löschen der Sicherungen und der archivierten Welten. Das kommt mit dem Agenten in Schritt 7.
 
 **Außerhalb des Backends**
 

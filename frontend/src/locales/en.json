@@ -13,7 +13,8 @@
     "overview": "Overview",
     "groups": "Groups",
     "yearEnd": "End of the year",
-    "health": "Status"
+    "health": "Status",
+    "removals": "Deletions"
   },
   "login": {
     "title": "Log in",
@@ -131,7 +132,28 @@
       "unlocked": "{day}: choosing unlocked by {by}"
     },
     "historyHint": "The history comes from the protocol of the world and is deleted with the end of the school year.",
-    "protocols": "Protocols"
+    "protocols": "Protocols",
+    "unused": "never logged in",
+    "removal": "Delete account",
+    "removalPending": "Deletion is waiting for the world",
+    "removalTakeBack": "Take deletion back",
+    "removalRefusals": {
+      "used": "Deletion refused: the account has been used. Only the school administration can delete it.",
+      "staff": "Deletion refused: this is the account of a teacher.",
+      "unknown": "Deletion refused: the world does not know this account.",
+      "incomplete": "Deletion not finished: the world could not delete everything. The account still exists, please try again.",
+      "failed": "Deletion failed. The world may be older than this application."
+    },
+    "removalTitle": "Delete account {account} for good",
+    "removalIntro": "This is meant for parents or a child asking for deletion, and for accounts that were never needed. It cannot be undone.",
+    "removalDeletedTitle": "Will be deleted",
+    "removalDeleted": "Access and password, display name, progress, trophies, the content of the reward chest, inventory, the room in the lobby, the learning rooms and all entries of the account in the protocols, including private messages to the account. In the world and here.",
+    "removalKeptTitle": "Cannot be deleted",
+    "removalKept": "What the child built in the survival world, its signs, books and protected areas: they are part of the map and only go with the world. The log file of the game server. Files somebody exported from the protocols. Lines of others in the protocols that only mention the account stay until the year is closed.",
+    "removalNote": "A child that is in the game right now is disconnected. If the world is not running, the deletion waits until it answers. Only who deleted which account and when is kept for good.",
+    "removalType": "Type the account name {account} to confirm.",
+    "removalYes": "Delete for good",
+    "removalKeptHint": "Accounts somebody has logged in with can only be deleted by the school administration."
   },
   "slips": {
     "title": "Access slips",
@@ -293,6 +315,18 @@
     "runsTitle": "Years closed so far",
     "noRuns": "None yet.",
     "run": "{day}: by {account}, {entries} entries in protocols and {exports} in the list of exports deleted, {groups} groups"
+  },
+  "removals": {
+    "title": "Deletions",
+    "loading": "Loading deletions …",
+    "intro": "Accounts that were deleted on request. Nothing is stored about them any more except this note: who, when, which account, in which group.",
+    "empty": "No account has been deleted so far.",
+    "time": "Time",
+    "account": "Account",
+    "group": "Group",
+    "by": "Ordered by",
+    "inWorld": "in the world itself",
+    "hint": "These notes are kept for good, also beyond the end of the year. A deleted account name is never given out again."
   },
   "live": {
     "offline": "The connection to the backend is lost. The page shows the last state and updates again as soon as the connection is back."

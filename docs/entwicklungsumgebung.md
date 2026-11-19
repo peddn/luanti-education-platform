@@ -255,7 +255,7 @@ Lehrkräfte legt die Schulverwaltung an. Die Seite dazu in der Web-Anwendung fol
 
 ### Konto löschen
 
-Ein Konto lässt sich mit allem löschen, was die Welt darüber weiß (Konzept, Abschnitt 12). Die Seite in der Web-Anwendung folgt; bis dahin gibt es einen Debug-Befehl:
+Ein Konto lässt sich mit allem löschen, was die Welt darüber weiß (Konzept, Abschnitt 12). Ohne Browser gibt es dafür einen Debug-Befehl:
 
 | Befehl | Wirkung |
 |---|---|
@@ -275,7 +275,7 @@ Mit Backend:
 - Bis dahin steht das Konto in der Liste mit „Löschung wartet“. Ein wartender Auftrag lässt sich zurücknehmen (`DELETE` auf dieselbe Adresse).
 - Bei jeder Anmeldung meldet die Welt mit `account_used`, dass das Konto benutzt wird.
 - Was über das Konto noch in der Warteschlange der Brücke liegt, wird bei der Löschung verworfen.
-- Die Seite dazu in der Web-Anwendung folgt.
+- Im Browser: In der Schülerliste steht bei jedem angelegten Konto „Konto löschen“, für Lehrkräfte nur bei Konten, mit denen sich noch nie jemand angemeldet hat. Ein Feld zeigt, was gelöscht wird und was nicht, bestätigt wird durch Eintippen des Kontonamens. Die Schulverwaltung sieht die Vermerke unter „Löschungen“.
 
 Ein Mod, der etwas über Spieler speichert, meldet mit `lep_core.register_on_forget_account(function(konto) … end)` eine Funktion an, die es löscht. Wirft sie einen Fehler, bleibt das Konto bestehen und die Löschung lässt sich wiederholen. `lep_accounts.remove(name, { only_unused = …, by = … }, callback)` löst alles aus.
 
