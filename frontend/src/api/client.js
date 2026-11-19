@@ -14,6 +14,7 @@
 /** @typedef {Schemas['ProtocolPage']} ProtocolPage */
 /** @typedef {Schemas['ProtocolRow']} ProtocolRow */
 /** @typedef {Schemas['YearEnd']} YearEnd */
+/** @typedef {Schemas['Removal']} Removal */
 
 /**
  * What narrows a protocol down.
@@ -362,6 +363,44 @@ export function createClient(options = {}) {
     async removeDisplayName(id, account) {
       const path = `${studentsPath(id)}/${encodeURIComponent(account)}/display-name`
       return studentsOf(await request(path, undefined, false, 'DELETE'))
+    },
+
+    /**
+     * Orders the world to delete the account of a student with
+     * everything it knows about it. It cannot be undone. The account
+     * name is sent once more, so that no request does this by accident.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @returns {Promise<Student[]>}
+     */
+    async orderRemoval(id, account) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}/removal`
+      return studentsOf(await request(path, { confirm: account }))
+    },
+
+    /**
+     * Takes back the order to delete an account, as long as the world
+     * has not answered.
+     *
+     * @param {string} id
+     * @param {string} account
+     * @returns {Promise<Student[]>}
+     */
+    async takeBackRemoval(id, account) {
+      const path = `${studentsPath(id)}/${encodeURIComponent(account)}/removal`
+      return studentsOf(await request(path, undefined, false, 'DELETE'))
+    },
+
+    /**
+     * Returns the notes of the accounts that were deleted on request,
+     * newest first. For the school administration only.
+     *
+     * @returns {Promise<Removal[]>}
+     */
+    async removals() {
+      const body = /** @type {Schemas['Removals']} */ (await request('/api/web/v1/removals'))
+      return body.removals
     },
 
     /**
