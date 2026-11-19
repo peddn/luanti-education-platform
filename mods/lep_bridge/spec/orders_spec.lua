@@ -64,6 +64,16 @@ describe("lep_bridge orders", function()
 		assert.is_nil(orders.parse_name_lock({ account = "klugeEule", by = "lehrer1", locked = 1 }))
 	end)
 
+	it("reads the order to delete the protocols", function()
+		assert.are.same({ by = "leitung" }, orders.parse_clear({ by = "leitung", all = true }))
+		assert.is_nil(orders.parse_clear({}))
+		assert.is_nil(orders.parse_clear({ by = "" }))
+		assert.is_nil(orders.parse_clear({ by = "lei tung" }))
+		assert.is_nil(orders.parse_clear({ by = 7 }))
+		assert.is_nil(orders.parse_clear(nil))
+		assert.is_nil(orders.parse_clear("leitung"))
+	end)
+
 	it("describes an order for the protocol", function()
 		assert.are.equal("web:set_level lep_math:math 3",
 			orders.describe("set_level", orders.parse_level(level())))

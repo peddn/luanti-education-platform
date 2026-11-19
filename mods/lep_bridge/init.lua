@@ -15,6 +15,7 @@ load("game/web_access")
 load("game/accounts")
 load("game/progress")
 load("game/names")
+load("game/year_end")
 load("game/commands")
 
 core.log("action", "[lep_bridge] loaded")

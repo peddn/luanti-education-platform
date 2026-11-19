@@ -21,6 +21,7 @@ reports.JOB_SET_LEVEL = "set_level"
 reports.JOB_SET_LOCKED = "set_locked"
 reports.JOB_REMOVE_DISPLAY_NAME = "remove_display_name"
 reports.JOB_SET_DISPLAY_LOCKED = "set_display_locked"
+reports.JOB_CLEAR_PROTOCOLS = "clear_protocols"
 reports.JOB_SYNC_STATE = "sync_state"
 reports.JOB_WEB_ACCESS_STATUS = "web_access_status"
 
