@@ -30,6 +30,11 @@ function trophies.stage_id(module_id, level)
 	return "lep_trophies:stage:" .. module_id .. ":" .. level
 end
 
+--- Id of the trophy for a completed module.
+function trophies.module_id(module_id)
+	return "lep_trophies:module:" .. module_id
+end
+
 --- Id of the trophy for a number of solved level tasks in a module.
 function trophies.tasks_id(module_id, count)
 	return "lep_trophies:tasks:" .. module_id .. ":" .. count
@@ -47,11 +52,9 @@ end
 
 trophies.DAILY_COUNTER = "daily"
 
---- Returns the material for the trophy of a stage: gold for the last
--- stage of a module, silver for the others.
-function trophies.stage_material(is_last)
-	return is_last and trophies.GOLD or trophies.SILVER
-end
+-- The trophy of a stage is silver, the one of a completed module gold.
+trophies.STAGE_MATERIAL = trophies.SILVER
+trophies.MODULE_MATERIAL = trophies.GOLD
 
 --- Returns the steps that a counter reached by going from `old` to `new`.
 function trophies.steps_reached(steps, old, new)

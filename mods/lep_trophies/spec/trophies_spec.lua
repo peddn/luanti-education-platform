@@ -48,8 +48,10 @@ describe("lep_trophies milestones", function()
 	end)
 
 	it("gives gold for the last stage and silver for the others", function()
-		assert.are.equal(trophies.GOLD, trophies.stage_material(true))
-		assert.are.equal(trophies.SILVER, trophies.stage_material(false))
+		assert.are.equal(trophies.SILVER, trophies.STAGE_MATERIAL)
+		assert.are.equal(trophies.GOLD, trophies.MODULE_MATERIAL)
+		assert.are.equal("lep_trophies:module:m:a", trophies.module_id("m:a"))
+		assert.are_not.equal(trophies.module_id("m:a"), trophies.stage_id("m:a", 4))
 	end)
 
 	it("finds the steps a counter reached", function()

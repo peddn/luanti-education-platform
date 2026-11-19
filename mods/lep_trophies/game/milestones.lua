@@ -9,16 +9,20 @@ core.register_on_mods_loaded(function()
 	for _, module_id in ipairs(lep_progress.get_module_ids()) do
 		local module = lep_progress.get_module(module_id)
 
+		-- The last level is never a stage: it completes the module, and
+		-- that has its own trophy.
 		for index, level in ipairs(module.stages) do
-			local is_last = index == #module.stages
 			lep_trophies.register_trophy(trophies.stage_id(module_id, level), {
 				title = S("@1: stage @2", module.title, index),
-				description = is_last
-					and S("Completed all levels of @1.", module.title)
-					or S("Completed level @1 of @2.", level, module.title),
-				material = trophies.stage_material(is_last),
+				description = S("Completed level @1 of @2.", level, module.title),
+				material = trophies.STAGE_MATERIAL,
 			})
 		end
+		lep_trophies.register_trophy(trophies.module_id(module_id), {
+			title = S("@1: completed", module.title),
+			description = S("Completed all levels of @1.", module.title),
+			material = trophies.MODULE_MATERIAL,
+		})
 
 		for _, step in ipairs(trophies.TASK_STEPS) do
 			lep_trophies.register_trophy(trophies.tasks_id(module_id, step.count), {
@@ -53,6 +57,26 @@ lep_progress.register_on_level_completed(function(player_name, module_id, level,
 	if is_stage then
 		lep_trophies.award(player_name, trophies.stage_id(module_id, level))
 	end
+end)
+
+lep_progress.register_on_module_completed(function(player_name, module_id)
+	lep_trophies.award(player_name, trophies.module_id(module_id))
+end)
+
+-- Who completed a module before it had a trophy of its own gets it now.
+-- Back then the last level counted as a stage; that trophy is gone.
+core.register_on_mods_loaded(function()
+	core.after(0, function()
+		for _, player_name in ipairs(lep_progress.get_players()) do
+			for _, module_id in ipairs(lep_progress.get_module_ids()) do
+				local info = lep_progress.get_progress(player_name, module_id)
+				local id = trophies.module_id(module_id)
+				if info and info.completed and not lep_trophies.has(player_name, id) then
+					lep_trophies.award(player_name, id)
+				end
+			end
+		end
+	end)
 end)
 
 -- Every solved task counts, also one that earns no reward any more.
