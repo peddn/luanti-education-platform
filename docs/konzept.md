@@ -409,7 +409,7 @@ Module, die kurze Aufgaben im Dialogfenster stellen können (Rechnen, Textfragen
 - Für neue Schüler gilt ein Startniveau, das die Lehrkraft pro Gruppe und Modul festlegt. Die Vorgabe ist Niveau 1.
   - Es gilt für jedes Konto, über das die Welt in diesem Modul noch nichts gespeichert hat: keine gelöste Aufgabe, kein von einer Lehrkraft gesetztes Niveau, keine Sperre. Eine Änderung wirkt also auch auf Konten, die schon länger bestehen, solange sie in dem Modul nichts getan haben. Wer schon etwas gelöst hat, bleibt, wo er ist.
   - Für die übersprungenen Niveaus gibt es weder Belohnung noch Trophäe: Sie gelten nicht als abgeschlossen.
-  - Festgelegt wird es in der Web-Anwendung, nicht am Pult. Die Welt speichert es, meldet es mit ihren Modulen und schreibt jede Änderung ins Protokoll des Pults.
+  - Festgelegt wird es in der Web-Anwendung auf der Seite „Fortschritt“, nicht am Pult. Das geht auch, bevor die Gruppe Schüler hat. Die Welt speichert es, meldet es mit ihren Modulen und schreibt jede Änderung ins Protokoll des Pults.
 - Es gibt keinen Auf- oder Abstieg nach Leistung.
 
 **Pensum**
