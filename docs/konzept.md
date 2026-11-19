@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 63 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 64 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -1056,7 +1056,7 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 - Passwörter zurücksetzen.
 - Schüler in eine andere Gruppe verschieben.
 - Niveau pro Schüler und Modul setzen, Startniveau pro Gruppe festlegen, automatischen Aufstieg sperren.
-- Fortschritt pro Gruppe, Schüler und Modul in Prozent des Pensums, Export als CSV.
+- Fortschritt pro Gruppe, Schüler und Modul in Prozent des Pensums. Der Stand der Gruppe lässt sich als CSV-Datei herunterladen: eine Zeile je Schüler und Modul mit Konto, Wunschname, Modul, Niveau, Zahl der Niveaus, Prozent, abgeschlossen und Aufstieg gesperrt. Die einzelnen Aufgabenarten stehen nicht darin. Exportieren darf, wer die Seite sehen darf.
 - Fragensets hochladen und zuweisen.
 - Belohnungstabellen pro Gruppe.
 - Alle Protokolle der Gruppe einsehen, nach Konto und Zeitraum filtern und als CSV exportieren. Das Protokoll des Pults sieht nur die Schulverwaltung.
@@ -1132,7 +1132,7 @@ Es gibt mehrere Protokolle: Chat, Schildtexte, Belohnungen, Aktionen am Pult und
 - Einsicht haben nur Lehrkräfte der Gruppe, in der Web-Anwendung: alle fünf Protokolle, nach Konto und Zeitraum gefiltert. Schüler sehen ihr eigenes Belohnungsprotokoll.
 - Das Protokoll des Pults zeigt, was Lehrkräfte getan haben. Es sieht nur die Schulverwaltung.
 - Die gefilterte Ansicht lässt sich als CSV-Datei herunterladen, um einen Vorfall weitergeben zu können. Damit verlassen Einträge die Plattform: Wer exportiert, ist für die Datei verantwortlich, und die Löschung beim Jahresabschluss erreicht sie nicht. Das gehört in die Information an Schule und Eltern.
-- Jeder Export wird festgehalten: wer, wann, welches Protokoll, mit welchen Filtern und wie viele Einträge. Der Inhalt der Datei wird nicht gespeichert. Dieses Protokoll schreibt das Backend, nicht die Welt, denn der Export geschieht im Backend. Es sieht nur die Schulverwaltung. Auch der Export dieses Protokolls wird darin eingetragen. Gelöscht wird es wie alle Protokolle mit dem Jahresabschluss.
+- Jeder Export wird festgehalten: wer, wann, welches Protokoll, mit welchen Filtern und wie viele Einträge. Das gilt auch für den Export des Fortschritts (Abschnitt 11.5): Er ist nur ein Stand, aber auch er verlässt als Datei die Plattform. Der Inhalt der Datei wird nicht gespeichert. Dieses Protokoll schreibt das Backend, nicht die Welt, denn der Export geschieht im Backend. Es sieht nur die Schulverwaltung. Auch der Export dieses Protokolls wird darin eingetragen. Gelöscht wird es wie alle Protokolle mit dem Jahresabschluss.
 - Die Ansicht bleibt beim Lesen ruhig. Kommen neue Einträge, sagt sie es in einer Zeile und zeigt sie erst auf Klick.
 - Die Schüler werden darauf hingewiesen, dass der Chat mitgeschrieben wird.
 - Ein Jahr ist lang und muss gegenüber Schule und Eltern begründet werden, etwa mit der Aufklärung von Mobbing-Vorfällen und von Streit um Belohnungen.

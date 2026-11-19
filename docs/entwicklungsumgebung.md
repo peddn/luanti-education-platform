@@ -509,6 +509,19 @@ Steht ein Kind auf einem Niveau, dessen Pensum voll ist, etwa mit gesperrtem Auf
 
 In der Testwelt gibt es neben „Kopfrechnen“ das „Testmodul“ aus den Debug-Hilfen.
 
+„Als CSV herunterladen“ liefert den Stand der Gruppe als Datei `fortschritt-<gruppe>.csv`: eine Zeile je Schüler und Modul, Zellen mit Semikolon getrennt.
+
+| Spalte | Inhalt |
+|---|---|
+| `account` | Kontoname |
+| `display_name` | Wunschname, leer ohne |
+| `module` | Titel des Moduls |
+| `level`, `levels` | aktuelles Niveau und Zahl der Niveaus |
+| `percent` | Anteil des Pensums im aktuellen Niveau |
+| `completed`, `locked` | `yes` oder `no`: Modul abgeschlossen, Aufstieg gesperrt |
+
+Die Spaltennamen sind englisch wie beim Export der Protokolle, das Backend kennt keine Sprache. Jeder Download steht im Exportprotokoll der Gruppe als „Fortschritt“, mit Konto und Zahl der Zeilen. Das Exportprotokoll sieht nur die Schulverwaltung.
+
 ### Mailversand
 
 Ohne Mailserver schreibt das Backend jede Mail in sein Terminal. Für echten Versand die Einstellungen in `.dev/backend.env` eintragen, zum Beispiel:

@@ -176,7 +176,7 @@ fn utc(time: i64) -> String {
 /// Writes one cell of a CSV file. Text that a spreadsheet would take
 /// for a formula gets a leading apostrophe: the texts are typed by
 /// students, and the file is opened by teachers.
-fn cell(text: &str) -> String {
+pub(crate) fn cell(text: &str) -> String {
     let guarded = if text.starts_with(['=', '+', '-', '@', '\t', '\r']) {
         format!("'{text}")
     } else {

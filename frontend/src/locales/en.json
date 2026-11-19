@@ -212,7 +212,9 @@
     "unlock": "Unlock moving up",
     "repeat": "Repeat level",
     "changeHint": "The world makes the change and notes it in the protocol of the teacher's desk. With moving up locked the child stays on their level, even after finishing its workload.",
-    "repeatHint": "Repeating empties the workload of this level. Every task counts and is rewarded again. The reward for completing the level is given the first time only."
+    "repeatHint": "Repeating empties the workload of this level. Every task counts and is rewarded again. The reward for completing the level is given the first time only.",
+    "export": "Download as CSV",
+    "exportHint": "One line per student and module. The file leaves the platform: you answer for it, and the export is noted."
   },
   "protocols": {
     "titleFor": "Protocols of group {group}",
@@ -226,7 +228,8 @@
       "rewards": "Rewards",
       "names": "Display names",
       "desk": "Teacher's desk",
-      "exports": "Exports"
+      "exports": "Exports",
+      "progress": "Progress"
     },
     "account": "Account",
     "period": "Period",

@@ -131,6 +131,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/progress/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns where the students of a group stand as a CSV file to
+         *     download: one line per student and module, cells separated by
+         *     semicolons. The file leaves the platform: who exports it answers for
+         *     it, and the export is written into the protocol "exports".
+         */
+        get: operations["export_progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/progress/{account}/{module}": {
         parameters: {
             query?: never;
@@ -1808,6 +1830,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GroupProgress"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or not one of the teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    export_progress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The progress as a CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
             /** @description Not logged in (unauthorized) */

@@ -377,3 +377,41 @@ async fn changes_that_cannot_be_made_get_a_code() {
         assert_eq!(json["code"], code, "{cell} {body}");
     }
 }
+
+#[tokio::test]
+async fn the_progress_can_be_downloaded_and_the_export_is_noted() {
+    let setup = Setup::new().await;
+    setup.with_a_student().await;
+    let teacher = log_in(&setup.state.db, "lehrer1").await;
+    let stranger = log_in(&setup.state.db, "lehrer2").await;
+    let administration = log_in(&setup.state.db, "leitung").await;
+    let path = format!("{}/export", setup.progress(&setup.first));
+
+    let (status, _) = setup.web(Method::GET, &path, &stranger, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _, _) = setup.call(Method::GET, &path, None, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let cookie = (header::COOKIE, format!("lep_session={teacher}"));
+    let (status, _, headers) = setup.call(Method::GET, &path, Some(cookie), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers[header::CONTENT_TYPE], "text/csv; charset=utf-8");
+    assert_eq!(
+        headers[header::CONTENT_DISPOSITION],
+        "attachment; filename=\"fortschritt-7b.csv\""
+    );
+    assert_eq!(headers[header::CACHE_CONTROL], "no-store");
+
+    // Only the one download that worked stands in the list of exports,
+    // which the school administration sees.
+    let exports = format!("/api/web/v1/groups/{}/protocols/exports", setup.first);
+    let (status, page) = setup
+        .web(Method::GET, &exports, &administration, None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let entries = page["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0]["account"], "lehrer1");
+    assert_eq!(entries[0]["fields"]["protocol"], "progress");
+    assert_eq!(entries[0]["fields"]["entries"], "1");
+}

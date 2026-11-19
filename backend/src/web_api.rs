@@ -107,6 +107,7 @@ pub fn router(state: &AppState) -> Router<AppState> {
         .route("/v1/staff/{account}/password", post(reset_staff_password))
         .route("/v1/staff/{account}/removal", post(remove_staff))
         .route("/v1/groups/{id}/progress", get(show_progress))
+        .route("/v1/groups/{id}/progress/export", get(export_progress))
         .route(
             "/v1/groups/{id}/progress/{account}/{module}",
             post(change_progress),
@@ -1352,6 +1353,57 @@ pub async fn show_progress(
 ) -> Result<Json<GroupProgress>, Failure> {
     group_of(&state, &teacher.account, &id).await?;
     Ok(Json(progress::of_group(&state.db, &id).await?))
+}
+
+/// Returns where the students of a group stand as a CSV file to
+/// download: one line per student and module, cells separated by
+/// semicolons. The file leaves the platform: who exports it answers for
+/// it, and the export is written into the protocol "exports".
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/progress/export",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The progress as a CSV file", content_type = "text/csv", body = String),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or not one of the teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn export_progress(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Response, Failure> {
+    let group = group_of(&state, &teacher.account, &id).await?;
+    let (file, lines) = progress::export(&state.db, &id).await?;
+    protocols::record_export(
+        &state.db,
+        &id,
+        clock::now(),
+        &teacher.account,
+        progress::EXPORT_NAME,
+        &protocols::Filter::default(),
+        lines,
+    )
+    .await?;
+    state.changes.tell(&id, &[ChangeTopic::Protocols]);
+    let group_name: String = group
+        .name
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric() || *character == '-')
+        .collect();
+    let disposition = format!("attachment; filename=\"fortschritt-{group_name}.csv\"");
+    tracing::info!(account = %teacher.account, group = %id, "progress exported");
+    Ok((
+        [
+            (CONTENT_TYPE, "text/csv; charset=utf-8".to_owned()),
+            (CONTENT_DISPOSITION, disposition),
+            (CACHE_CONTROL, "no-store".to_owned()),
+        ],
+        file,
+    )
+        .into_response())
 }
 
 /// Orders a new level, a lock or both for a student in a module. The
