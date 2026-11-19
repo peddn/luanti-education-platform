@@ -198,4 +198,14 @@ describe("lep_bridge reports", function()
 		assert.is_false(reports.concerns(event("account_removed", { account = "anna" }), "anna"))
 		assert.is_false(reports.concerns(event("modules", nil), "anna"))
 	end)
+	it("reports the start level with each module, 1 where none is set", function()
+		local payload = reports.modules({
+			{ id = "lep_math:math", title = "Kopfrechnen", levels = {}, start_level = 3 },
+			{ id = "lep_debug:test", title = "Testmodul", levels = {} },
+		})
+		assert.is_true(fits("Modules", payload))
+		assert.are.equal(3, payload.modules[1].start_level)
+		assert.are.equal(1, payload.modules[2].start_level)
+		assert.are.equal("set_start_level", reports.JOB_SET_START_LEVEL)
+	end)
 end)

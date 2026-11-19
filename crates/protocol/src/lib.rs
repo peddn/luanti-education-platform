@@ -117,6 +117,10 @@ pub mod world {
     /// student in a module.
     pub const JOB_SET_LOCKED: &str = "set_locked";
 
+    /// Kind of the job that makes a world set the level new players
+    /// start a module on.
+    pub const JOB_SET_START_LEVEL: &str = "set_start_level";
+
     /// The protocols a world keeps. Their entries are deleted with the end
     /// of the school year.
     pub const PROTOCOLS: [&str; 5] = ["rewards", "chat", "signs", "desk", "names"];
@@ -216,6 +220,14 @@ pub mod world {
         pub title: String,
         #[serde(default, deserialize_with = "null_as_default")]
         pub levels: Vec<Level>,
+        /// The level players start on about whom the world has stored
+        /// nothing in this module yet. 1 if a world does not say.
+        #[serde(default = "first_level")]
+        pub start_level: u32,
+    }
+
+    fn first_level() -> u32 {
+        1
     }
 
     /// Payload of the event "modules": all modules of the world. It
@@ -470,6 +482,17 @@ pub mod world {
         pub account: String,
         pub module: String,
         /// The new level, counted from 1.
+        pub level: u32,
+        /// Account name of the teacher who ordered it.
+        pub by: String,
+    }
+
+    /// Payload of the job "set_start_level". The world writes the change
+    /// into the protocol of the desk, under the account of the teacher.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetStartLevel {
+        pub module: String,
+        /// The level new players start on, counted from 1.
         pub level: u32,
         /// Account name of the teacher who ordered it.
         pub by: String,
@@ -899,6 +922,19 @@ pub mod web {
         pub title: String,
         /// How many levels the module has.
         pub levels: u32,
+        /// The level students start on about whom the world has stored
+        /// nothing in this module yet.
+        pub start_level: u32,
+        /// Missing in the usual case: no change of the start level is
+        /// on its way.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub start_change: Option<ChangeState>,
+    }
+
+    /// Request to set the level new students start a module on.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StartLevelChange {
+        pub level: u32,
     }
 
     /// How far a student is with one kind of task of their level.

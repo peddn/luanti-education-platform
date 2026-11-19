@@ -30,7 +30,8 @@ local function send_modules()
 				task.title = plain(task.title)
 			end
 		end
-		list[index] = { id = module_id, title = plain(module.title), levels = levels }
+		list[index] = { id = module_id, title = plain(module.title), levels = levels,
+			start_level = lep_progress.get_start_level(module_id) }
 	end
 	lep_bridge.send(reports.EVENT_MODULES, reports.modules(list))
 end
@@ -88,6 +89,8 @@ end
 -- Every change of the state of a student is reported as the new state.
 if has_progress then
 	lep_progress.register_on_state_changed(send_progress)
+	-- The start levels are part of what the world says about its modules.
+	lep_progress.register_on_start_level_changed(send_modules)
 end
 if has_trophies then
 	lep_trophies.register_on_awarded(send_trophies)

@@ -153,6 +153,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/progress/start/{module}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Orders the level new students start a module on. It counts for
+         *     every student the world has stored nothing about in this module;
+         *     who has started stays where they are. The world makes the change and
+         *     reports it with its modules; until then the answer shows the old
+         *     level with the change as pending.
+         */
+        post: operations["change_start_level"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/progress/{account}/{module}": {
         parameters: {
             query?: never;
@@ -1025,6 +1048,12 @@ export interface components {
         Module: {
             id: string;
             levels?: components["schemas"]["Level"][];
+            /**
+             * Format: int32
+             * @description The level players start on about whom the world has stored
+             *     nothing in this module yet. 1 if a world does not say.
+             */
+            start_level?: number;
             /** @description Name for people, in the language of the world. */
             title: string;
         };
@@ -1120,6 +1149,13 @@ export interface components {
              * @description How many levels the module has.
              */
             levels: number;
+            start_change?: components["schemas"]["ChangeState"] | null;
+            /**
+             * Format: int32
+             * @description The level students start on about whom the world has stored
+             *     nothing in this module yet.
+             */
+            start_level: number;
             /** @description Name for people, in the language of the world. */
             title: string;
         };
@@ -1313,6 +1349,20 @@ export interface components {
              */
             staff?: boolean;
         };
+        /**
+         * @description Payload of the job "set_start_level". The world writes the change
+         *     into the protocol of the desk, under the account of the teacher.
+         */
+        SetStartLevel: {
+            /** @description Account name of the teacher who ordered it. */
+            by: string;
+            /**
+             * Format: int32
+             * @description The level new players start on, counted from 1.
+             */
+            level: number;
+            module: string;
+        };
         /** @description The account of a teacher, as the school administration sees it. */
         StaffAccount: {
             account: string;
@@ -1349,6 +1399,11 @@ export interface components {
          * @enum {string}
          */
         StaffState: "creating" | "active" | "refused";
+        /** @description Request to set the level new students start a module on. */
+        StartLevelChange: {
+            /** Format: int32 */
+            level: number;
+        };
         /**
          * @description State of the backend with its details, for teachers who are
          *     logged in.
@@ -1883,6 +1938,62 @@ export interface operations {
                 };
             };
             /** @description No such group, or not one of the teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    change_start_level: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description Id of the module */
+                module: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartLevelChange"];
+            };
+        };
+        responses: {
+            /** @description The progress of the group, with the change on its way */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupProgress"];
+                };
+            };
+            /** @description The module has no such level (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, not one of the teacher, or no such module (not_found) */
             404: {
                 headers: {
                     [name: string]: unknown;

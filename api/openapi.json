@@ -439,6 +439,92 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/progress/start/{module}": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Orders the level new students start a module on. It counts for\nevery student the world has stored nothing about in this module;\nwho has started stays where they are. The world makes the change and\nreports it with its modules; until then the answer shows the old\nlevel with the change as pending.",
+        "operationId": "change_start_level",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "module",
+            "in": "path",
+            "description": "Id of the module",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLevelChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The progress of the group, with the change on its way",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The module has no such level (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, not one of the teacher, or no such module (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/progress/{account}/{module}": {
       "post": {
         "tags": [
@@ -3072,6 +3158,12 @@
               "$ref": "#/components/schemas/Level"
             }
           },
+          "start_level": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The level players start on about whom the world has stored\nnothing in this module yet. 1 if a world does not say.",
+            "minimum": 0
+          },
           "title": {
             "type": "string",
             "description": "Name for people, in the language of the world."
@@ -3252,7 +3344,8 @@
         "required": [
           "id",
           "title",
-          "levels"
+          "levels",
+          "start_level"
         ],
         "properties": {
           "id": {
@@ -3262,6 +3355,23 @@
             "type": "integer",
             "format": "int32",
             "description": "How many levels the module has.",
+            "minimum": 0
+          },
+          "start_change": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeState",
+                "description": "Missing in the usual case: no change of the start level is\non its way."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_level": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The level students start on about whom the world has stored\nnothing in this module yet.",
             "minimum": 0
           },
           "title": {
@@ -3615,6 +3725,30 @@
           }
         }
       },
+      "SetStartLevel": {
+        "type": "object",
+        "description": "Payload of the job \"set_start_level\". The world writes the change\ninto the protocol of the desk, under the account of the teacher.",
+        "required": [
+          "module",
+          "level",
+          "by"
+        ],
+        "properties": {
+          "by": {
+            "type": "string",
+            "description": "Account name of the teacher who ordered it."
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The level new players start on, counted from 1.",
+            "minimum": 0
+          },
+          "module": {
+            "type": "string"
+          }
+        }
+      },
       "StaffAccount": {
         "type": "object",
         "description": "The account of a teacher, as the school administration sees it.",
@@ -3728,6 +3862,20 @@
           "active",
           "refused"
         ]
+      },
+      "StartLevelChange": {
+        "type": "object",
+        "description": "Request to set the level new students start a module on.",
+        "required": [
+          "level"
+        ],
+        "properties": {
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
       },
       "Status": {
         "type": "object",

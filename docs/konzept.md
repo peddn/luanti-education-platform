@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 64 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 65 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -406,7 +406,10 @@ Module, die kurze Aufgaben im Dialogfenster stellen können (Rechnen, Textfragen
 
 - Jedes Modul hat beliebig viele Niveaus, also Schwierigkeitsgrade. Das Modul legt fest, wie viele es sind. Kopfrechnen braucht deutlich mehr als drei.
 - Die Lehrkraft setzt das Niveau pro Schüler und Modul. Ein Schüler kann in verschiedenen Modulen auf verschiedenen Niveaus stehen.
-- Für neue Schüler gilt ein Startniveau, das die Lehrkraft pro Gruppe und Modul festlegt.
+- Für neue Schüler gilt ein Startniveau, das die Lehrkraft pro Gruppe und Modul festlegt. Die Vorgabe ist Niveau 1.
+  - Es gilt für jedes Konto, über das die Welt in diesem Modul noch nichts gespeichert hat: keine gelöste Aufgabe, kein von einer Lehrkraft gesetztes Niveau, keine Sperre. Eine Änderung wirkt also auch auf Konten, die schon länger bestehen, solange sie in dem Modul nichts getan haben. Wer schon etwas gelöst hat, bleibt, wo er ist.
+  - Für die übersprungenen Niveaus gibt es weder Belohnung noch Trophäe: Sie gelten nicht als abgeschlossen.
+  - Festgelegt wird es in der Web-Anwendung, nicht am Pult. Die Welt speichert es, meldet es mit ihren Modulen und schreibt jede Änderung ins Protokoll des Pults.
 - Es gibt keinen Auf- oder Abstieg nach Leistung.
 
 **Pensum**

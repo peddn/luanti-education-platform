@@ -21,14 +21,16 @@ pub async fn store_modules(pool: &SqlitePool, world_id: &str, modules: &Modules)
         .await?;
     for (position, module) in modules.modules.iter().enumerate() {
         sqlx::query(
-            "INSERT OR REPLACE INTO modules (world_id, module_id, title, levels, position)
-             VALUES (?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO modules
+                 (world_id, module_id, title, levels, position, start_level)
+             VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(world_id)
         .bind(&module.id)
         .bind(&module.title)
         .bind(serde_json::to_string(&module.levels)?)
         .bind(position as i64)
+        .bind(module.start_level.max(1))
         .execute(&mut *tx)
         .await?;
     }
@@ -346,6 +348,7 @@ mod tests {
     async fn replaces_modules_and_trophies_as_a_whole() {
         let (pool, world) = setup().await;
         let module = |id: &str| Module {
+            start_level: 1,
             id: id.to_owned(),
             title: "Title".to_owned(),
             levels: vec![Level {

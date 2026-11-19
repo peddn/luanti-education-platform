@@ -120,16 +120,34 @@ end
 -- State of one player in one module
 
 --- Returns the state of a player who has not done anything in a module.
-function progress.new_state()
-	return { level = 1, locked = false, completed = {}, solved = {} }
+-- @param level Optional level to start on, 1 by default.
+function progress.new_state(level)
+	return { level = level or 1, locked = false, completed = {}, solved = {} }
+end
+
+--- Returns the level new players start a module on: the one that was
+-- set, if the module has it, otherwise 1.
+function progress.start_level(module, wanted)
+	if type(wanted) == "number" and wanted == math.floor(wanted)
+			and wanted >= 1 and wanted <= #module.levels then
+		return wanted
+	end
+	return 1
+end
+
+--- Returns true if a level can be the start level of a module.
+function progress.is_start_level(module, level)
+	return type(level) == "number" and progress.start_level(module, level) == level
 end
 
 --- Repairs a state that comes from storage, for the given module.
-function progress.normalize(module, state)
-	local result = progress.new_state()
+-- @param start Optional level a player starts on about whom nothing is
+--   stored. The levels below it do not count as completed.
+function progress.normalize(module, state, start)
 	if type(state) ~= "table" then
-		return result
+		return progress.new_state(progress.start_level(module, start))
 	end
+	local result = progress.new_state()
 	local last = #module.levels
 
 	if type(state.level) == "number" and state.level == math.floor(state.level) then

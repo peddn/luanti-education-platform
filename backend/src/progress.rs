@@ -12,7 +12,8 @@ use lep_protocol::web::{
     ProgressTask, StudentProgress,
 };
 use lep_protocol::world::{
-    Level, SetLevel, SetLocked, TaskProgress, JOB_SET_LEVEL, JOB_SET_LOCKED,
+    Level, SetLevel, SetLocked, SetStartLevel, TaskProgress, JOB_SET_LEVEL, JOB_SET_LOCKED,
+    JOB_SET_START_LEVEL,
 };
 use sqlx::{Row, SqlitePool};
 
@@ -23,21 +24,33 @@ struct Known {
     id: String,
     title: String,
     levels: Vec<Level>,
+    /// The level a student starts on about whom nothing was reported.
+    start_level: u32,
 }
 
 async fn modules_of(pool: &SqlitePool, world_id: &str) -> Result<Vec<Known>> {
     let rows = sqlx::query(
-        "SELECT module_id, title, levels FROM modules WHERE world_id = ? ORDER BY position",
+        "SELECT module_id, title, levels, start_level FROM modules
+         WHERE world_id = ? ORDER BY position",
     )
     .bind(world_id)
     .fetch_all(pool)
     .await?;
     Ok(rows
         .iter()
-        .map(|row| Known {
-            id: row.get("module_id"),
-            title: row.get("title"),
-            levels: serde_json::from_str(row.get("levels")).unwrap_or_default(),
+        .map(|row| {
+            let levels: Vec<Level> = serde_json::from_str(row.get("levels")).unwrap_or_default();
+            // A level the module does not have counts as the first.
+            let start_level = match row.get::<u32, _>("start_level") {
+                level if level >= 1 && level as usize <= levels.len() => level,
+                _ => 1,
+            };
+            Known {
+                id: row.get("module_id"),
+                title: row.get("title"),
+                levels,
+                start_level,
+            }
         })
         .collect())
 }
@@ -93,6 +106,71 @@ async fn changes_of(
                 changes.insert(key, ChangeState::Refused);
             } else {
                 changes.remove(&key);
+            }
+        }
+    }
+    Ok(changes)
+}
+
+/// Orders the world of a group to set the level new students start a
+/// module on. It counts for every student the world has stored nothing
+/// about in this module.
+/// @param by Account name of the teacher, for the protocol of the world.
+pub async fn set_start_level(
+    pool: &SqlitePool,
+    world_id: &str,
+    module_id: &str,
+    level: u32,
+    by: &str,
+) -> Result<Result<(), ChangeError>> {
+    let modules = modules_of(pool, world_id).await?;
+    let Some(module) = modules.iter().find(|module| module.id == module_id) else {
+        return Ok(Err(ChangeError::NoModule));
+    };
+    if level < 1 || level as usize > module.levels.len() {
+        return Ok(Err(ChangeError::BadLevel));
+    }
+    let payload = SetStartLevel {
+        module: module.id.clone(),
+        level,
+        by: by.to_owned(),
+    };
+    // The job is about a module, not about an account.
+    jobs::add_about(
+        pool,
+        world_id,
+        JOB_SET_START_LEVEL,
+        &serde_json::to_value(payload)?,
+        Some(&module.id),
+    )
+    .await?;
+    Ok(Ok(()))
+}
+
+/// How far the newest change of the start level of each module is. One
+/// that waits counts before one that was refused.
+async fn start_changes_of(
+    pool: &SqlitePool,
+    world_id: &str,
+) -> Result<HashMap<String, ChangeState>> {
+    let rows = sqlx::query(
+        "SELECT subject, finished_at, ok FROM jobs
+         WHERE world_id = ? AND kind = 'set_start_level' AND subject IS NOT NULL
+         ORDER BY rowid",
+    )
+    .bind(world_id)
+    .fetch_all(pool)
+    .await?;
+    let mut changes = HashMap::new();
+    for row in &rows {
+        let module: String = row.get("subject");
+        if row.get::<Option<i64>, _>("finished_at").is_none() {
+            changes.insert(module, ChangeState::Pending);
+        } else if changes.get(&module) != Some(&ChangeState::Pending) {
+            if row.get::<Option<bool>, _>("ok") == Some(false) {
+                changes.insert(module, ChangeState::Refused);
+            } else {
+                changes.remove(&module);
             }
         }
     }
@@ -224,11 +302,11 @@ pub async fn of_group(pool: &SqlitePool, world_id: &str) -> Result<GroupProgress
                         None => ModuleProgress {
                             module: module.id.clone(),
                             started: false,
-                            level: 1,
+                            level: module.start_level,
                             locked: false,
                             percent: 0,
                             completed: false,
-                            tasks: tasks_of(module, 1, &[]),
+                            tasks: tasks_of(module, module.start_level, &[]),
                             change,
                         },
                     }
@@ -243,6 +321,7 @@ pub async fn of_group(pool: &SqlitePool, world_id: &str) -> Result<GroupProgress
         })
         .collect();
 
+    let mut start_changes = start_changes_of(pool, world_id).await?;
     Ok(GroupProgress {
         modules: modules
             .iter()
@@ -250,6 +329,8 @@ pub async fn of_group(pool: &SqlitePool, world_id: &str) -> Result<GroupProgress
                 id: module.id.clone(),
                 title: module.title.clone(),
                 levels: module.levels.len() as u32,
+                start_level: module.start_level,
+                start_change: start_changes.remove(&module.id),
             })
             .collect(),
         students,
@@ -357,6 +438,7 @@ mod tests {
         };
         let modules = Modules {
             modules: vec![Module {
+                start_level: 1,
                 id: MATH.to_owned(),
                 title: "Kopfrechnen".to_owned(),
                 levels: vec![level("add", "Addieren"), level("sub", "Subtrahieren")],
@@ -417,6 +499,75 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn orders_a_start_level_and_shows_it_for_who_has_not_started() {
+        let (pool, world) = setup().await;
+        report(&pool, &world, "frohesReh", 1, 3).await;
+        for (module, level, expected) in [
+            ("lep_math:nothing", 1, ChangeError::NoModule),
+            (MATH, 0, ChangeError::BadLevel),
+            (MATH, 3, ChangeError::BadLevel),
+        ] {
+            let result = set_start_level(&pool, &world, module, level, "lehrer1").await;
+            assert_eq!(result.unwrap(), Err(expected), "{module} {level}");
+        }
+        assert!(jobs::take_waiting(&pool, &world).await.unwrap().is_empty());
+
+        set_start_level(&pool, &world, MATH, 2, "lehrer1")
+            .await
+            .unwrap()
+            .unwrap();
+        let waiting = jobs::take_waiting(&pool, &world).await.unwrap();
+        assert_eq!(waiting[0].kind, JOB_SET_START_LEVEL);
+        assert_eq!(
+            waiting[0].payload,
+            serde_json::json!({ "module": MATH, "level": 2, "by": "lehrer1" })
+        );
+        // Until the world has reported it, the old one is shown.
+        let shown = of_group(&pool, &world).await.unwrap();
+        assert_eq!(shown.modules[0].start_level, 1);
+        assert_eq!(shown.modules[0].start_change, Some(ChangeState::Pending));
+
+        // The world did it and reports its modules again.
+        answer(&pool, &world, true).await;
+        sqlx::query("UPDATE modules SET start_level = 2 WHERE world_id = ?")
+            .bind(&world)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let shown = of_group(&pool, &world).await.unwrap();
+        assert_eq!(shown.modules[0].start_level, 2);
+        assert_eq!(shown.modules[0].start_change, None);
+        let level_of = |account: &str| {
+            let student = shown
+                .students
+                .iter()
+                .find(|student| student.account == account)
+                .unwrap();
+            (student.modules[0].level, student.modules[0].started)
+        };
+        // Nothing reported: on the start level, with its kinds of tasks.
+        assert_eq!(level_of("klugeEule"), (2, false));
+        assert_eq!(shown.students[0].modules[0].tasks[0].title, "Subtrahieren");
+        // Who has started stays where they are.
+        assert_eq!(level_of("frohesReh"), (1, true));
+
+        // A refusal shows, and a level the module lost counts as 1.
+        set_start_level(&pool, &world, MATH, 1, "lehrer1")
+            .await
+            .unwrap()
+            .unwrap();
+        answer(&pool, &world, false).await;
+        sqlx::query("UPDATE modules SET start_level = 9 WHERE world_id = ?")
+            .bind(&world)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let shown = of_group(&pool, &world).await.unwrap();
+        assert_eq!(shown.modules[0].start_change, Some(ChangeState::Refused));
+        assert_eq!(shown.modules[0].start_level, 1);
+    }
+
+    #[tokio::test]
     async fn exports_one_line_per_student_and_module() {
         let (pool, world) = setup().await;
         report(&pool, &world, "frohesReh", 2, 3).await;
@@ -471,7 +622,9 @@ mod tests {
             [ProgressModule {
                 id: MATH.to_owned(),
                 title: "Kopfrechnen".to_owned(),
-                levels: 2
+                levels: 2,
+                start_level: 1,
+                start_change: None,
             }]
         );
         // In the order of the list, without the name that was only rolled.

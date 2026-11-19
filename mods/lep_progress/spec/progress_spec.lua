@@ -360,4 +360,37 @@ describe("lep_progress normalize", function()
 		assert.are.same({ [1] = true }, state.completed)
 		assert.are.same({ [1] = { add = 2 } }, state.solved)
 	end)
+	it("puts a player nothing is stored about on the start level", function()
+		local fresh = progress.normalize(module, nil, 2)
+		assert.are.equal(2, fresh.level)
+		-- The levels below were skipped, not completed: no rewards for them.
+		assert.are.same({}, fresh.completed)
+		assert.are.same({}, fresh.solved)
+		assert.is_false(fresh.locked)
+	end)
+
+	it("leaves a player alone who has a stored state", function()
+		local state = solve(module, progress.new_state(), 1, "add")
+		assert.are.equal(1, progress.normalize(module, state, 3).level)
+		-- A level a teacher set by hand counts as well.
+		local set = progress.set_level(module, progress.new_state(), 2)
+		assert.are.equal(2, progress.normalize(module, set, 3).level)
+	end)
+
+	it("falls back to level 1 for a start level the module does not have", function()
+		for _, bad in ipairs({ 0, 4, 1.5, "2", -1 }) do
+			assert.are.equal(1, progress.start_level(module, bad))
+			assert.is_false(progress.is_start_level(module, bad))
+			assert.are.equal(1, progress.normalize(module, nil, bad).level)
+		end
+		assert.are.equal(1, progress.start_level(module, nil))
+		assert.is_true(progress.is_start_level(module, 1))
+		assert.is_true(progress.is_start_level(module, 3))
+	end)
+
+	it("counts the first task on the start level", function()
+		local state = solve(module, progress.normalize(module, nil, 2), 2, "mul")
+		assert.are.equal(2, state.level)
+		assert.are.equal(1, state.solved[2].mul)
+	end)
 end)

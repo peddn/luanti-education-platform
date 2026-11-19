@@ -19,7 +19,8 @@ use lep_protocol::web::{
     AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
     DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
     MailTransport, Me, ProgressChange, ProtocolPage, RemovalRequest, Removals, StaffCreate,
-    StaffList, Status, Students, TeacherList, YearEnd, YearEndRequest, YEAR_END_CONFIRMATION,
+    StaffList, StartLevelChange, Status, Students, TeacherList, YearEnd, YearEndRequest,
+    YEAR_END_CONFIRMATION,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -108,6 +109,10 @@ pub fn router(state: &AppState) -> Router<AppState> {
         .route("/v1/staff/{account}/removal", post(remove_staff))
         .route("/v1/groups/{id}/progress", get(show_progress))
         .route("/v1/groups/{id}/progress/export", get(export_progress))
+        .route(
+            "/v1/groups/{id}/progress/start/{module}",
+            post(change_start_level),
+        )
         .route(
             "/v1/groups/{id}/progress/{account}/{module}",
             post(change_progress),
@@ -1352,6 +1357,48 @@ pub async fn show_progress(
     Path(id): Path<String>,
 ) -> Result<Json<GroupProgress>, Failure> {
     group_of(&state, &teacher.account, &id).await?;
+    Ok(Json(progress::of_group(&state.db, &id).await?))
+}
+
+/// Orders the level new students start a module on. It counts for
+/// every student the world has stored nothing about in this module;
+/// who has started stays where they are. The world makes the change and
+/// reports it with its modules; until then the answer shows the old
+/// level with the change as pending.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/progress/start/{module}",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("module" = String, Path, description = "Id of the module"),
+    ),
+    request_body = StartLevelChange,
+    responses(
+        (status = 200, description = "The progress of the group, with the change on its way", body = GroupProgress),
+        (status = 400, description = "The module has no such level (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, not one of the teacher, or no such module (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn change_start_level(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, module)): Path<(String, String)>,
+    wanted: Result<Json<StartLevelChange>, JsonRejection>,
+) -> Result<Json<GroupProgress>, Failure> {
+    let wanted = body(wanted)?;
+    group_of(&state, &teacher.account, &id).await?;
+    match progress::set_start_level(&state.db, &id, &module, wanted.level, &teacher.account).await?
+    {
+        Ok(()) => {}
+        Err(ChangeProgressError::BadLevel) => {
+            return Err(Failure::invalid_request("the module has no such level"))
+        }
+        Err(_) => return Err(Failure::not_found("no such module")),
+    }
+    state.waiters.wake(&id);
+    tracing::info!(account = %teacher.account, group = %id, %module, level = wanted.level, "start level ordered");
     Ok(Json(progress::of_group(&state.db, &id).await?))
 }
 
