@@ -14,7 +14,8 @@
     "groups": "Gruppen",
     "yearEnd": "Jahresabschluss",
     "health": "Zustand",
-    "removals": "Löschungen"
+    "removals": "Löschungen",
+    "staff": "Lehrkräfte"
   },
   "login": {
     "title": "Anmelden",
@@ -170,7 +171,10 @@
     "done": "Fertig, Zettel sind gedruckt",
     "confirmLeave": "Die Passwörter lassen sich danach nicht mehr anzeigen.",
     "namePlaceholder": "Name des Kindes (freiwillig)",
-    "resetNote": "Das neue Passwort gilt, sobald die Welt es übernommen hat. Bis dahin gilt das alte. Ist das Kind gerade im Spiel, bleibt es angemeldet."
+    "resetNote": "Das neue Passwort gilt, sobald die Welt es übernommen hat. Bis dahin gilt das alte. Ist das Kind gerade im Spiel, bleibt es angemeldet.",
+    "staffNote": "Gib den Zettel der Lehrkraft persönlich. Mit diesem Konto richtet sie im Spiel am Lehrerpult ihren Web-Zugang ein.",
+    "resetNoteStaff": "Das neue Passwort gilt, sobald die Welten es übernommen haben. Bis dahin gilt das alte. Wer gerade im Spiel ist, bleibt angemeldet.",
+    "noAddressStaff": "sagt dir die Schulverwaltung"
   },
   "progress": {
     "titleFor": "Fortschritt der Gruppe {group}",
@@ -286,6 +290,39 @@
         "unlocked": "Wählen freigegeben"
       }
     }
+  },
+  "staff": {
+    "title": "Lehrkräfte",
+    "loading": "Lehrkräfte werden geladen …",
+    "intro": "Die Konten der Lehrkräfte gelten in jeder Welt. Hier legst du sie an, setzt ein Passwort zurück oder löschst ein Konto. Welcher Gruppe eine Lehrkraft zugeordnet ist, stellst du bei der Gruppe ein.",
+    "account": "Konto",
+    "state": "Stand",
+    "webAccess": "Web-Zugang",
+    "groups": "Gruppen",
+    "states": {
+      "creating": "wird in den Welten angelegt",
+      "active": "angelegt",
+      "refused": "von den Welten abgelehnt: Den Namen gibt es dort schon"
+    },
+    "fromGame": "im Spiel angelegt",
+    "schoolAdmin": "Schulverwaltung",
+    "noHolder": "hat in keiner Welt das Privileg für den Web-Zugang",
+    "webAccessStates": {
+      "none": "nicht eingerichtet",
+      "pending": "Adresse wartet auf Bestätigung",
+      "confirmed": "eingerichtet"
+    },
+    "noGroups": "keine",
+    "protected": "wird nur im Spiel vom Admin verwaltet",
+    "own": "dein eigenes Konto",
+    "createTitle": "Neue Lehrkraft",
+    "name": "Kontoname",
+    "create": "Konto anlegen",
+    "createHint": "Den Namen wählst du selbst. Er ist im Spiel für alle sichtbar und lässt sich später nicht ändern. Das Konto bekommt die Rechte einer Lehrkraft: Pult, Schüler lenken, zuschauen, stummschalten, Aufmerksamkeit, Klassenmodus, Tageszeit, Aufgabentruhen und Web-Zugang.",
+    "invalidName": "Ein Name hat 2 bis 19 Zeichen: Buchstaben ohne Umlaute, Ziffern, _ und -.",
+    "removalIntro": "Das Konto wird in jeder Welt gelöscht, mit allem, was dort darüber gespeichert ist. Hier verschwinden auch die Mailadresse, der Web-Zugang und die Zuordnung zu Gruppen. Es lässt sich nicht rückgängig machen.",
+    "removalKept": "Was die Lehrkraft in der Survival-Welt gebaut hat, bleibt in der Karte. Zeilen anderer in den Protokollen, die das Konto nur nennen, bleiben bis zum Jahresabschluss. Dauerhaft vermerkt wird, wer wann welches Konto gelöscht hat.",
+    "hint": "Wer zur Schulverwaltung gehört, bestimmt nur der Admin im Spiel. Einzelne Rechte vergibt und nimmt ebenfalls der Admin."
   },
   "yearEnd": {
     "title": "Jahresabschluss",

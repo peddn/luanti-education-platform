@@ -14,7 +14,8 @@
     "groups": "Groups",
     "yearEnd": "End of the year",
     "health": "Status",
-    "removals": "Deletions"
+    "removals": "Deletions",
+    "staff": "Teachers"
   },
   "login": {
     "title": "Log in",
@@ -170,7 +171,10 @@
     "done": "Done, the slips are printed",
     "confirmLeave": "The passwords cannot be shown again afterwards.",
     "namePlaceholder": "Name of the child (optional)",
-    "resetNote": "The new password counts as soon as the world has taken it. Until then the old one does. A child who is in the game right now stays logged in."
+    "resetNote": "The new password counts as soon as the world has taken it. Until then the old one does. A child who is in the game right now stays logged in.",
+    "staffNote": "Hand the slip to the teacher in person. With this account they set up their web access at the teacher's desk in the game.",
+    "resetNoteStaff": "The new password counts as soon as the worlds have taken it over. Until then the old one counts. Who is in the game right now stays logged in.",
+    "noAddressStaff": "the school administration tells you"
   },
   "progress": {
     "titleFor": "Progress of group {group}",
@@ -286,6 +290,39 @@
         "unlocked": "choosing unlocked"
       }
     }
+  },
+  "staff": {
+    "title": "Teachers",
+    "loading": "Loading teachers …",
+    "intro": "The accounts of teachers count in every world. Here you create them, reset a password or delete an account. Which group a teacher is assigned to is set at the group.",
+    "account": "Account",
+    "state": "State",
+    "webAccess": "Web access",
+    "groups": "Groups",
+    "states": {
+      "creating": "being created in the worlds",
+      "active": "created",
+      "refused": "refused by the worlds: the name exists there already"
+    },
+    "fromGame": "created in the game",
+    "schoolAdmin": "School administration",
+    "noHolder": "holds the privilege for web access in no world",
+    "webAccessStates": {
+      "none": "not set up",
+      "pending": "address waits for confirmation",
+      "confirmed": "set up"
+    },
+    "noGroups": "none",
+    "protected": "looked after by the admin in the game only",
+    "own": "your own account",
+    "createTitle": "New teacher",
+    "name": "Account name",
+    "create": "Create account",
+    "createHint": "You choose the name yourself. Everybody in the game sees it, and it cannot be changed later. The account gets the rights of a teacher: desk, steering students, watching, muting, attention, class mode, time of day, task chests and web access.",
+    "invalidName": "A name has 2 to 19 characters: letters without umlauts, digits, _ and -.",
+    "removalIntro": "The account is deleted in every world, with everything stored about it there. Here the mail address, the web access and the assignment to groups go as well. It cannot be undone.",
+    "removalKept": "What the teacher built in the survival world stays in the map. Lines of others in the protocols that only mention the account stay until the year is closed. Who deleted which account and when is kept for good.",
+    "hint": "Who belongs to the school administration is decided by the admin in the game only. Single rights are also granted and taken by the admin."
   },
   "yearEnd": {
     "title": "End of the year",

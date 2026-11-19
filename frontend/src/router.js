@@ -11,6 +11,7 @@ import OverviewPage from './pages/OverviewPage.vue'
 import ProgressPage from './pages/ProgressPage.vue'
 import ProtocolsPage from './pages/ProtocolsPage.vue'
 import RemovalsPage from './pages/RemovalsPage.vue'
+import StaffPage from './pages/StaffPage.vue'
 import YearEndPage from './pages/YearEndPage.vue'
 import { useAuthStore } from './stores/auth'
 
@@ -36,6 +37,7 @@ export const routes = [
     }),
   },
   { path: '/year-end', name: 'yearEnd', component: YearEndPage },
+  { path: '/staff', name: 'staff', component: StaffPage },
   { path: '/removals', name: 'removals', component: RemovalsPage },
   { path: '/status', name: 'health', component: HealthPage },
   { path: '/login', name: 'login', component: LoginPage, meta: { public: true } },

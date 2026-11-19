@@ -10,6 +10,8 @@ const props = defineProps({
   address: { type: String, default: '' },
   /** True if the slips carry a new password for accounts that exist. */
   reset: { type: Boolean, default: false },
+  /** True if the slips are for teachers: nothing about children is asked. */
+  staff: { type: Boolean, default: false },
 })
 
 defineEmits(['done'])
@@ -31,8 +33,11 @@ function print() {
       <p role="alert" class="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
         {{ $t('slips.once') }}
       </p>
-      <p v-if="reset" data-test="reset-note" class="text-sm text-slate-600">{{ $t('slips.resetNote') }}</p>
-      <p class="text-sm text-slate-600">{{ $t('slips.namesHint') }}</p>
+      <p v-if="reset" data-test="reset-note" class="text-sm text-slate-600">
+        {{ staff ? $t('slips.resetNoteStaff') : $t('slips.resetNote') }}
+      </p>
+      <p v-if="staff" data-test="staff-note" class="text-sm text-slate-600">{{ $t('slips.staffNote') }}</p>
+      <p v-else class="text-sm text-slate-600">{{ $t('slips.namesHint') }}</p>
       <div class="flex flex-wrap items-center gap-4">
         <button
           type="button"
@@ -63,8 +68,10 @@ function print() {
       >
         <h3 class="font-bold">{{ $t('slips.heading') }}</h3>
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-          <dt class="text-slate-500" :class="{ 'print:hidden': !names[index]?.trim() }">{{ $t('slips.for') }}</dt>
-          <dd :class="{ 'print:hidden': !names[index]?.trim() }">
+          <dt v-if="!staff" class="text-slate-500" :class="{ 'print:hidden': !names[index]?.trim() }">
+            {{ $t('slips.for') }}
+          </dt>
+          <dd v-if="!staff" :class="{ 'print:hidden': !names[index]?.trim() }">
             <input
               v-model="names[index]"
               type="text"
@@ -77,7 +84,7 @@ function print() {
             <span data-test="child" class="hidden print:inline">{{ names[index]?.trim() }}</span>
           </dd>
           <dt class="text-slate-500">{{ $t('slips.address') }}</dt>
-          <dd data-test="address">{{ address || $t('slips.noAddress') }}</dd>
+          <dd data-test="address">{{ address || (staff ? $t('slips.noAddressStaff') : $t('slips.noAddress')) }}</dd>
           <dt class="text-slate-500">{{ $t('slips.account') }}</dt>
           <dd data-test="account" class="font-mono text-lg font-semibold">{{ slip.account }}</dd>
           <dt class="text-slate-500">{{ $t('slips.password') }}</dt>
