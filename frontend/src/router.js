@@ -10,6 +10,7 @@ import NotFoundPage from './pages/NotFoundPage.vue'
 import OverviewPage from './pages/OverviewPage.vue'
 import ProgressPage from './pages/ProgressPage.vue'
 import ProtocolsPage from './pages/ProtocolsPage.vue'
+import YearEndPage from './pages/YearEndPage.vue'
 import { useAuthStore } from './stores/auth'
 
 // Pages are closed unless they say `public`. Without a login only the
@@ -33,6 +34,7 @@ export const routes = [
       startAccount: typeof route.query.account === 'string' ? route.query.account : '',
     }),
   },
+  { path: '/year-end', name: 'yearEnd', component: YearEndPage },
   { path: '/status', name: 'health', component: HealthPage },
   { path: '/login', name: 'login', component: LoginPage, meta: { public: true } },
   { path: '/confirm', name: 'confirm', component: ConfirmPage, meta: { public: true } },

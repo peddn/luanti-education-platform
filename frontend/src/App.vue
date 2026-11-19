@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 
 import LanguageSwitch from './components/LanguageSwitch.vue'
@@ -7,6 +7,10 @@ import { useAuthStore } from './stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+
+// Closing the year is for the school administration only; the backend
+// checks that again.
+const pages = computed(() => ['overview', 'groups', ...(auth.me?.school_admin ? ['yearEnd'] : []), 'health'])
 
 // On a public page nobody has asked yet who is logged in.
 onMounted(() => auth.load())
@@ -30,7 +34,7 @@ async function logout() {
         <nav class="flex flex-1 gap-1 text-sm">
           <template v-if="auth.loggedIn">
             <RouterLink
-              v-for="page in ['overview', 'groups', 'health']"
+              v-for="page in pages"
               :key="page"
               :to="{ name: page }"
               class="rounded px-3 py-1.5 text-slate-600 hover:bg-slate-100"

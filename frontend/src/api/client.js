@@ -13,6 +13,7 @@
 /** @typedef {Schemas['GroupProgress']} GroupProgress */
 /** @typedef {Schemas['ProtocolPage']} ProtocolPage */
 /** @typedef {Schemas['ProtocolRow']} ProtocolRow */
+/** @typedef {Schemas['YearEnd']} YearEnd */
 
 /**
  * What narrows a protocol down.
@@ -461,6 +462,27 @@ export function createClient(options = {}) {
     /** @returns {Promise<void>} */
     async logout() {
       await request('/api/web/v1/logout', {})
+    },
+
+    /**
+     * Returns what closing the year would delete, and when it was closed
+     * before. For the school administration only.
+     *
+     * @returns {Promise<YearEnd>}
+     */
+    async yearEnd() {
+      return /** @type {YearEnd} */ (await request('/api/web/v1/year-end'))
+    },
+
+    /**
+     * Closes the year for the whole school: all protocols are deleted.
+     * It cannot be undone. The word is the one the backend asks for, so
+     * that no request does this by accident.
+     *
+     * @returns {Promise<YearEnd>}
+     */
+    async closeYear() {
+      return /** @type {YearEnd} */ (await request('/api/web/v1/year-end', { confirm: 'close-the-year' }))
     },
 
     /**
