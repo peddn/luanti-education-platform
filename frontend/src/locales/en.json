@@ -70,7 +70,8 @@
     "progress": "Progress",
     "address": "Address of the world",
     "noAddress": "not entered yet",
-    "addressHint": "How the children reach the world, for example “spiel.schule.example, port 30000”. The address is printed on the access slips."
+    "addressHint": "How the children reach the world, for example “spiel.schule.example, port 30000”. The address is printed on the access slips.",
+    "protocols": "Protocols"
   },
   "students": {
     "titleFor": "Student accounts of the group {group}",
@@ -128,7 +129,8 @@
       "locked": "{day}: choosing locked by {by}",
       "unlocked": "{day}: choosing unlocked by {by}"
     },
-    "historyHint": "The history comes from the protocol of the world and is deleted with the end of the school year."
+    "historyHint": "The history comes from the protocol of the world and is deleted with the end of the school year.",
+    "protocols": "Protocols"
   },
   "slips": {
     "title": "Access slips",
@@ -184,6 +186,78 @@
     "repeat": "Repeat level",
     "changeHint": "The world makes the change and notes it in the protocol of the teacher's desk. With moving up locked the child stays on their level, even after finishing its workload.",
     "repeatHint": "Repeating empties the workload of this level. Every task counts and is rewarded again. The reward for completing the level is given the first time only."
+  },
+  "protocols": {
+    "titleFor": "Protocols of group {group}",
+    "intro": "This is what the world wrote down. The protocols name the account, below it stands the display name of today. They are deleted with the end of the school year.",
+    "back": "To the group",
+    "loading": "Loading protocols …",
+    "tabsLabel": "Choose a protocol",
+    "tabs": {
+      "chat": "Chat",
+      "signs": "Signs",
+      "rewards": "Rewards",
+      "names": "Display names",
+      "desk": "Teacher's desk"
+    },
+    "account": "Account",
+    "period": "Period",
+    "periods": {
+      "all": "everything",
+      "today": "today",
+      "week": "last 7 days",
+      "month": "last 30 days"
+    },
+    "apply": "Show",
+    "export": "Download as CSV",
+    "exportHint": "The file holds the filtered entries. It leaves the platform: you answer for the file, and the end of the school year does not delete it.",
+    "waiting": "Show {n} new entry | Show {n} new entries",
+    "waitingMany": "Show many new entries",
+    "empty": "There are no entries that match.",
+    "more": "Load older entries",
+    "time": "Time",
+    "columns": {
+      "account": "Account",
+      "kind": "Kind",
+      "recipient": "To",
+      "text": "Text",
+      "pos": "Place",
+      "size": "Size",
+      "reason": "Reason",
+      "module": "Module",
+      "level": "Level",
+      "task": "Task",
+      "items": "Items",
+      "action": "Action",
+      "targets": "Targets",
+      "name": "Name",
+      "by": "By"
+    },
+    "values": {
+      "kind": {
+        "chat": "to everybody",
+        "private": "private",
+        "action": "action (/me)"
+      },
+      "size": {
+        "small": "small",
+        "medium": "medium",
+        "large": "large"
+      },
+      "reason": {
+        "task": "task",
+        "daily": "daily task",
+        "level": "level completed",
+        "stage": "milestone"
+      },
+      "action": {
+        "chosen": "chosen",
+        "given_up": "account name restored",
+        "removed": "removed",
+        "locked": "choosing locked",
+        "unlocked": "choosing unlocked"
+      }
+    }
   },
   "live": {
     "offline": "The connection to the backend is lost. The page shows the last state and updates again as soon as the connection is back."
