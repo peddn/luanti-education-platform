@@ -237,7 +237,7 @@ Andere Mods fragen `lep_accounts.get_display_name(name)` und speichern den Namen
 
 ### Lehrkräfte
 
-Lehrkräfte legt die Schulverwaltung an. Die Seite dazu in der Web-Anwendung folgt; die Schnittstelle gibt es schon:
+Lehrkräfte legt die Schulverwaltung auf der Seite „Lehrkräfte“ an. Dort setzt sie auch Passwörter zurück und löscht Konten. Der Zugangszettel mit dem Startpasswort erscheint einmal. Die neue Lehrkraft meldet sich damit im Spiel an und richtet im Lehrerpult (`/pult`, Reiter „Web-Zugang“) ihre Mailadresse ein. Die Schnittstelle dahinter:
 
 | Aufruf | Wirkung |
 |---|---|

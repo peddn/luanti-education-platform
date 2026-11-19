@@ -15,6 +15,7 @@
 /** @typedef {Schemas['ProtocolRow']} ProtocolRow */
 /** @typedef {Schemas['YearEnd']} YearEnd */
 /** @typedef {Schemas['Removal']} Removal */
+/** @typedef {Schemas['StaffAccount']} StaffAccount */
 
 /**
  * What narrows a protocol down.
@@ -391,6 +392,55 @@ export function createClient(options = {}) {
     async takeBackRemoval(id, account) {
       const path = `${studentsPath(id)}/${encodeURIComponent(account)}/removal`
       return studentsOf(await request(path, undefined, false, 'DELETE'))
+    },
+
+    /**
+     * Returns the accounts of all teachers. For the school
+     * administration only, like everything about these accounts.
+     *
+     * @returns {Promise<StaffAccount[]>}
+     */
+    async staff() {
+      const body = /** @type {Schemas['StaffList']} */ (await request('/api/web/v1/staff'))
+      return body.staff
+    },
+
+    /**
+     * Has every world create the account of a teacher. The password in
+     * the answer is shown once.
+     *
+     * @param {string} name the account name the school administration chose
+     * @returns {Promise<AccessSlip[]>} one slip
+     */
+    async createStaff(name) {
+      const answer = /** @type {Schemas['AccessSlips']} */ (await request('/api/web/v1/staff', { name }))
+      return answer.slips
+    },
+
+    /**
+     * Orders a new start password for a teacher in every world. The
+     * password in the answer is shown once.
+     *
+     * @param {string} account
+     * @returns {Promise<AccessSlip[]>} one slip
+     */
+    async resetStaffPassword(account) {
+      const path = `/api/web/v1/staff/${encodeURIComponent(account)}/password`
+      const answer = /** @type {Schemas['AccessSlips']} */ (await request(path, undefined, false, 'POST'))
+      return answer.slips
+    },
+
+    /**
+     * Orders every world to delete the account of a teacher. It cannot
+     * be undone.
+     *
+     * @param {string} account
+     * @returns {Promise<StaffAccount[]>}
+     */
+    async removeStaff(account) {
+      const path = `/api/web/v1/staff/${encodeURIComponent(account)}/removal`
+      const body = /** @type {Schemas['StaffList']} */ (await request(path, { confirm: account }))
+      return body.staff
     },
 
     /**
