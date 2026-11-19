@@ -15,7 +15,10 @@ reports.EVENT_TEACHERS = "teachers"
 reports.EVENT_WEB_ACCESS = "web_access"
 reports.EVENT_ACCOUNTS_CREATED = "accounts_created"
 reports.EVENT_DISPLAY_NAME = "display_name"
+reports.EVENT_ACCOUNT_USED = "account_used"
+reports.EVENT_ACCOUNT_REMOVED = "account_removed"
 reports.JOB_CREATE_ACCOUNTS = "create_accounts"
+reports.JOB_REMOVE_ACCOUNT = "remove_account"
 reports.JOB_SET_PASSWORD = "set_password"
 reports.JOB_SET_LEVEL = "set_level"
 reports.JOB_SET_LOCKED = "set_locked"
@@ -118,6 +121,35 @@ function reports.protocol(name, record)
 		end
 	end
 	return { protocol = name, account = account, fields = fields }
+end
+
+--- Builds the payload of the event "account_used": somebody has logged
+-- in with this account.
+function reports.account_used(account)
+	return { account = account }
+end
+
+--- Builds the payload of the event "account_removed": the world has
+-- deleted the account with everything it knew about it.
+-- @param by Account name of who ordered it, or nil.
+function reports.account_removed(account, by)
+	return { account = account, by = type(by) == "string" and by ~= "" and by or nil }
+end
+
+--- Returns true if a waiting event is about an account: it carries its
+-- state, or an entry of a protocol the account caused or that was
+-- addressed to it alone. Such events are dropped when the account is
+-- removed.
+function reports.concerns(event, account)
+	local payload = type(event) == "table" and event.payload
+	if type(payload) ~= "table" or event.kind == reports.EVENT_ACCOUNT_REMOVED then
+		return false
+	end
+	if payload.account == account then
+		return true
+	end
+	return event.kind == reports.EVENT_PROTOCOL and type(payload.fields) == "table"
+		and payload.fields.recipient == account
 end
 
 --- Builds the payload of the event "teachers": the accounts that hold

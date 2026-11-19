@@ -5,6 +5,7 @@
 //! up at that moment, handed to the teacher for the access slips and to
 //! the world in a job, and kept nowhere else.
 
+use crate::removals;
 use anyhow::Result;
 use lep_protocol::web::{AccessSlip, ChangeState, PasswordState, Student, StudentState};
 use lep_protocol::world::{
@@ -61,6 +62,16 @@ pub async fn list(pool: &SqlitePool, world_id: &str) -> Result<Vec<Student>> {
                    AND jobs.kind IN ('remove_display_name', 'set_display_locked')
                    AND jobs.subject = students.account
                  ORDER BY jobs.finished_at IS NULL DESC, jobs.rowid DESC LIMIT 1) AS display_change,
+                (SELECT CASE WHEN jobs.ok = 0 THEN 'refused' ELSE 'pending' END
+                 FROM jobs
+                 WHERE jobs.world_id = students.world_id AND jobs.kind = 'remove_account'
+                   AND jobs.subject = students.account
+                 ORDER BY jobs.finished_at IS NULL DESC, jobs.rowid DESC LIMIT 1) AS removal,
+                (SELECT jobs.message FROM jobs
+                 WHERE jobs.world_id = students.world_id AND jobs.kind = 'remove_account'
+                   AND jobs.subject = students.account
+                 ORDER BY jobs.finished_at IS NULL DESC, jobs.rowid DESC LIMIT 1) AS removal_message,
+                students.used AS used,
                 display_names.name AS display_name,
                 display_names.changed_at AS display_changed_at,
                 COALESCE(display_names.locked, 0) AS display_locked
@@ -74,40 +85,71 @@ pub async fn list(pool: &SqlitePool, world_id: &str) -> Result<Vec<Student>> {
     .await?;
     Ok(rows
         .iter()
-        .map(|row| Student {
-            account: row.get("account"),
-            state: state_of(row.get("state")),
-            password: match row.get::<Option<String>, _>("password").as_deref() {
-                Some("pending") => Some(PasswordState::Pending),
-                Some("refused") => Some(PasswordState::Refused),
-                _ => None,
-            },
-            display_name: row.get("display_name"),
-            display_changed_at: row.get("display_changed_at"),
-            display_locked: row.get("display_locked"),
-            // An order that waits counts before one that was refused.
-            display_change: match row.get::<Option<String>, _>("display_change").as_deref() {
-                Some("pending") => Some(ChangeState::Pending),
-                Some("refused") => Some(ChangeState::Refused),
-                _ => None,
-            },
+        .map(|row| {
+            let removal: Option<String> = row.get("removal");
+            Student {
+                account: row.get("account"),
+                state: state_of(row.get("state")),
+                password: match row.get::<Option<String>, _>("password").as_deref() {
+                    Some("pending") => Some(PasswordState::Pending),
+                    Some("refused") => Some(PasswordState::Refused),
+                    _ => None,
+                },
+                display_name: row.get("display_name"),
+                display_changed_at: row.get("display_changed_at"),
+                display_locked: row.get("display_locked"),
+                // An order that waits counts before one that was refused.
+                display_change: match row.get::<Option<String>, _>("display_change").as_deref() {
+                    Some("pending") => Some(ChangeState::Pending),
+                    Some("refused") => Some(ChangeState::Refused),
+                    _ => None,
+                },
+                used: row.get("used"),
+                // A world that has deleted and whose report is still on its
+                // way counts as waiting: the account is shown until then.
+                removal: match removal.as_deref() {
+                    Some("pending") => Some(ChangeState::Pending),
+                    Some("refused") => Some(ChangeState::Refused),
+                    _ => None,
+                },
+                removal_refusal: (removal.as_deref() == Some("refused")).then(|| {
+                    removals::refusal_of(
+                        row.get::<Option<String>, _>("removal_message")
+                            .as_deref()
+                            .unwrap_or_default(),
+                    )
+                }),
+            }
         })
         .collect())
 }
 
-/// Returns true if a name is taken at the school: by a student, a
-/// teacher or the school administration, in any letter case.
-async fn is_taken(tx: &mut Transaction<'_, Sqlite>, name: &str) -> Result<bool> {
-    let taken: Option<i64> = sqlx::query_scalar(
-        "SELECT 1 FROM students WHERE account = ?1 COLLATE NOCASE
+const TAKEN: &str = "SELECT 1 FROM students WHERE account = ?1 COLLATE NOCASE
          UNION ALL SELECT 1 FROM teachers WHERE account = ?1 COLLATE NOCASE
          UNION ALL SELECT 1 FROM teacher_worlds WHERE account = ?1 COLLATE NOCASE
          UNION ALL SELECT 1 FROM school_admin_worlds WHERE account = ?1 COLLATE NOCASE
-         LIMIT 1",
-    )
-    .bind(name)
-    .fetch_optional(&mut **tx)
-    .await?;
+         UNION ALL SELECT 1 FROM account_removals WHERE account = ?1 COLLATE NOCASE
+         LIMIT 1";
+
+/// Returns true if a name is taken at the school: by a student, a
+/// teacher or the school administration, in any letter case. The name
+/// of an account that was deleted on request stays taken for good, so
+/// the note about it never points at somebody else.
+async fn is_taken(tx: &mut Transaction<'_, Sqlite>, name: &str) -> Result<bool> {
+    let taken: Option<i64> = sqlx::query_scalar(TAKEN)
+        .bind(name)
+        .fetch_optional(&mut **tx)
+        .await?;
+    Ok(taken.is_some())
+}
+
+/// Returns true if a name is taken at the school or was deleted there,
+/// see `is_taken`.
+pub async fn is_known_name(pool: &SqlitePool, name: &str) -> Result<bool> {
+    let taken: Option<i64> = sqlx::query_scalar(TAKEN)
+        .bind(name)
+        .fetch_optional(pool)
+        .await?;
     Ok(taken.is_some())
 }
 

@@ -82,6 +82,18 @@ function orders.parse_clear(payload)
 	return { by = payload.by }
 end
 
+--- Reads the payload of the job "remove_account".
+-- @return Table with account, by and only_unused, or nil if the payload
+--   cannot be read.
+function orders.parse_remove_account(payload)
+	local order = name_target(payload)
+	if not order or type(payload.only_unused) ~= "boolean" then
+		return nil
+	end
+	order.only_unused = payload.only_unused
+	return order
+end
+
 --- Returns the line for the protocol of the desk.
 function orders.describe(kind, order)
 	if kind == "set_level" then

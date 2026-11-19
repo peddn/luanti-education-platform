@@ -250,6 +250,15 @@ Ein Konto lässt sich mit allem löschen, was die Welt darüber weiß (Konzept, 
 - Das Zimmer in der Lobby wird leer zurückgebaut, das Schild ist blank. Das nächste neue Konto zieht dort ein. Lernräume werden geleert und nicht wieder vergeben.
 - Nicht gelöscht wird, was in der Karte steht: Bauwerke, Schilder, Bücher und geschützte Bereiche in der Survival-Welt. Auch Luantis Logdatei bleibt. Der Awards-Mod kann einen Eintrag nur leeren: Der Kontoname bleibt dort ohne Daten stehen.
 
+Mit Backend:
+
+- Der Auftrag `remove_account` kommt vom Backend, wenn im Browser jemand ein Konto löscht (`POST /api/web/v1/groups/{id}/students/{konto}/removal` mit dem Kontonamen als Bestätigung). Eine Lehrkraft der Gruppe löscht nur nie benutzte Konten, die Schulverwaltung jedes Schülerkonto. Die Welt prüft das noch einmal selbst.
+- Die Welt meldet jede Löschung mit dem Ereignis `account_removed`, auch eine mit dem Debug-Befehl. Erst dann löscht das Backend seine Kopien und schreibt den dauerhaften Vermerk (`GET /api/web/v1/removals`, nur Schulverwaltung).
+- Bis dahin steht das Konto in der Liste mit „Löschung wartet“. Ein wartender Auftrag lässt sich zurücknehmen (`DELETE` auf dieselbe Adresse).
+- Bei jeder Anmeldung meldet die Welt mit `account_used`, dass das Konto benutzt wird.
+- Was über das Konto noch in der Warteschlange der Brücke liegt, wird bei der Löschung verworfen.
+- Die Seite dazu in der Web-Anwendung folgt.
+
 Ein Mod, der etwas über Spieler speichert, meldet mit `lep_core.register_on_forget_account(function(konto) … end)` eine Funktion an, die es löscht. Wirft sie einen Fehler, bleibt das Konto bestehen und die Löschung lässt sich wiederholen. `lep_accounts.remove(name, { only_unused = …, by = … }, callback)` löst alles aus.
 
 ### Hinweise

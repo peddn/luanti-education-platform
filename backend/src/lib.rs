@@ -17,6 +17,7 @@ pub mod mail;
 pub mod names;
 pub mod progress;
 pub mod protocols;
+pub mod removals;
 pub mod state;
 pub mod students;
 pub mod teachers;

@@ -335,6 +335,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/students/{account}/removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Orders the world to delete the account of a student with everything
+         *     it knows about it. The backend deletes its copies when the world
+         *     reports that it did. A teacher of the group takes back an account
+         *     nobody ever logged in with; a used one only the school
+         *     administration deletes. It cannot be undone.
+         */
+        post: operations["order_removal"];
+        /**
+         * Takes back the order to delete an account, as long as the world has
+         *     not answered.
+         */
+        delete: operations["take_back_removal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/students/{account}/reroll": {
         parameters: {
             query?: never;
@@ -422,6 +449,26 @@ export interface paths {
         };
         /** Says who is logged in. */
         get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/removals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists the accounts that were deleted on request: who, when, which
+         *     account, in which group. Nothing else is kept about them.
+         */
+        get: operations["list_removals"];
         put?: never;
         post?: never;
         delete?: never;
@@ -568,6 +615,22 @@ export interface components {
         /** @description Answer to creating accounts: the slips to print. */
         AccessSlips: {
             slips: components["schemas"]["AccessSlip"][];
+        };
+        /**
+         * @description Payload of the event "account_removed". The backend deletes its
+         *     copies when it arrives and keeps a note for good.
+         */
+        AccountRemoved: {
+            account: string;
+            /**
+             * @description Account name of who ordered it. Missing if nobody did from
+             *     outside.
+             */
+            by?: string | null;
+        };
+        /** @description Payload of the event "account_used". */
+        AccountUsed: {
+            account: string;
         };
         /**
          * @description Payload of the event "accounts_created": what became of the
@@ -1030,6 +1093,55 @@ export interface components {
             time: number;
         };
         /**
+         * @description The note that an account was deleted. It carries no content and
+         *     is kept for good.
+         */
+        Removal: {
+            account: string;
+            /**
+             * @description Account name of who ordered it. Missing if it was done in the
+             *     world itself.
+             */
+            by?: string | null;
+            /** @description Name of the group the account belonged to. */
+            group: string;
+            /**
+             * Format: int64
+             * @description When the world reported it, in seconds since 1970.
+             */
+            time: number;
+        };
+        /**
+         * @description Why a world did not delete an account.
+         * @enum {string}
+         */
+        RemovalRefusal: "used" | "staff" | "unknown" | "incomplete" | "failed";
+        /** @description Request to delete the account of a student for good. */
+        RemovalRequest: {
+            /** @description The account name, typed in once more. */
+            confirm: string;
+        };
+        /** @description The accounts that were deleted on request, newest first. */
+        Removals: {
+            removals: components["schemas"]["Removal"][];
+        };
+        /**
+         * @description Payload of the job "remove_account". The world answers with a
+         *     fixed word: "removed", or why not, see `web::RemovalRefusal`.
+         */
+        RemoveAccount: {
+            /** @description Account name of the student. */
+            account: string;
+            /** @description Account name of who ordered it. */
+            by: string;
+            /**
+             * @description True if the account may only be deleted when nobody ever
+             *     logged in with it: a teacher takes back what they created.
+             *     The world checks that itself.
+             */
+            only_unused: boolean;
+        };
+        /**
          * @description Payload of the job "remove_display_name". The world writes it
          *     into the protocol of the names, under the account of the teacher.
          */
@@ -1121,7 +1233,14 @@ export interface components {
              */
             display_name?: string | null;
             password?: components["schemas"]["PasswordState"] | null;
+            removal?: components["schemas"]["ChangeState"] | null;
+            removal_refusal?: components["schemas"]["RemovalRefusal"] | null;
             state: components["schemas"]["StudentState"];
+            /**
+             * @description True if somebody has ever logged in with the account, as far
+             *     as the world has said.
+             */
+            used?: boolean;
         };
         /**
          * @description Where a student stands: one entry per module of the world, in the
@@ -2142,6 +2261,114 @@ export interface operations {
             };
         };
     };
+    order_removal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description Account name of the student */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemovalRequest"];
+            };
+        };
+        responses: {
+            /** @description The students of the group, with the order on its way */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description The request does not carry the account name as confirmation (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The account was used: only the school administration deletes it (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no such account that exists in the world (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    take_back_removal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description Account name of the student */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The students of the group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Students"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or no order that waits for this account (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     reroll_student: {
         parameters: {
             query?: never;
@@ -2300,6 +2527,44 @@ export interface operations {
             };
             /** @description Not logged in (unauthorized) */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    list_removals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The deleted accounts, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Removals"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

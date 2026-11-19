@@ -18,8 +18,8 @@ use futures_util::stream::{self, Stream};
 use lep_protocol::web::{
     AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
     DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
-    MailTransport, Me, ProgressChange, ProtocolPage, Status, Students, TeacherList, YearEnd,
-    YearEndRequest, YEAR_END_CONFIRMATION,
+    MailTransport, Me, ProgressChange, ProtocolPage, RemovalRequest, Removals, Status, Students,
+    TeacherList, YearEnd, YearEndRequest, YEAR_END_CONFIRMATION,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -40,6 +40,7 @@ use crate::groups::{self, ChangeError};
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
 use crate::progress::{self, ChangeError as ChangeProgressError};
 use crate::protocols;
+use crate::removals::{self, OrderError};
 use crate::students::{self, DraftError};
 use crate::teachers::{self, ConfirmError};
 use crate::year_end;
@@ -96,6 +97,11 @@ pub fn router(state: &AppState) -> Router<AppState> {
             "/v1/groups/{id}/students/{account}/display-names",
             get(display_name_history),
         )
+        .route(
+            "/v1/groups/{id}/students/{account}/removal",
+            post(order_removal).delete(take_back_removal),
+        )
+        .route("/v1/removals", get(list_removals))
         .route("/v1/groups/{id}/progress", get(show_progress))
         .route(
             "/v1/groups/{id}/progress/{account}/{module}",
@@ -696,6 +702,111 @@ pub async fn remove_display_name(
     tracing::info!(account = %teacher.account, group = %id, student = %account, "removal of a display name ordered");
     Ok(Json(Students {
         students: students::list(&state.db, &id).await?,
+    }))
+}
+
+/// Orders the world to delete the account of a student with everything
+/// it knows about it. The backend deletes its copies when the world
+/// reports that it did. A teacher of the group takes back an account
+/// nobody ever logged in with; a used one only the school
+/// administration deletes. It cannot be undone.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/students/{account}/removal",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "Account name of the student"),
+    ),
+    request_body = RemovalRequest,
+    responses(
+        (status = 200, description = "The students of the group, with the order on its way", body = Students),
+        (status = 400, description = "The request does not carry the account name as confirmation (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "The account was used: only the school administration deletes it (forbidden)", body = ApiError),
+        (status = 404, description = "No such group, or no such account that exists in the world (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn order_removal(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+    wanted: Result<Json<RemovalRequest>, JsonRejection>,
+) -> Result<Json<Students>, Failure> {
+    let wanted = body(wanted)?;
+    group_of(&state, &teacher.account, &id).await?;
+    if wanted.confirm != account {
+        return Err(Failure::invalid_request(
+            "the request does not carry the account name as confirmation",
+        ));
+    }
+    let school_admin = groups::is_school_admin(&state.db, &teacher.account).await?;
+    match removals::order(&state.db, &id, &account, &teacher.account, school_admin).await? {
+        Ok(()) => {}
+        Err(OrderError::NotFound) => {
+            return Err(Failure::not_found(
+                "no such account that exists in the world",
+            ))
+        }
+        Err(OrderError::Used) => {
+            return Err(Failure::forbidden(
+                "the account was used: only the school administration deletes it",
+            ))
+        }
+    }
+    state.waiters.wake(&id);
+    tracing::warn!(account = %teacher.account, group = %id, student = %account, "deleting an account ordered");
+    students_of(&state, &id).await
+}
+
+/// Takes back the order to delete an account, as long as the world has
+/// not answered.
+#[utoipa::path(
+    delete,
+    path = "/api/web/v1/groups/{id}/students/{account}/removal",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("account" = String, Path, description = "Account name of the student"),
+    ),
+    responses(
+        (status = 200, description = "The students of the group", body = Students),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or no order that waits for this account (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn take_back_removal(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, account)): Path<(String, String)>,
+) -> Result<Json<Students>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    if !removals::take_back(&state.db, &id, &account).await? {
+        return Err(Failure::not_found("no order waits for this account"));
+    }
+    tracing::info!(account = %teacher.account, group = %id, student = %account, "order to delete an account taken back");
+    students_of(&state, &id).await
+}
+
+/// Lists the accounts that were deleted on request: who, when, which
+/// account, in which group. Nothing else is kept about them.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/removals",
+    responses(
+        (status = 200, description = "The deleted accounts, newest first", body = Removals),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn list_removals(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+) -> Result<Json<Removals>, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    Ok(Json(Removals {
+        removals: removals::list(&state.db).await?,
     }))
 }
 

@@ -164,4 +164,38 @@ describe("lep_bridge reports", function()
 		assert.is_true(fits("SetPassword", reset))
 		assert.are.equal("klugeEule", (accounts.parse_password(reset)))
 	end)
+
+	it("reports that an account was used, and that one was removed", function()
+		assert.is_true(fits("AccountUsed", reports.account_used("klugeEule")))
+		local payload = reports.account_removed("klugeEule", "leitung")
+		assert.is_true(fits("AccountRemoved", payload))
+		assert.are.same({ account = "klugeEule", by = "leitung" }, payload)
+		-- Removed in the world itself: nobody ordered it from outside.
+		assert.is_true(fits("AccountRemoved", reports.account_removed("klugeEule")))
+		assert.are.same({ account = "klugeEule" }, reports.account_removed("klugeEule", ""))
+		assert.are.equal("account_used", reports.EVENT_ACCOUNT_USED)
+		assert.are.equal("account_removed", reports.EVENT_ACCOUNT_REMOVED)
+		assert.are.equal("remove_account", reports.JOB_REMOVE_ACCOUNT)
+	end)
+
+	it("knows which waiting events are about an account", function()
+		local function event(kind, payload)
+			return { id = "x", kind = kind, time = 1, payload = payload }
+		end
+		assert.is_true(reports.concerns(event("progress", { account = "anna" }), "anna"))
+		assert.is_true(reports.concerns(event("display_name", { account = "anna" }), "anna"))
+		assert.is_true(reports.concerns(event("protocol",
+			{ protocol = "chat", account = "anna", fields = { text = "hi" } }), "anna"))
+		-- A private message to the account.
+		assert.is_true(reports.concerns(event("protocol",
+			{ protocol = "chat", account = "ben", fields = { recipient = "anna" } }), "anna"))
+		-- Others, and lines that only mention the account.
+		assert.is_false(reports.concerns(event("progress", { account = "ben" }), "anna"))
+		assert.is_false(reports.concerns(event("protocol",
+			{ protocol = "desk", account = "lehrer1", fields = { targets = "anna" } }), "anna"))
+		assert.is_false(reports.concerns(event("teachers", { accounts = { "anna" } }), "anna"))
+		-- The news of the removal itself has to arrive.
+		assert.is_false(reports.concerns(event("account_removed", { account = "anna" }), "anna"))
+		assert.is_false(reports.concerns(event("modules", nil), "anna"))
+	end)
 end)
