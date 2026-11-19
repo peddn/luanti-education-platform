@@ -5,8 +5,8 @@
 //! need no session: there the token from the mail is the proof.
 
 use axum::extract::rejection::JsonRejection;
-use axum::extract::{FromRequestParts, Path, Request, State};
-use axum::http::header::{COOKIE, SET_COOKIE};
+use axum::extract::{FromRequestParts, Path, Query, Request, State};
+use axum::http::header::{CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_TYPE, COOKIE, SET_COOKIE};
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, Method, StatusCode};
 use axum::middleware::{self, Next};
@@ -18,7 +18,7 @@ use futures_util::stream::{self, Stream};
 use lep_protocol::web::{
     AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
     DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
-    MailTransport, Me, ProgressChange, Status, Students, TeacherList,
+    MailTransport, Me, ProgressChange, ProtocolPage, Status, Students, TeacherList,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -38,9 +38,11 @@ use crate::failure::Failure;
 use crate::groups::{self, ChangeError};
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
 use crate::progress::{self, ChangeError as ChangeProgressError};
+use crate::protocols;
 use crate::students::{self, DraftError};
 use crate::teachers::{self, ConfirmError};
 use crate::{clock, mail, web_access};
+use serde::Deserialize;
 
 /// Name of the cookie that holds the session.
 pub const SESSION_COOKIE: &str = "lep_session";
@@ -48,6 +50,11 @@ pub const SESSION_COOKIE: &str = "lep_session";
 pub fn router(state: &AppState) -> Router<AppState> {
     Router::new()
         .route("/v1/groups/{id}/changes", get(watch_changes))
+        .route("/v1/groups/{id}/protocols/{protocol}", get(show_protocol))
+        .route(
+            "/v1/groups/{id}/protocols/{protocol}/export",
+            get(export_protocol),
+        )
         .route("/v1/confirm", post(confirm))
         .route("/v1/login/link", post(request_login_link))
         .route("/v1/login", post(log_in))
@@ -756,6 +763,140 @@ pub async fn display_name_history(
             "no such account that exists in the world",
         )),
     }
+}
+
+/// What narrows a protocol down, and which part of it is wanted.
+#[derive(Debug, Deserialize)]
+pub struct ProtocolQuery {
+    account: Option<String>,
+    since: Option<i64>,
+    before: Option<i64>,
+    after: Option<i64>,
+}
+
+impl ProtocolQuery {
+    fn filter(&self) -> protocols::Filter {
+        protocols::Filter {
+            account: self
+                .account
+                .as_deref()
+                .map(str::trim)
+                .filter(|account| !account.is_empty())
+                .map(str::to_owned),
+            since: self.since,
+        }
+    }
+}
+
+/// Checks that a teacher may read a protocol of a group and returns the
+/// group. The protocol of the desk shows what teachers did: only the
+/// administration of the school reads it.
+async fn protocol_of(
+    state: &AppState,
+    account: &str,
+    id: &str,
+    protocol: &str,
+) -> Result<Group, Failure> {
+    let group = group_of(state, account, id).await?;
+    if protocols::columns(protocol).is_none() {
+        return Err(Failure::not_found("no such protocol"));
+    }
+    if protocol == protocols::DESK && !groups::is_school_admin(&state.db, account).await? {
+        return Err(Failure::forbidden(
+            "only the school administration reads the protocol of the desk",
+        ));
+    }
+    Ok(group)
+}
+
+/// Shows a part of a protocol of the world of a group, newest entries
+/// first: chat, signs, rewards, desk or names. A page has 100 entries.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/protocols/{protocol}",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("protocol" = String, Path, description = "chat, signs, rewards, desk or names"),
+        ("account" = Option<String>, Query, description = "Only entries of this account"),
+        ("since" = Option<i64>, Query, description = "Only entries from this time on, in seconds since 1970"),
+        ("before" = Option<i64>, Query, description = "Only entries older than the one with this id: the next page"),
+        ("after" = Option<i64>, Query, description = "Only entries that arrived after the one with this id"),
+    ),
+    responses(
+        (status = 200, description = "A part of the protocol", body = ProtocolPage),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "The protocol of the desk, and not the school administration (forbidden)", body = ApiError),
+        (status = 404, description = "No such group, not one of the teacher, or no such protocol (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn show_protocol(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, protocol)): Path<(String, String)>,
+    Query(query): Query<ProtocolQuery>,
+) -> Result<Json<ProtocolPage>, Failure> {
+    protocol_of(&state, &teacher.account, &id, &protocol).await?;
+    let part = match (query.before, query.after) {
+        (Some(id), _) => protocols::Part::Before(id),
+        (None, Some(id)) => protocols::Part::After(id),
+        (None, None) => protocols::Part::Newest,
+    };
+    protocols::page(&state.db, &id, &protocol, &query.filter(), part)
+        .await?
+        .map(Json)
+        .ok_or_else(|| Failure::not_found("no such protocol"))
+}
+
+/// Returns the filtered entries of a protocol as a CSV file to download,
+/// oldest first, with times in UTC and cells separated by semicolons.
+/// The file leaves the platform: who exports it answers for it.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/protocols/{protocol}/export",
+    params(
+        ("id" = String, Path, description = "Identifier of the group"),
+        ("protocol" = String, Path, description = "chat, signs, rewards, desk or names"),
+        ("account" = Option<String>, Query, description = "Only entries of this account"),
+        ("since" = Option<i64>, Query, description = "Only entries from this time on, in seconds since 1970"),
+    ),
+    responses(
+        (status = 200, description = "The entries as a CSV file", content_type = "text/csv", body = String),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "The protocol of the desk, and not the school administration (forbidden)", body = ApiError),
+        (status = 404, description = "No such group, not one of the teacher, or no such protocol (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn export_protocol(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path((id, protocol)): Path<(String, String)>,
+    Query(query): Query<ProtocolQuery>,
+) -> Result<Response, Failure> {
+    let group = protocol_of(&state, &teacher.account, &id, &protocol).await?;
+    let filter = query.filter();
+    let file = protocols::export(&state.db, &id, &protocol, &filter)
+        .await?
+        .ok_or_else(|| Failure::not_found("no such protocol"))?;
+    // The name of the group goes into the file name, without anything a
+    // header or a file system could trip over.
+    let group_name: String = group
+        .name
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric() || *character == '-')
+        .collect();
+    let disposition = format!("attachment; filename=\"protokoll-{protocol}-{group_name}.csv\"");
+    tracing::info!(account = %teacher.account, group = %id, %protocol, filtered_by = ?filter.account, "protocol exported");
+    Ok((
+        [
+            (CONTENT_TYPE, "text/csv; charset=utf-8".to_owned()),
+            (CONTENT_DISPOSITION, disposition),
+            (CACHE_CONTROL, "no-store".to_owned()),
+        ],
+        file,
+    )
+        .into_response())
 }
 
 /// Returns the group a path of this interface is about, if any.

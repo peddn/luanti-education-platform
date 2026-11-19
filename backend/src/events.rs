@@ -137,7 +137,7 @@ fn topics_of(kind: &str) -> &'static [ChangeTopic] {
             &[ChangeTopic::Students, ChangeTopic::Progress]
         }
         EVENT_TEACHERS | EVENT_WEB_ACCESS | EVENT_WORLD_STARTED => &[ChangeTopic::Group],
-        // Entries of protocols are shown on request only.
+        EVENT_PROTOCOL => &[ChangeTopic::Protocols],
         _ => &[],
     }
 }

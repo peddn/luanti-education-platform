@@ -152,6 +152,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/protocols/{protocol}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shows a part of a protocol of the world of a group, newest entries
+         *     first: chat, signs, rewards, desk or names. A page has 100 entries.
+         */
+        get: operations["show_protocol"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/protocols/{protocol}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the filtered entries of a protocol as a CSV file to download,
+         *     oldest first, with times in UTC and cells separated by semicolons.
+         *     The file leaves the platform: who exports it answers for it.
+         */
+        get: operations["export_protocol"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/students": {
         parameters: {
             query?: never;
@@ -535,7 +576,7 @@ export interface components {
          *     named "change"; a page then loads that part again.
          * @enum {string}
          */
-        ChangeTopic: "group" | "students" | "progress";
+        ChangeTopic: "group" | "students" | "progress" | "protocols";
         /** @description Request to confirm an address with the token from a mail. */
         ConfirmRequest: {
             token: string;
@@ -917,6 +958,45 @@ export interface components {
             };
             /** @description Which protocol, one of `PROTOCOLS`. */
             protocol: string;
+        };
+        /** @description A part of a protocol, newest entries first. */
+        ProtocolPage: {
+            /**
+             * @description The columns of this protocol besides time and account, in the
+             *     order to show them.
+             */
+            columns: string[];
+            entries: components["schemas"]["ProtocolRow"][];
+            /**
+             * @description True if there are older entries than the last one here. Ask
+             *     for them with `before` set to its id.
+             */
+            more: boolean;
+        };
+        /** @description One entry of a protocol of a world. */
+        ProtocolRow: {
+            /** @description Account name of who did it. */
+            account: string;
+            /**
+             * @description The display name the account has now. Protocols only keep
+             *     the account name.
+             */
+            display_name?: string | null;
+            /** @description The other columns of the entry. */
+            fields: {
+                [key: string]: string;
+            };
+            /**
+             * Format: int64
+             * @description Number of the entry in the backend. Entries that arrived
+             *     later have a larger one.
+             */
+            id: number;
+            /**
+             * Format: int64
+             * @description When it happened in the world, in seconds since 1970.
+             */
+            time: number;
         };
         /**
          * @description Payload of the job "remove_display_name". The world writes it
@@ -1466,6 +1546,124 @@ export interface operations {
                 };
             };
             /** @description No such group, no such account that exists in the world, or no such module (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    show_protocol: {
+        parameters: {
+            query?: {
+                /** @description Only entries of this account */
+                account?: string;
+                /** @description Only entries from this time on, in seconds since 1970 */
+                since?: number;
+                /** @description Only entries older than the one with this id: the next page */
+                before?: number;
+                /** @description Only entries that arrived after the one with this id */
+                after?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description chat, signs, rewards, desk or names */
+                protocol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A part of the protocol */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtocolPage"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The protocol of the desk, and not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, not one of the teacher, or no such protocol (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    export_protocol: {
+        parameters: {
+            query?: {
+                /** @description Only entries of this account */
+                account?: string;
+                /** @description Only entries from this time on, in seconds since 1970 */
+                since?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+                /** @description chat, signs, rewards, desk or names */
+                protocol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entries as a CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The protocol of the desk, and not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, not one of the teacher, or no such protocol (not_found) */
             404: {
                 headers: {
                     [name: string]: unknown;
