@@ -12,6 +12,7 @@
   "nav": {
     "overview": "Übersicht",
     "groups": "Gruppen",
+    "yearEnd": "Jahresabschluss",
     "health": "Zustand"
   },
   "login": {
@@ -263,6 +264,35 @@
         "unlocked": "Wählen freigegeben"
       }
     }
+  },
+  "yearEnd": {
+    "title": "Jahresabschluss",
+    "loading": "Jahresabschluss wird geladen …",
+    "intro": "Der Jahresabschluss ist der eine Zeitpunkt, zu dem Daten in großem Umfang gelöscht werden. Er gilt für die ganze Schule, nicht für einzelne Gruppen.",
+    "deletedTitle": "Wird gelöscht",
+    "deleted": "Alle Protokolle aller Gruppen: Chat, Schilder, Belohnungen, Lehrerpult und Wunschnamen, in den Welten und hier. Dazu die Liste der Exporte.",
+    "keptTitle": "Bleibt erhalten",
+    "kept": "Konten, Fortschritt, Trophäen und Wunschnamen der Schüler, die Gruppen und ihre Lehrkräfte.",
+    "later": "Archivierte Welten und Sicherungen gibt es noch nicht. Sobald es sie gibt, löscht der Jahresabschluss auch sie.",
+    "noGroups": "Es gibt noch keine Gruppen.",
+    "group": "Gruppe",
+    "entries": "Einträge in Protokollen",
+    "exports": "Einträge in der Exportliste",
+    "world": "Welt",
+    "look": "Protokolle ansehen und exportieren",
+    "worldStates": {
+      "pending": "hat ihre Protokolle noch nicht gelöscht",
+      "refused": "konnte ihre Protokolle nicht löschen"
+    },
+    "closeTitle": "Jahr abschließen",
+    "warning": "Das lässt sich nicht rückgängig machen. Was du vorher brauchst, exportiere über die Protokolle der Gruppen.",
+    "typeWord": "Tippe zur Bestätigung das Wort {word}",
+    "word": "LÖSCHEN",
+    "close": "Jahr abschließen und Protokolle löschen",
+    "done": "Das Jahr ist abgeschlossen. Die Protokolle hier sind gelöscht. Jede Welt löscht ihre eigenen, sobald sie sich meldet; die Tabelle zeigt, welche noch aussteht.",
+    "runsTitle": "Bisherige Jahresabschlüsse",
+    "noRuns": "Es gab noch keinen.",
+    "run": "{day}: durch {account}, {entries} Einträge in Protokollen und {exports} in der Exportliste gelöscht, {groups} Gruppen"
   },
   "live": {
     "offline": "Die Verbindung zum Backend ist unterbrochen. Die Seite zeigt den letzten Stand und aktualisiert sich wieder, sobald die Verbindung steht."

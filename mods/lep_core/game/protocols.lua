@@ -20,6 +20,44 @@ function protocols.register_on_append(listener)
 	listeners[#listeners + 1] = listener
 end
 
+local clear_listeners = {}
+
+--- Registers a function() that is called after all protocols were
+-- deleted, at the end of the year. A mod that keeps data of the year
+-- somewhere else deletes it then.
+function protocols.register_on_clear(listener)
+	assert(type(listener) == "function", "register_on_clear: listener must be a function")
+	clear_listeners[#clear_listeners + 1] = listener
+end
+
+--- Deletes all protocols of this world: every file in the folder of the
+-- protocols, also of protocols no mod has opened this time. This is the
+-- end of the year, see the concept, section 12. Protocols stay open and
+-- can be written to right away.
+-- @return number of files deleted, number of files that could not be
+function protocols.clear_all()
+	local deleted, failed = 0, 0
+	for _, file in ipairs(core.get_dir_list(DIR, false)) do
+		if file:match("%.tsv$") then
+			if os.remove(DIR .. "/" .. file) then
+				deleted = deleted + 1
+			else
+				failed = failed + 1
+			end
+		end
+	end
+	core.log("action", "[lep_core] deleted " .. deleted .. " protocol file(s)"
+		.. (failed > 0 and ", " .. failed .. " could not be deleted" or ""))
+	for _, listener in ipairs(clear_listeners) do
+		local ok, err = pcall(listener)
+		if not ok then
+			core.log("error", "[lep_core] listener for deleted protocols failed: "
+				.. tostring(err))
+		end
+	end
+	return deleted, failed
+end
+
 local function path(name)
 	return DIR .. "/" .. name .. ".tsv"
 end
@@ -87,20 +125,6 @@ function protocols.open(name, columns)
 
 	opened[name] = object
 	return object
-end
-
---- Deletes all protocols of this world. This is part of the yearly
--- closing.
--- @return Number of deleted files.
-function protocols.clear_all()
-	local count = 0
-	for _, file_name in ipairs(core.get_dir_list(DIR, false)) do
-		if file_name:match("%.tsv$") and os.remove(DIR .. "/" .. file_name) then
-			count = count + 1
-		end
-	end
-	core.log("action", "[lep_core] deleted " .. count .. " protocols")
-	return count
 end
 
 return protocols

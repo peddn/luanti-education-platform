@@ -12,6 +12,7 @@
   "nav": {
     "overview": "Overview",
     "groups": "Groups",
+    "yearEnd": "End of the year",
     "health": "Status"
   },
   "login": {
@@ -263,6 +264,35 @@
         "unlocked": "choosing unlocked"
       }
     }
+  },
+  "yearEnd": {
+    "title": "End of the year",
+    "loading": "Loading the end of the year …",
+    "intro": "The end of the year is the one moment data is deleted on a large scale. It is for the whole school, not for single groups.",
+    "deletedTitle": "Is deleted",
+    "deleted": "All protocols of all groups: chat, signs, rewards, teacher's desk and display names, in the worlds and here. And the list of exports.",
+    "keptTitle": "Stays",
+    "kept": "Accounts, progress, trophies and display names of the students, the groups and their teachers.",
+    "later": "There are no archived worlds and backups yet. Once there are, the end of the year deletes them too.",
+    "noGroups": "There are no groups yet.",
+    "group": "Group",
+    "entries": "Entries in protocols",
+    "exports": "Entries in the list of exports",
+    "world": "World",
+    "look": "Look at and export the protocols",
+    "worldStates": {
+      "pending": "has not deleted its protocols yet",
+      "refused": "could not delete its protocols"
+    },
+    "closeTitle": "Close the year",
+    "warning": "This cannot be undone. Export what you need before, through the protocols of the groups.",
+    "typeWord": "To confirm, type the word {word}",
+    "word": "DELETE",
+    "close": "Close the year and delete the protocols",
+    "done": "The year is closed. The protocols here are deleted. Every world deletes its own as soon as it reports; the table shows which one is still missing.",
+    "runsTitle": "Years closed so far",
+    "noRuns": "None yet.",
+    "run": "{day}: by {account}, {entries} entries in protocols and {exports} in the list of exports deleted, {groups} groups"
   },
   "live": {
     "offline": "The connection to the backend is lost. The page shows the last state and updates again as soon as the connection is back."

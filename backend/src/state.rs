@@ -134,6 +134,14 @@ pub async fn store_protocol_entry(
     if !PROTOCOLS.contains(&entry.protocol.as_str()) || !is_account(&entry.account) {
         return Ok(false);
     }
+    // What a world wrote before the year was closed but reports only now
+    // is taken off its hands and not kept: it is deleted already.
+    let closed: Option<i64> = sqlx::query_scalar("SELECT MAX(time) FROM year_ends")
+        .fetch_one(pool)
+        .await?;
+    if closed.is_some_and(|closed| time <= closed) {
+        return Ok(true);
+    }
     sqlx::query(
         "INSERT INTO protocol_entries (world_id, protocol, time, account, fields)
          VALUES (?, ?, ?, ?, ?)",

@@ -437,6 +437,19 @@ Auf der Seite einer Gruppe führt „Protokolle“ zu dem, was die Welt mitgesch
 - „Als CSV herunterladen“ liefert die gefilterten Einträge als Datei: älteste zuerst, Zeiten in UTC, Zellen mit Semikolon getrennt. Texte, die eine Tabellenkalkulation für eine Formel halten würde, bekommen ein Hochkomma vorangestellt. 
 - Jeder Download wird festgehalten: wer, wann, welches Protokoll, mit welchen Filtern und wie viele Einträge. Das steht im Reiter „Exporte“, den wie das Lehrerpult nur die Schulverwaltung sieht. Auch der Download dieser Liste wird eingetragen. Das Backend führt sie selbst, die Welt weiß nichts davon.
 
+### Jahresabschluss
+
+Die Seite „Jahresabschluss“ steht nur der Schulverwaltung in der Navigation, also einem Konto mit `lep_manage_school`. Sie zeigt je Gruppe, wie viele Einträge in Protokollen und Exportliste gelöscht würden.
+
+- Zum Auslösen tippt man das Wort „LÖSCHEN“ ein. Das Backend löscht dann seine Kopien aller Protokolle und die Liste der Exporte und schickt jeder Welt den Auftrag `clear_protocols`.
+- Die Welt löscht alle Dateien in `lep_protocols/`. Im Log steht `[lep_bridge] <konto> closed the year: deleting all protocols` und `[lep_core] deleted n protocol file(s)`.
+- Läuft eine Welt nicht, wartet der Auftrag. Die Seite zeigt bei der Gruppe „hat ihre Protokolle noch nicht gelöscht“ und fragt alle paar Sekunden nach.
+- Konten, Fortschritt, Trophäen und Wunschnamen bleiben.
+- Dass und wann abgeschlossen wurde, bleibt unten auf der Seite stehen: wer, wann, wie viel.
+- Einträge, die eine Welt vor dem Abschluss geschrieben hat und erst danach meldet, nimmt das Backend an und verwirft sie.
+
+Mods, die Jahresdaten an anderer Stelle halten, melden sich mit `lep_core.protocols.register_on_clear` an. Archive und Sicherungen von Welten kommen mit dem Agenten dazu.
+
 ### Fortschritt
 
 Auf der Seite einer Gruppe führt „Fortschritt“ zur Tabelle der Schüler und Module. Sie zeigt, was die Welt zuletzt gemeldet hat, und aktualisiert sich von selbst.

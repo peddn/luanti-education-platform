@@ -95,6 +95,10 @@ pub mod world {
     /// display name for a student.
     pub const JOB_SET_DISPLAY_LOCKED: &str = "set_display_locked";
 
+    /// Kind of the job that makes a world delete all its protocols: the
+    /// end of the year.
+    pub const JOB_CLEAR_PROTOCOLS: &str = "clear_protocols";
+
     /// Kind of the job that makes a world set the level of a student in
     /// a module.
     pub const JOB_SET_LEVEL: &str = "set_level";
@@ -390,6 +394,13 @@ pub mod world {
         pub by: String,
     }
 
+    /// Payload of the job "clear_protocols".
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ClearProtocols {
+        /// Account name of who closed the year, for the log of the world.
+        pub by: String,
+    }
+
     /// Payload of the job "set_level". The world writes the change into
     /// the protocol of the desk, under the account of the teacher.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -575,6 +586,57 @@ pub mod web {
         /// its lock is on its way.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub display_change: Option<ChangeState>,
+    }
+
+    /// The word a request to close the year has to carry, so that no
+    /// request does it by accident.
+    pub const YEAR_END_CONFIRMATION: &str = "close-the-year";
+
+    /// Request to close the year.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct YearEndRequest {
+        /// Has to be "close-the-year".
+        pub confirm: String,
+    }
+
+    /// A year that was closed. Kept for good, without any content.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct YearEndRun {
+        /// When, in seconds since 1970.
+        pub time: i64,
+        /// Account name of who did it.
+        pub account: String,
+        /// How many groups there were.
+        pub groups: i64,
+        /// How many entries of protocols the backend deleted.
+        pub protocol_entries: i64,
+        /// How many entries of the list of exports it deleted.
+        pub exports: i64,
+    }
+
+    /// What closing the year would delete for one group, and how far its
+    /// world is with the last one.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct YearEndGroup {
+        pub id: String,
+        pub name: String,
+        /// Entries of protocols the backend holds for the group.
+        pub protocol_entries: i64,
+        /// Entries of the list of exports.
+        pub exports: i64,
+        /// Missing if the world was never asked to delete its protocols,
+        /// or has done so. Pending: it has not answered yet, for example
+        /// because it does not run. Refused: it could not.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub world: Option<ChangeState>,
+    }
+
+    /// What closing the year would delete, and when it was closed last.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct YearEnd {
+        pub groups: Vec<YearEndGroup>,
+        /// The years that were closed, newest first.
+        pub runs: Vec<YearEndRun>,
     }
 
     /// One entry of a protocol of a world.
