@@ -509,6 +509,12 @@ Steht ein Kind auf einem Niveau, dessen Pensum voll ist, etwa mit gesperrtem Auf
 
 In der Testwelt gibt es neben „Kopfrechnen“ das „Testmodul“ aus den Debug-Hilfen.
 
+Das **Startniveau** eines Moduls gilt für jedes Konto, über das die Welt in diesem Modul noch nichts gespeichert hat: keine gelöste Aufgabe, kein gesetztes Niveau, keine Sperre. Wer schon etwas getan hat, bleibt, wo er ist. Die übersprungenen Niveaus gelten nicht als abgeschlossen, es gibt für sie weder Belohnung noch Trophäe.
+
+- Bestellt wird es mit `POST /api/web/v1/groups/{id}/progress/start/{modul}` und `{"level": n}`. Die Welt speichert es (`lep_progress.set_start_level`), schreibt `web:set_start_level <modul> <niveau>` ins Protokoll des Pults und meldet es mit ihren Modulen.
+- Im Log der Welt steht `[lep_progress] start level of <modul> is now <niveau>`.
+- Andere Mods fragen `lep_progress.get_start_level(modul)` und erfahren von Änderungen mit `lep_progress.register_on_start_level_changed`.
+
 „Als CSV herunterladen“ liefert den Stand der Gruppe als Datei `fortschritt-<gruppe>.csv`: eine Zeile je Schüler und Modul, Zellen mit Semikolon getrennt.
 
 | Spalte | Inhalt |
