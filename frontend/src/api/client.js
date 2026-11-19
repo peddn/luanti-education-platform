@@ -11,6 +11,35 @@
 /** @typedef {Schemas['Student']} Student */
 /** @typedef {Schemas['AccessSlip']} AccessSlip */
 /** @typedef {Schemas['GroupProgress']} GroupProgress */
+/** @typedef {Schemas['ProtocolPage']} ProtocolPage */
+/** @typedef {Schemas['ProtocolRow']} ProtocolRow */
+
+/**
+ * What narrows a protocol down.
+ *
+ * @typedef {object} ProtocolFilters
+ * @property {string} [account] only entries of this account
+ * @property {number} [since] only entries from this time on, in seconds since 1970
+ */
+
+/**
+ * @param {string} id identifier of the group
+ * @param {string} protocol
+ * @param {string} tail what follows the name of the protocol
+ * @param {Record<string, string | number | undefined>} wanted
+ */
+function protocolPath(id, protocol, tail, wanted) {
+  const query = new URLSearchParams()
+  for (const [name, value] of Object.entries(wanted)) {
+    if (value !== undefined && value !== '') {
+      query.set(name, String(value))
+    }
+  }
+  const text = query.toString()
+  const path = `/api/web/v1/groups/${encodeURIComponent(id)}/protocols/${encodeURIComponent(protocol)}${tail}`
+  return text === '' ? path : `${path}?${text}`
+}
+
 /** @typedef {Schemas['DisplayNameEntry']} DisplayNameEntry */
 /** @typedef {Schemas['ModuleProgress']} ModuleProgress */
 /** @typedef {Schemas['ProgressChange']} ProgressChange */
@@ -360,6 +389,32 @@ export function createClient(options = {}) {
       const path = `${studentsPath(id)}/${encodeURIComponent(account)}/display-names`
       const answer = /** @type {Schemas['DisplayNameHistory']} */ (await request(path))
       return answer.entries
+    },
+
+    /**
+     * Returns a part of a protocol of the world of a group, newest
+     * entries first.
+     *
+     * @param {string} id
+     * @param {string} protocol chat, signs, rewards, desk or names
+     * @param {ProtocolFilters & { before?: number, after?: number }} [wanted]
+     * @returns {Promise<ProtocolPage>}
+     */
+    async protocol(id, protocol, wanted = {}) {
+      return /** @type {ProtocolPage} */ (await request(protocolPath(id, protocol, '', wanted)))
+    },
+
+    /**
+     * Returns the address the filtered entries of a protocol can be
+     * downloaded from as a CSV file.
+     *
+     * @param {string} id
+     * @param {string} protocol
+     * @param {ProtocolFilters} [wanted]
+     * @returns {string}
+     */
+    protocolExportUrl(id, protocol, wanted = {}) {
+      return protocolPath(id, protocol, '/export', wanted)
     },
 
     /**

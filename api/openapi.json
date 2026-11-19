@@ -477,6 +477,216 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/protocols/{protocol}": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Shows a part of a protocol of the world of a group, newest entries\nfirst: chat, signs, rewards, desk or names. A page has 100 entries.",
+        "operationId": "show_protocol",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "path",
+            "description": "chat, signs, rewards, names, desk or exports",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "description": "Only entries of this account",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "Only entries from this time on, in seconds since 1970",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Only entries older than the one with this id: the next page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Only entries that arrived after the one with this id",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A part of the protocol",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The protocol of the desk or of the exports, and not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, not one of the teacher, or no such protocol (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/protocols/{protocol}/export": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Returns the filtered entries of a protocol as a CSV file to download,\noldest first, with times in UTC and cells separated by semicolons.\nThe file leaves the platform: who exports it answers for it, and\nevery export is written into the protocol \"exports\".",
+        "operationId": "export_protocol",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "path",
+            "description": "chat, signs, rewards, names, desk or exports",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "description": "Only entries of this account",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "Only entries from this time on, in seconds since 1970",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries as a CSV file",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The protocol of the desk or of the exports, and not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, not one of the teacher, or no such protocol (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/students": {
       "get": {
         "tags": [
@@ -1591,7 +1801,8 @@
         "enum": [
           "group",
           "students",
-          "progress"
+          "progress",
+          "protocols"
         ]
       },
       "ConfirmRequest": {
@@ -2406,6 +2617,77 @@
           "protocol": {
             "type": "string",
             "description": "Which protocol, one of `PROTOCOLS`."
+          }
+        }
+      },
+      "ProtocolPage": {
+        "type": "object",
+        "description": "A part of a protocol, newest entries first.",
+        "required": [
+          "columns",
+          "entries",
+          "more"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The columns of this protocol besides time and account, in the\norder to show them."
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProtocolRow"
+            }
+          },
+          "more": {
+            "type": "boolean",
+            "description": "True if there are older entries than the last one here. Ask\nfor them with `before` set to its id."
+          }
+        }
+      },
+      "ProtocolRow": {
+        "type": "object",
+        "description": "One entry of a protocol of a world.",
+        "required": [
+          "id",
+          "time",
+          "account",
+          "fields"
+        ],
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account name of who did it."
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The display name the account has now. Protocols only keep\nthe account name."
+          },
+          "fields": {
+            "type": "object",
+            "description": "The other columns of the entry.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of the entry in the backend. Entries that arrived\nlater have a larger one."
+          },
+          "time": {
+            "type": "integer",
+            "format": "int64",
+            "description": "When it happened in the world, in seconds since 1970."
           }
         }
       },

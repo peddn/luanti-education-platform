@@ -70,7 +70,8 @@
     "progress": "Fortschritt",
     "address": "Adresse der Welt",
     "noAddress": "noch nicht eingetragen",
-    "addressHint": "So erreichen die Kinder die Welt, zum Beispiel „spiel.schule.example, Port 30000“. Die Adresse steht auf den Zugangszetteln."
+    "addressHint": "So erreichen die Kinder die Welt, zum Beispiel „spiel.schule.example, Port 30000“. Die Adresse steht auf den Zugangszetteln.",
+    "protocols": "Protokolle"
   },
   "students": {
     "titleFor": "Schülerkonten der Gruppe {group}",
@@ -128,7 +129,8 @@
       "locked": "{day}: Wählen gesperrt von {by}",
       "unlocked": "{day}: Wählen freigegeben von {by}"
     },
-    "historyHint": "Der Verlauf stammt aus dem Protokoll der Welt und wird mit dem Jahresabschluss gelöscht."
+    "historyHint": "Der Verlauf stammt aus dem Protokoll der Welt und wird mit dem Jahresabschluss gelöscht.",
+    "protocols": "Protokolle"
   },
   "slips": {
     "title": "Zugangszettel",
@@ -184,6 +186,83 @@
     "repeat": "Niveau wiederholen",
     "changeHint": "Die Welt führt die Änderung aus und hält sie im Protokoll des Lehrerpults fest. Mit gesperrtem Aufstieg bleibt das Kind auf seinem Niveau, auch wenn es das Pensum geschafft hat.",
     "repeatHint": "Wiederholen leert das Pensum dieses Niveaus. Jede Aufgabe zählt und wird wieder belohnt. Die Belohnung für den Abschluss gibt es nur beim ersten Mal."
+  },
+  "protocols": {
+    "titleFor": "Protokolle der Gruppe {group}",
+    "intro": "Hier steht, was die Welt mitgeschrieben hat. Die Protokolle nennen den Kontonamen, darunter steht der Wunschname von heute. Mit dem Jahresabschluss werden sie gelöscht.",
+    "back": "Zur Gruppe",
+    "loading": "Protokolle werden geladen …",
+    "tabsLabel": "Protokoll wählen",
+    "tabs": {
+      "chat": "Chat",
+      "signs": "Schilder",
+      "rewards": "Belohnungen",
+      "names": "Wunschnamen",
+      "desk": "Lehrerpult",
+      "exports": "Exporte"
+    },
+    "account": "Konto",
+    "period": "Zeitraum",
+    "periods": {
+      "all": "alles",
+      "today": "heute",
+      "week": "letzte 7 Tage",
+      "month": "letzte 30 Tage"
+    },
+    "apply": "Anzeigen",
+    "export": "Als CSV herunterladen",
+    "exportHint": "Die Datei enthält die gefilterten Einträge. Sie verlässt die Plattform: Für die Datei bist du verantwortlich, und der Jahresabschluss löscht sie nicht. Jeder Download wird festgehalten und ist für die Schulverwaltung sichtbar.",
+    "waiting": "{n} neuen Eintrag anzeigen | {n} neue Einträge anzeigen",
+    "waitingMany": "Viele neue Einträge anzeigen",
+    "empty": "Es gibt keine Einträge, die dazu passen.",
+    "more": "Ältere Einträge laden",
+    "time": "Zeit",
+    "columns": {
+      "account": "Konto",
+      "kind": "Art",
+      "recipient": "An",
+      "text": "Text",
+      "pos": "Ort",
+      "size": "Größe",
+      "reason": "Anlass",
+      "module": "Modul",
+      "level": "Niveau",
+      "task": "Aufgabe",
+      "items": "Gegenstände",
+      "action": "Aktion",
+      "targets": "Ziele",
+      "name": "Name",
+      "by": "Durch",
+      "protocol": "Protokoll",
+      "filter_account": "Gefiltert nach Konto",
+      "filter_since": "Einträge ab",
+      "entries": "Einträge"
+    },
+    "values": {
+      "kind": {
+        "chat": "an alle",
+        "private": "privat",
+        "action": "Handlung (/me)"
+      },
+      "size": {
+        "small": "klein",
+        "medium": "mittel",
+        "large": "groß"
+      },
+      "reason": {
+        "task": "Aufgabe",
+        "daily": "Tagesaufgabe",
+        "level": "Niveau abgeschlossen",
+        "stage": "Meilenstein"
+      },
+      "action": {
+        "chosen": "gewählt",
+        "given_up": "Kontoname wiederhergestellt",
+        "removed": "entfernt",
+        "locked": "Wählen gesperrt",
+        "unlocked": "Wählen freigegeben"
+      }
+    }
   },
   "live": {
     "offline": "Die Verbindung zum Backend ist unterbrochen. Die Seite zeigt den letzten Stand und aktualisiert sich wieder, sobald die Verbindung steht."

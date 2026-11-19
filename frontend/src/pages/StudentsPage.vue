@@ -373,6 +373,13 @@ function closeSlips() {
                     >
                       {{ $t('students.history') }}
                     </button>
+                    <RouterLink
+                      :to="{ name: 'protocols', params: { id }, query: { account: student.account } }"
+                      data-test="protocols"
+                      class="text-emerald-700 underline"
+                    >
+                      {{ $t('students.protocols') }}
+                    </RouterLink>
                   </template>
                   <template v-if="changeable(student)">
                     <button

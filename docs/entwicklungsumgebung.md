@@ -426,6 +426,17 @@ Zum Zusehen: `curl -N -b cookies.txt http://127.0.0.1:8080/api/web/v1/groups/<id
 
 Das Backend endet bei Strg+C jetzt sofort. Vorher wartete es bis zu 25 Sekunden auf die Anfrage einer verbundenen Welt.
 
+### Protokolle
+
+Auf der Seite einer Gruppe führt „Protokolle“ zu dem, was die Welt mitgeschrieben hat: Chat, Schilder, Belohnungen, Wunschnamen und Lehrerpult. Dazu kommt die Liste der Exporte. Aus der Liste der Schüler führt „Protokolle“ direkt zu den Einträgen eines Kontos.
+
+- Gezeigt wird, was die Welt seit ihrer Verbindung mit dem Backend gemeldet hat, neueste Einträge zuerst, 100 je Seite.
+- Filter: Konto und Zeitraum. Die Protokolle nennen den Kontonamen, darunter steht der Wunschname von heute.
+- Das Protokoll des Pults sieht nur, wer in einer Welt `lep_manage_school` hat. Für alle anderen fehlt der Reiter, und das Backend antwortet mit `forbidden`.
+- Kommen neue Einträge, während die Seite offen ist, bleibt die Tabelle stehen. Ein Knopf darüber sagt, wie viele warten, und zeigt sie auf Klick.
+- „Als CSV herunterladen“ liefert die gefilterten Einträge als Datei: älteste zuerst, Zeiten in UTC, Zellen mit Semikolon getrennt. Texte, die eine Tabellenkalkulation für eine Formel halten würde, bekommen ein Hochkomma vorangestellt. 
+- Jeder Download wird festgehalten: wer, wann, welches Protokoll, mit welchen Filtern und wie viele Einträge. Das steht im Reiter „Exporte“, den wie das Lehrerpult nur die Schulverwaltung sieht. Auch der Download dieser Liste wird eingetragen. Das Backend führt sie selbst, die Welt weiß nichts davon.
+
 ### Fortschritt
 
 Auf der Seite einer Gruppe führt „Fortschritt“ zur Tabelle der Schüler und Module. Sie zeigt, was die Welt zuletzt gemeldet hat, und aktualisiert sich von selbst.

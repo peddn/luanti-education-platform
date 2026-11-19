@@ -577,6 +577,36 @@ pub mod web {
         pub display_change: Option<ChangeState>,
     }
 
+    /// One entry of a protocol of a world.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ProtocolRow {
+        /// Number of the entry in the backend. Entries that arrived
+        /// later have a larger one.
+        pub id: i64,
+        /// When it happened in the world, in seconds since 1970.
+        pub time: i64,
+        /// Account name of who did it.
+        pub account: String,
+        /// The display name the account has now. Protocols only keep
+        /// the account name.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub display_name: Option<String>,
+        /// The other columns of the entry.
+        pub fields: std::collections::BTreeMap<String, String>,
+    }
+
+    /// A part of a protocol, newest entries first.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct ProtocolPage {
+        /// The columns of this protocol besides time and account, in the
+        /// order to show them.
+        pub columns: Vec<String>,
+        pub entries: Vec<ProtocolRow>,
+        /// True if there are older entries than the last one here. Ask
+        /// for them with `before` set to its id.
+        pub more: bool,
+    }
+
     /// A part of a group that changed. The way
     /// `/api/web/v1/groups/{id}/changes` sends it as the data of an event
     /// named "change"; a page then loads that part again.
@@ -590,6 +620,8 @@ pub mod web {
         Students,
         /// Levels, workload, locks and trophies.
         Progress,
+        /// New entries in a protocol.
+        Protocols,
     }
 
     impl ChangeTopic {
@@ -599,6 +631,7 @@ pub mod web {
                 Self::Group => "group",
                 Self::Students => "students",
                 Self::Progress => "progress",
+                Self::Protocols => "protocols",
             }
         }
     }
