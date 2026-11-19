@@ -494,6 +494,24 @@ Die Seite „Jahresabschluss“ steht nur der Schulverwaltung in der Navigation,
 
 Mods, die Jahresdaten an anderer Stelle halten, melden sich mit `lep_core.protocols.register_on_clear` an. Archive und Sicherungen von Welten kommen mit dem Agenten dazu.
 
+### Belohnungen
+
+Jede Welt hat eine Belohnungstabelle: je Anlass ein Gegenstand mit Anzahl, dazu das Tageslimit der Tagesaufgaben.
+
+| Anlass | Vorgabe |
+|---|---|
+| `task`: Aufgabe gelöst | 1 Stahlbarren |
+| `level`: Niveau abgeschlossen | 1 Goldbarren |
+| `stage`: Etappe abgeschlossen | 1 Diamant |
+| `module`: Modul abgeschlossen | 3 Diamanten |
+
+- Der Aufwand vervielfacht die Anzahl: gering einfach, normal doppelt, hoch dreifach. Ein Modul nennt seinen Aufwand beim Anmelden (`effort`, ohne Angabe gering), eine Tagesaufgabe beim Melden (ohne Angabe normal). Die Aufgabentruhe in der Wildnis ist eine Tagesaufgabe mit normalem Aufwand und bringt deshalb das Doppelte der Zeile „Aufgabe“.
+- Für einen Abschluss gibt es genau eine Belohnung. Das letzte Niveau eines Moduls ist nie eine Etappe: Es bringt die Belohnung für das Modul und die goldene Trophäe „… abgeschlossen“.
+- `lep_rewards.get_table()`, `lep_rewards.set_table(tabelle)` und `lep_rewards.reset_table()` lesen und ändern die Tabelle zur Laufzeit. Sie wird nur als Ganzes angenommen. Eine Änderung gilt ab der nächsten Belohnung.
+- Im Spiel zeigt `/lep_rewards`, was es wofür gibt.
+- Die früheren Einstellungen `lep_rewards_small`, `lep_rewards_medium`, `lep_rewards_large` und `lep_rewards_daily_limit` gibt es nicht mehr.
+- Im Protokoll der Belohnungen steht statt der Größe jetzt der Aufwand. Ältere Einträge zeigen in dieser Spalte nichts.
+
 ### Fortschritt
 
 Auf der Seite einer Gruppe führt „Fortschritt“ zur Tabelle der Schüler und Module. Sie zeigt, was die Welt zuletzt gemeldet hat, und aktualisiert sich von selbst.
