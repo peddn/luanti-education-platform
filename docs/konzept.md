@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 54 · 18. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 55 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -1082,6 +1082,15 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 - **Erster Abgleich:** Beim ersten Kontakt sendet die Welt den Stand aller bekannten Schüler. Das Backend kann ihn per Auftrag erneut anfordern.
 - **Keine Nachlieferung alter Protokolle:** Gemeldet wird, was ab der Verbindung geschieht. Was vorher in den Protokolldateien stand, bleibt dort. Im Betrieb ist eine Welt von Anfang an verbunden, und alte Einträge nachträglich in die Cloud zu schieben, passt nicht zur begrenzten Aufbewahrung.
 - Texte für Menschen, etwa Titel, verlassen die Welt auf Deutsch.
+
+**Wie der Browser von Änderungen erfährt**
+
+- Die Seiten einer Gruppe zeigen Änderungen von selbst, ohne Neuladen: was die Welt meldet, was sie auf einen Auftrag antwortet und was eine andere Lehrkraft ändert.
+- Der Browser hält dafür eine Verbindung zum Backend offen. Darüber kommt nur ein Signal, welcher Teil der Gruppe sich geändert hat, nie die Daten selbst. Die Seite lädt den Teil dann neu, über dieselben Wege und mit denselben Rechten wie sonst.
+- Die Verbindung gibt es nur mit gültiger Anmeldung und nur für Gruppen, die die Lehrkraft sehen darf. Sie endet mit der Sitzung.
+- Signale werden nicht aufbewahrt. War die Verbindung unterbrochen, lädt die Seite beim Wiederverbinden alles neu.
+- Solange eine Seite Zugangszettel mit Passwörtern zeigt, lädt sie nichts neu.
+- Die Übersicht aller Gruppen ist noch nicht angeschlossen.
 
 **Was die Lehrkraft im Browser ändert**
 
