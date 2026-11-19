@@ -6,6 +6,8 @@ local formspec = lep_core.formspec
 
 local FORM = "lep_accounts:name"
 local WIDTH = 9
+local PAD = formspec.PADDING
+local TOP = formspec.CONTENT_TOP
 local REFUSALS = lep_accounts.NAME_REFUSALS
 
 -- Players who have the window open. Fields from anybody else are ignored.
@@ -35,28 +37,40 @@ end
 -- matter than choosing a name, so it stands apart: below a line, with a
 -- sentence of its own and a button in another colour.
 local function add_restore(fs, y)
-	fs:element("box", { 0.5, y }, { WIDTH - 1, 0.03 }, "#FFFFFF80")
-	fs:label(0.5, y + 0.45, S("You can go back to your account name at any time:"))
+	fs:separator(y)
+	fs:label(PAD, y + 0.45, S("You can go back to your account name at any time:"))
 	fs:element("style", "give_up", "bgcolor=#B05A2A")
-	fs:button(0.5, y + 0.8, 4.4, 0.8, "give_up", S("Restore account name"))
+	fs:button(PAD, y + 0.8, 4.4, 0.8, "give_up", S("Restore account name"))
+end
+
+-- Starts a window: the title, who the player is shown as, and a text.
+-- Returns the builder and where the rest starts.
+local function start(player_name, height, text)
+	local fs = formspec.new(WIDTH, height)
+	fs:title(S("Your display name"))
+	fs:label(PAD, TOP + 0.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
+	-- A text area without a name only shows its text, and breaks lines.
+	fs:element("textarea", { PAD, TOP + 0.6 }, { WIDTH - 2 * PAD, 1.1 }, "", "",
+		formspec.escape(text))
+	return fs, TOP + 1.9
+end
+
+local function finish(player_name, fs, height)
+	fs:button_exit(WIDTH - PAD - 1.5, height - PAD - 0.8, 1.5, 0.8, "close", S("Close"))
+	open[player_name] = true
+	core.show_formspec(player_name, FORM, fs:build())
 end
 
 -- A window that says why no name can be chosen now. It has no field
 -- and no button for choosing: they would not work and only confuse.
 local function show_closed(player_name, reason)
 	local restore = lep_accounts.get_display_state(player_name).display ~= nil
-	local height = restore and 5.8 or 3.9
-	local fs = formspec.new(WIDTH, height)
-	fs:label(0.5, 0.6, S("Your display name"))
-	fs:label(0.5, 1.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
-	-- A text area without a name only shows its text, and breaks lines.
-	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "", formspec.escape(reason))
+	local height = TOP + (restore and 5 or 3.1)
+	local fs, y = start(player_name, height, reason)
 	if restore then
-		add_restore(fs, 2.9)
+		add_restore(fs, y)
 	end
-	fs:button_exit(WIDTH - 2, height - 1.2, 1.5, 0.8, "close", S("Close"))
-	open[player_name] = true
-	core.show_formspec(player_name, FORM, fs:build())
+	finish(player_name, fs, height)
 end
 
 local function show(player_name, typed, message)
@@ -67,25 +81,18 @@ local function show(player_name, typed, message)
 		return show_closed(player_name, explain(REFUSALS.WAIT, state.next_change))
 	end
 
-	local height = state.display and 7.9 or 5.8
-	local fs = formspec.new(WIDTH, height)
-	fs:label(0.5, 0.6, S("Your display name"))
-	fs:label(0.5, 1.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
+	local height = TOP + (state.display and 7.1 or 5)
 	local hint = S("You can choose a new name once in 30 days.") .. " "
 		.. S("Your teachers see every name.")
-	-- A text area without a name only shows its text, and breaks lines.
-	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "",
-		formspec.escape(message or hint))
-
-	fs:field(0.5, 3.3, WIDTH - 1, 0.8, "name", S("New name"), typed or state.display or "")
+	local fs, y = start(player_name, height, message or hint)
+	fs:field(PAD, y + 0.4, WIDTH - 2 * PAD, 0.8, "name", S("New name"),
+		typed or state.display or "")
 	fs:submit_on_enter("name")
-	fs:button(0.5, 4.4, 2.5, 0.8, "apply", S("Apply"))
+	fs:button(PAD, y + 1.5, 2.5, 0.8, "apply", S("Apply"))
 	if state.display then
-		add_restore(fs, 5.6)
+		add_restore(fs, y + 2.7)
 	end
-	fs:button_exit(WIDTH - 2, height - 1.2, 1.5, 0.8, "close", S("Close"))
-	open[player_name] = true
-	core.show_formspec(player_name, FORM, fs:build())
+	finish(player_name, fs, height)
 end
 
 local function close(player_name, message)
