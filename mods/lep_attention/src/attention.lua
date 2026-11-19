@@ -133,6 +133,15 @@ function List:stop(player_name)
 	return true
 end
 
+--- Forgets a player altogether: the mode and where they came from. For
+-- an account that is removed.
+-- @return true if there was something to forget
+function List:forget(player_name)
+	local known = self._entries[player_name] ~= nil
+	self._entries[player_name] = nil
+	return known
+end
+
 --- Forgets that players were held where they came from. Used when the
 -- last teacher leaves: from then on nobody is held anywhere.
 function List:forget_holds()

@@ -323,14 +323,26 @@ end
 function corridors.new_book(data)
 	local owners = {}
 	local names = {}
+	-- Set of the slots whose owner was removed. Their rooms stand empty
+	-- until somebody new moves in.
+	local free = {}
 	local count = 0
+
+	local function is_slot(slot)
+		return type(slot) == "number" and slot >= 0 and slot == math.floor(slot)
+	end
 
 	if type(data) == "table" and type(data.owners) == "table" then
 		for name, slot in pairs(data.owners) do
-			if type(name) == "string" and type(slot) == "number"
-					and slot >= 0 and slot == math.floor(slot) and not names[slot] then
+			if type(name) == "string" and is_slot(slot) and not names[slot] then
 				owners[name] = slot
 				names[slot] = name
+				count = math.max(count, slot + 1)
+			end
+		end
+		for _, slot in ipairs(type(data.free) == "table" and data.free or {}) do
+			if is_slot(slot) and not names[slot] then
+				free[slot] = true
 				count = math.max(count, slot + 1)
 			end
 		end
@@ -348,7 +360,8 @@ function corridors.new_book(data)
 		return names[slot]
 	end
 
-	--- Returns the slot of a player, assigning the next free one if needed.
+	--- Returns the slot of a player, assigning one if needed: the lowest
+	-- slot that became free, otherwise the next new one.
 	-- @return slot, true if it was newly assigned
 	function book.assign(_, name)
 		assert(type(name) == "string" and name ~= "", "assign: name must be a string")
@@ -356,13 +369,32 @@ function corridors.new_book(data)
 			return owners[name], false
 		end
 		local slot = count
+		for free_slot in pairs(free) do
+			slot = math.min(slot, free_slot)
+		end
+		free[slot] = nil
 		owners[name] = slot
 		names[slot] = name
-		count = count + 1
+		count = math.max(count, slot + 1)
 		return slot, true
 	end
 
-	--- Returns the number of slots in use. Slots are never given back.
+	--- Takes the room away from a player whose account is removed. The
+	-- slot stays built and is given to the next new player.
+	-- @return The slot the player had, or nil.
+	function book.release(_, name)
+		local slot = owners[name]
+		if not slot then
+			return nil
+		end
+		owners[name] = nil
+		names[slot] = nil
+		free[slot] = true
+		return slot
+	end
+
+	--- Returns the number of slots that are built, with or without an
+	-- owner. It never gets smaller.
 	function book.count(_)
 		return count
 	end
@@ -373,7 +405,12 @@ function corridors.new_book(data)
 		for name, slot in pairs(owners) do
 			copy[name] = slot
 		end
-		return { owners = copy }
+		local free_slots = {}
+		for slot in pairs(free) do
+			free_slots[#free_slots + 1] = slot
+		end
+		table.sort(free_slots)
+		return { owners = copy, free = free_slots }
 	end
 
 	return book

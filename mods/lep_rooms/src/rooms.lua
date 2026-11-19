@@ -299,6 +299,26 @@ function Book:assign(type_id, player)
 	return record
 end
 
+--- Forgets all rooms of a player. Their slots stay empty: a slot is
+-- never given to a second player.
+-- @return List of { type_id, slot } of the rooms the player had, sorted
+--   by type.
+function Book:remove(player)
+	local list = {}
+	for type_id, entry in pairs(self._types) do
+		local record = entry.rooms[player]
+		if record then
+			list[#list + 1] = { type_id = type_id, slot = record.slot }
+			entry.rooms[player] = nil
+			self._cells[type_id][cell_key(rooms.slot_to_cell(record.slot))] = nil
+		end
+	end
+	table.sort(list, function(a, b)
+		return a.type_id < b.type_id
+	end)
+	return list
+end
+
 --- Records that a room was built with the given version.
 function Book:mark_built(type_id, player, version)
 	local record = self:get(type_id, player)

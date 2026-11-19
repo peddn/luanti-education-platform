@@ -121,4 +121,14 @@ core.register_on_leaveplayer(function(player)
 	end
 end)
 
+-- An account that is removed takes the content of its chest along, and
+-- what was waiting for room in it.
+lep_core.register_on_forget_account(function(player_name)
+	if inventories[player_name] then
+		core.remove_detached_inventory(inventory.location(player_name))
+		inventories[player_name] = nil
+	end
+	storage.remove(player_name)
+end)
+
 return inventory

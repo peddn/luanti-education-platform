@@ -358,3 +358,6 @@ lep_progress.register_on_level_changed = dispatcher:registrar("level_changed")
 --- Registers a function(player_name, module_id) called when a player
 -- completes the last level of a module.
 lep_progress.register_on_module_completed = dispatcher:registrar("module_completed")
+
+-- An account that is removed takes its progress along.
+lep_core.register_on_forget_account(storage.remove)

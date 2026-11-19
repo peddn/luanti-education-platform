@@ -263,6 +263,22 @@ describe("lep_rooms book", function()
 		assert.is_nil(record)
 		assert.is_truthy(err:find("no free room", 1, true))
 	end)
+
+	it("forgets the rooms of a player and never gives their slots away", function()
+		local book = rooms.new_book()
+		book:assign(TYPE, "anna")
+		book:assign(TYPE, "ben")
+		book:assign("other", "anna")
+		assert.are.same({ { type_id = "other", slot = 0 }, { type_id = TYPE, slot = 0 } },
+			book:remove("anna"))
+		assert.are.same({}, book:remove("anna"))
+		assert.is_nil(book:get(TYPE, "anna"))
+		assert.are.same({ "ben" }, book:owners(TYPE))
+
+		local restored = rooms.new_book(book:export())
+		assert.is_nil(restored:get(TYPE, "anna"))
+		assert.are.equal(2, restored:assign(TYPE, "carl").slot)
+	end)
 end)
 
 describe("lep_rooms locate and may_modify", function()

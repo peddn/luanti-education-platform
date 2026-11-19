@@ -30,4 +30,9 @@ function storage.save(player_name, data)
 	mod_storage:set_string(key(player_name), core.serialize(data))
 end
 
+--- Deletes everything stored about a player.
+function storage.remove(player_name)
+	mod_storage:set_string(key(player_name), "")
+end
+
 return storage

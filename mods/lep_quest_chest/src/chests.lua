@@ -97,6 +97,19 @@ function Store:data()
 	return data
 end
 
+--- Forgets which chests a player solved. For an account that is removed.
+-- @return true if the player had solved any
+function Store:forget(player_name)
+	local known = false
+	for _, chest in pairs(self._chests) do
+		if chest.solved[player_name] then
+			chest.solved[player_name] = nil
+			known = true
+		end
+	end
+	return known
+end
+
 --- Adds a chest. Returns false if there already is one at this position.
 function Store:add(pos, now, permanent)
 	local key = chests.key(pos)

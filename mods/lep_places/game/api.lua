@@ -287,3 +287,7 @@ core.register_on_joinplayer(function(player)
 	execute(player, steps)
 	storage.write_state(player, new_state)
 end)
+
+-- An account that is removed: where the player was and what they carried
+-- is in their metadata, which the engine deletes. This is the rest.
+lep_core.register_on_forget_account(storage.forget)

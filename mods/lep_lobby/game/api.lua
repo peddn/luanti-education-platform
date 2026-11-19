@@ -41,8 +41,10 @@ end
 -- into them has to be set again.
 local function announce_rooms(direction)
 	for slot = 0, book:count() - 1 do
-		if not direction or corridors.slot_position(slot) == direction then
-			dispatcher:emit("room_built", lep_lobby.get_room(book:owner(slot)))
+		-- A room whose owner was removed stands empty.
+		local owner = book:owner(slot)
+		if owner and (not direction or corridors.slot_position(slot) == direction) then
+			dispatcher:emit("room_built", lep_lobby.get_room(owner))
 		end
 	end
 end
@@ -251,6 +253,35 @@ if core.global_exists("lep_accounts") then
 		end
 	end)
 end
+
+-- An account that is removed gives its room back. The room is built
+-- again empty, with a blank sign, and waits for the next new player.
+lep_core.register_on_forget_account(function(account)
+	local room = lep_lobby.get_room(account)
+	if not room then
+		return
+	end
+	book:release(account)
+	mod_storage:set_string(BOOK_KEY, core.serialize(book:export()))
+	core.log("action", "[lep_lobby] room in slot " .. room.slot .. " is free again")
+	if not ready then
+		-- The pending build of the whole lobby writes the room empty.
+		return
+	end
+	local direction = corridors.slot_position(room.slot)
+	builder.build(ORIGIN, direction, get_count, get_owner, function()
+		-- Writing the corridor leaves the metadata of what stood in the
+		-- room: chest, pedestals and portal carry the name of the owner.
+		for _, pos in ipairs(core.find_nodes_with_meta(
+				vector.offset(room.interior_min, -1, -1, -1),
+				vector.offset(room.interior_max, 1, 1, 1))) do
+			if not vector.equals(pos, room.sign) and not vector.equals(pos, room.door) then
+				core.remove_node(pos)
+			end
+		end
+		announce_rooms(direction)
+	end)
+end)
 
 -- A click on a name sign. Only the sign of the own room does something.
 function lep_lobby._on_sign_click(pos, player_name)
