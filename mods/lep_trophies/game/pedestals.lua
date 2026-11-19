@@ -112,21 +112,22 @@ local function show(player_name, slot, selected)
 
 	local pad = formspec.PADDING
 	local width, list_height = 9, 5
-	local button_y = 1.3 + list_height + 0.3
-	local button_width = (width - 2 * pad - 0.4) / 3
+	local top = formspec.CONTENT_TOP
+	local list_y = top + 0.5
+	local button_y = list_y + list_height + 0.3
+	local button_width = (width - 3 * pad - formspec.CLOSE_WIDTH - 0.2) / 2
 
 	local fs = formspec.new(width, button_y + 0.8 + pad)
-		:label(pad, 0.5, S("Pedestal @1 of @2", slot, lep_trophies.SLOTS))
+		:title(S("Pedestal @1 of @2", slot, lep_trophies.SLOTS))
 	if #ids == 0 then
-		fs:label(pad, 1.1, S("You have not earned any trophies yet."))
+		fs:label(pad, top + 0.2, S("You have not earned any trophies yet."))
 	else
-		fs:label(pad, 1.0, S("Choose a trophy:"))
+		fs:label(pad, top + 0.2, S("Choose a trophy:"))
 	end
-	fs:textlist(pad, 1.3, width - 2 * pad, list_height, "list", lines, selected)
+	fs:textlist(pad, list_y, width - 2 * pad, list_height, "list", lines, selected)
 		:button(pad, button_y, button_width, 0.8, "place", S("Put it here"))
 		:button(pad + button_width + 0.2, button_y, button_width, 0.8, "clear", S("Clear pedestal"))
-		:button_exit(pad + 2 * (button_width + 0.2), button_y, button_width, 0.8, "close",
-			S("Close"))
+		:close(S("Close"))
 
 	core.show_formspec(player_name, FORM, fs:build())
 end

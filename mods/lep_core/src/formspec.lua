@@ -2,7 +2,12 @@
 --
 -- Every LEP window is written by hand with this builder. It takes care of
 -- the two things that are easy to get wrong: escaping text and joining
--- the parts of an element.
+-- the parts of an element. And it gives all windows the same look:
+--   * a title that stands out, with a line below it (Builder:title)
+--   * the same padding (formspec.PADDING)
+--   * a button "Close" in the bottom right corner (Builder:close)
+--   * two colours for buttons that stand out (Builder:highlight)
+--   * one way to write headings inside a window and large text
 
 local formspec = {}
 
@@ -15,6 +20,16 @@ formspec.SLOT = 1
 formspec.SLOT_GAP = 0.25
 -- Where the content of a window starts below its title, see Builder:title.
 formspec.CONTENT_TOP = 1.45
+formspec.BUTTON_HEIGHT = 0.8
+-- Width of the button that closes a window.
+formspec.CLOSE_WIDTH = 2
+
+-- The two ways a button can stand out.
+-- ACTIVE: the current position of a switch.
+-- OTHER: something else than the window is mainly for, like going back.
+formspec.ACTIVE = "active"
+formspec.OTHER = "other"
+local HIGHLIGHTS = { [formspec.ACTIVE] = "#30C030", [formspec.OTHER] = "#B05A2A" }
 
 -- Colour of the lines that set parts of a window apart.
 local LINE = "#FFFFFF80"
@@ -41,6 +56,7 @@ function formspec.new(width, height)
 		"formspec.new: width and height must be numbers")
 	return setmetatable({
 		_width = width,
+		_height = height,
 		_parts = {
 			"formspec_version[" .. formspec.VERSION .. "]",
 			"size[" .. width .. "," .. height .. "]",
@@ -57,6 +73,38 @@ function Builder:title(text)
 	self:label(formspec.PADDING, 0.6, text)
 	self:element("style_type", "label", "font=normal;font_size=*1")
 	return self:separator(1.05)
+end
+
+--- Adds a heading inside a window: bold, in the size of the text. For
+-- the parts of a large window. The text is escaped here.
+function Builder:heading(x, y, text)
+	self:element("style_type", "label", "font=bold")
+	self:label(x, y, text)
+	return self:element("style_type", "label", "font=normal")
+end
+
+--- Adds a line of large text, for the one thing a window is about, like
+-- the task to solve. The text is escaped here.
+function Builder:big_label(x, y, text)
+	self:element("style_type", "label", "font_size=*1.6")
+	self:label(x, y, text)
+	return self:element("style_type", "label", "font_size=*1")
+end
+
+--- Makes a button stand out. Call it before the button is added.
+-- @param kind formspec.ACTIVE or formspec.OTHER
+function Builder:highlight(name, kind)
+	local colour = assert(HIGHLIGHTS[kind], "highlight: unknown kind " .. tostring(kind))
+	return self:element("style", formspec.escape(name), "bgcolor=" .. colour)
+end
+
+--- Adds the button that closes the window, in the bottom right corner.
+-- Every window has one. It arrives as the field "close", together with
+-- "quit". The label is escaped here.
+function Builder:close(label)
+	return self:button_exit(self._width - formspec.PADDING - formspec.CLOSE_WIDTH,
+		self._height - formspec.PADDING - formspec.BUTTON_HEIGHT,
+		formspec.CLOSE_WIDTH, formspec.BUTTON_HEIGHT, "close", label)
 end
 
 --- Adds a line across the window that sets apart what follows.

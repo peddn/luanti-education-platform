@@ -189,6 +189,24 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_chests age <minuten>` | macht die erzeugten Truhen älter, als wären so viele Minuten vergangen. Damit lässt sich das Verschwinden prüfen, ohne zu warten |
 | `/lep_report <aufgabe> [fail \| daily \| daily_low \| daily_high] [<niveau>]` | meldet eine Aufgabe des Testmoduls: gelöst als Niveauaufgabe, falsch, oder gelöst als Tagesaufgabe mit normalem, geringem oder hohem Aufwand. Niveau 2 und 4 sind Etappen. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
 
+### Fenster im Spiel
+
+Alle Fenster sehen gleich aus. Die Bausteine dafür liegen in der Hilfsschicht `lep_core.formspec`:
+
+| Baustein | Wofür |
+|---|---|
+| `fs:title(text)` | Überschrift des Fensters: größer, fett, mit Linie darunter. Der Inhalt beginnt bei `formspec.CONTENT_TOP` |
+| `fs:close(text)` | Knopf „Schließen“ unten rechts. Jedes Fenster hat einen |
+| `fs:highlight(name, art)` | Hebt einen Knopf hervor. `formspec.ACTIVE` für die aktuelle Stellung eines Schalters, `formspec.OTHER` für eine andere Möglichkeit als die, um die es im Fenster geht |
+| `fs:heading(x, y, text)` | Zwischenüberschrift in einem großen Fenster, fett |
+| `fs:big_label(x, y, text)` | Große Schrift für die eine Sache, um die es geht, etwa die Aufgabe |
+| `fs:separator(y)` | Linie, die einen Teil absetzt |
+| `formspec.PADDING` | Abstand zum Rand |
+
+Das Pult hat Reiter statt einer Überschrift. Seine Teile tragen Zwischenüberschriften.
+
+Farben und Schriftgrößen stehen nur in der Hilfsschicht. Ein neues Fenster setzt keine eigenen.
+
 ### Wunschnamen
 
 Ein Rechtsklick auf das Türschild des eigenen Raums in der Lobby öffnet das Fenster für den Wunschnamen. Fremde Schilder tun nichts. Der Name gilt sofort: über der Figur, im Chat, am Türschild und in der Liste des Pults. Protokolle und das Log des Servers nennen weiter den Kontonamen.

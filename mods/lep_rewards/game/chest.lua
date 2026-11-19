@@ -15,13 +15,13 @@ local function show(player_name)
 	inventory.ensure(player_name)
 	local pad = formspec.PADDING
 	local width = formspec.slots(inventory.COLUMNS) + 2 * pad
-	local chest_y = 1
+	local chest_y = formspec.CONTENT_TOP + 0.1
 	local player_y = chest_y + formspec.slots(inventory.ROWS) + 1.1
-	local height = player_y + formspec.slots(4) + pad
+	local height = player_y + formspec.slots(4) + 2 * pad + formspec.BUTTON_HEIGHT
 	local location = "detached:" .. inventory.location(player_name)
 
 	local fs = formspec.new(width, height)
-		:label(pad, 0.5, S("Your rewards"))
+		:title(S("Your rewards"))
 		:list(location, inventory.LIST, pad, chest_y, inventory.COLUMNS, inventory.ROWS)
 
 	local waiting = inventory.pending_count(player_name)
@@ -32,6 +32,7 @@ local function show(player_name)
 	fs:list("current_player", "main", pad, player_y, 8, 4)
 		:listring(location, inventory.LIST)
 		:listring("current_player", "main")
+		:close(S("Close"))
 
 	core.show_formspec(player_name, "lep_rewards:chest", fs:build())
 end

@@ -11,14 +11,13 @@ local S = core.get_translator("lep_desk")
 local formspec = lep_core.formspec
 
 local FORM = "lep_desk:desk"
-local WIDTH, HEIGHT = 20, 13
+-- The bottom row belongs to the button that closes the desk.
+local WIDTH, HEIGHT = 20, 14
 -- Longest text of the teacher that is passed on.
 local MAX_TEXT = 200
 local LIST_WIDTH = 12
 -- Colours of the lines in the list.
 local MARKED, UNMARKED = "#9CFF9C", "#BBBBBB"
--- Colour of the button that is the current position of a switch.
-local ACTIVE = "#30C030"
 
 -- Per teacher: selection (see src/desk.lua), status (last line of text),
 -- open (true while the window is shown), students (the list the window
@@ -115,8 +114,10 @@ local function show(teacher_name)
 	local fs = formspec.new(WIDTH, HEIGHT)
 	local tab = add_tabs(fs, state, teacher_name)
 	if tab then
+		-- The bottom row belongs to the button that closes the desk.
 		tab.build(fs, teacher_name, { x = pad, y = pad, width = WIDTH - 2 * pad,
-			height = HEIGHT - 2 * pad })
+			height = HEIGHT - 3 * pad - formspec.BUTTON_HEIGHT })
+		fs:close(S("Close"))
 		core.show_formspec(teacher_name, FORM, fs:build())
 		return
 	end
@@ -130,7 +131,7 @@ local function show(teacher_name)
 			describe_place(student), describe_levels(student) }
 	end
 
-	fs:label(pad, 0.55, S("Students (@1): click a box to mark", #students))
+	fs:heading(pad, 0.55, S("Students (@1): click a box to mark", #students))
 		:table(pad, 0.9, LIST_WIDTH, HEIGHT - 5.1, "students", COLUMNS, rows,
 			desk.index_of(state.highlight, students))
 
@@ -154,17 +155,17 @@ local function show(teacher_name)
 	fs:label(pad, HEIGHT - 0.5, state.status)
 
 	local actions_x = pad + LIST_WIDTH + 0.4
-	fs:label(actions_x, 0.55, S("Actions"))
+	fs:heading(actions_x, 0.55, S("Actions"))
 	local actions = lep_desk.get_actions(teacher_name)
 	for _, item in ipairs(desk.layout(actions, actions_x, 0.9, WIDTH - actions_x - pad)) do
 		if item.kind == "heading" then
-			fs:label(item.x, item.y, item.text)
+			fs:heading(item.x, item.y, item.text)
 		else
 			local action = actions[item.index]
 			local name = "action_" .. item.index
 			if action.is_active and action.is_active() then
 				-- The current position of a switch looks pressed.
-				fs:element("style", name, "bgcolor=" .. ACTIVE)
+				fs:highlight(name, formspec.ACTIVE)
 			end
 			fs:button(item.x, item.y, item.width, item.height, name, action.title)
 		end
@@ -173,6 +174,7 @@ local function show(teacher_name)
 		fs:label(actions_x, 1.3, S("You may not use any actions."))
 	end
 	state.actions = actions
+	fs:close(S("Close"))
 
 	core.show_formspec(teacher_name, FORM, fs:build())
 end
