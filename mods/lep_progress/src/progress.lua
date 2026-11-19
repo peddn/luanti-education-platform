@@ -21,7 +21,8 @@ progress.MODULE_COMPLETED = "module_completed"
 progress.KIND_TASK = "task"
 progress.KIND_DAILY = "daily"
 
--- How much effort a daily task takes.
+-- How much effort a task takes. A daily task says it itself, a module
+-- says it once for all its level tasks.
 progress.EFFORT_LOW = "low"
 progress.EFFORT_NORMAL = "normal"
 progress.EFFORT_HIGH = "high"
@@ -47,10 +48,12 @@ function progress.new_modules()
 	-- @param id Module id, for example "lep_math:math".
 	-- @param def Table with:
 	--   title   name shown to players
+	--   effort  optional: how hard the module is, EFFORT_LOW (default),
+	--           EFFORT_NORMAL or EFFORT_HIGH. Rewards follow it.
 	--   levels  list of levels, each a table with
 	--     title  optional name of the level
 	--     stage  optional: true if completing this level ends a stage.
-	--            The last level always ends one.
+	--            The last level never ends one: it ends the module.
 	--     tasks  list of task types, each a table with
 	--       id        id of the task type, unique within the module
 	--       title     name shown to players
@@ -61,6 +64,10 @@ function progress.new_modules()
 		assert(type(def) == "table", "module definition must be a table")
 		assert(type(def.levels) == "table" and #def.levels >= 1,
 			"module '" .. id .. "' needs at least one level")
+		local effort = def.effort or progress.EFFORT_LOW
+		assert(effort == progress.EFFORT_LOW or effort == progress.EFFORT_NORMAL
+			or effort == progress.EFFORT_HIGH,
+			"module '" .. id .. "' has the unknown effort '" .. tostring(effort) .. "'")
 
 		local levels = {}
 		local seen = {}
@@ -89,13 +96,13 @@ function progress.new_modules()
 			end
 			levels[number] = {
 				title = level.title or tostring(number),
-				stage = level.stage == true or number == #def.levels,
+				stage = level.stage == true and number < #def.levels,
 				tasks = tasks,
 				by_id = by_id,
 			}
 		end
 
-		modules[id] = { id = id, title = def.title or id, levels = levels }
+		modules[id] = { id = id, title = def.title or id, levels = levels, effort = effort }
 		order[#order + 1] = id
 	end
 

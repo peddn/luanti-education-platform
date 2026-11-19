@@ -64,8 +64,8 @@ function lep_progress.get_module_ids()
 	return modules:ids()
 end
 
---- Returns id, title, number of levels and the list of levels that end a
--- stage of a module, or nil.
+--- Returns id, title, number of levels, the effort and the list of
+-- levels that end a stage of a module, or nil.
 function lep_progress.get_module(module_id)
 	local module = modules:get(module_id)
 	if not module then
@@ -77,7 +77,8 @@ function lep_progress.get_module(module_id)
 			stages[#stages + 1] = number
 		end
 	end
-	return { id = module.id, title = module.title, levels = #module.levels, stages = stages }
+	return { id = module.id, title = module.title, levels = #module.levels, stages = stages,
+		effort = module.effort }
 end
 
 --- Returns the levels of a module with their kinds of tasks, or nil: a
@@ -226,10 +227,15 @@ function lep_progress.report(result)
 	if kind ~= progress.KIND_TASK and kind ~= progress.KIND_DAILY then
 		return false, "unknown kind '" .. tostring(kind) .. "'"
 	end
+	-- A daily task says how hard it is. A level task is as hard as its
+	-- module.
 	local effort = result.effort or progress.EFFORT_NORMAL
 	if effort ~= progress.EFFORT_LOW and effort ~= progress.EFFORT_NORMAL
 			and effort ~= progress.EFFORT_HIGH then
 		return false, "unknown effort '" .. tostring(effort) .. "'"
+	end
+	if kind == progress.KIND_TASK then
+		effort = module.effort
 	end
 
 	local state = get_state(result.player, module)
