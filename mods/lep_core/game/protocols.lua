@@ -62,6 +62,47 @@ local function path(name)
 	return DIR .. "/" .. name .. ".tsv"
 end
 
+-- Per opened protocol: the numbers of the columns that say whose entry a
+-- line is. A file no mod has opened this time is taken by the rule that
+-- the first column is the account.
+local account_positions = {}
+local DEFAULT_POSITIONS = { 1 }
+
+--- Deletes the entries of one account from all protocols of this world:
+-- what the account caused itself, and what was addressed to it alone.
+-- Lines of others that only mention the account stay. This is deleting
+-- on request, see the concept, section 12.
+-- @return number of entries deleted, number of files that could not be
+--   rewritten
+function protocols.remove_account(account)
+	assert(type(account) == "string" and account ~= "", "remove_account: account is missing")
+	local removed, failed = 0, 0
+	for _, file_name in ipairs(core.get_dir_list(DIR, false)) do
+		local name = file_name:match("^(.*)%.tsv$")
+		local file = name and io.open(path(name), "r")
+		if file then
+			local lines = {}
+			for line in file:lines() do
+				lines[#lines + 1] = line
+			end
+			file:close()
+			local kept, count = protocol.without_account(lines, account,
+				account_positions[name] or DEFAULT_POSITIONS)
+			if count > 0 then
+				local text = #kept > 0 and table.concat(kept, "\n") .. "\n" or ""
+				if core.safe_file_write(path(name), text) then
+					removed = removed + count
+				else
+					failed = failed + 1
+				end
+			end
+		end
+	end
+	core.log("action", "[lep_core] deleted " .. removed .. " protocol entries of one account"
+		.. (failed > 0 and ", " .. failed .. " file(s) could not be rewritten" or ""))
+	return removed, failed
+end
+
 local function now()
 	return os.date("!%Y-%m-%dT%H:%M:%SZ")
 end
@@ -71,13 +112,18 @@ end
 -- @param columns List of column names. The time is added automatically.
 --   By convention the first column is "account" with the account name,
 --   never the display name.
+-- @param accounts Optional list of the columns that say whose entry a
+--   line is, by default { "account" }. A protocol with entries that are
+--   addressed to somebody names that column as well, so deleting an
+--   account takes them along.
 -- @return Object with :append(record) and :read(filter, limit).
-function protocols.open(name, columns)
+function protocols.open(name, columns, accounts)
 	assert(protocol.is_valid_name(name), "protocol name must be a lower case word")
 	if opened[name] then
 		return opened[name]
 	end
 	protocol.check_columns(columns)
+	account_positions[name] = protocol.positions(columns, accounts or { "account" })
 	core.mkdir(DIR)
 
 	local object = {}
