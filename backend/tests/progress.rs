@@ -188,7 +188,7 @@ async fn a_teacher_sees_the_progress_and_orders_a_change() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
         json["modules"],
-        json!([{ "id": MATH, "title": "Kopfrechnen", "levels": 2 }])
+        json!([{ "id": MATH, "title": "Kopfrechnen", "levels": 2, "start_level": 1 }])
     );
     assert_eq!(
         json["students"],
@@ -414,4 +414,74 @@ async fn the_progress_can_be_downloaded_and_the_export_is_noted() {
     assert_eq!(entries[0]["account"], "lehrer1");
     assert_eq!(entries[0]["fields"]["protocol"], "progress");
     assert_eq!(entries[0]["fields"]["entries"], "1");
+}
+
+#[tokio::test]
+async fn a_teacher_orders_a_start_level_and_the_world_reports_it() {
+    let setup = Setup::new().await;
+    setup.with_a_student().await;
+    let teacher = log_in(&setup.state.db, "lehrer1").await;
+    let stranger = log_in(&setup.state.db, "lehrer2").await;
+    let path = format!("{}/start/lep_math%3Amath", setup.progress(&setup.first));
+
+    let (status, _) = setup
+        .web(Method::POST, &path, &stranger, Some(json!({ "level": 2 })))
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, error) = setup
+        .web(Method::POST, &path, &teacher, Some(json!({ "level": 3 })))
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(error["code"], "invalid_request");
+    let unknown = format!("{}/start/lep_math%3Anothing", setup.progress(&setup.first));
+    let (status, _) = setup
+        .web(
+            Method::POST,
+            &unknown,
+            &teacher,
+            Some(json!({ "level": 1 })),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let (status, shown) = setup
+        .web(Method::POST, &path, &teacher, Some(json!({ "level": 2 })))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(shown["modules"][0]["start_level"], 1);
+    assert_eq!(shown["modules"][0]["start_change"], "pending");
+    let (_, jobs) = setup.world(Method::GET, "/api/world/v1/jobs", None).await;
+    assert_eq!(jobs["jobs"][0]["kind"], "set_start_level");
+    assert_eq!(
+        jobs["jobs"][0]["payload"],
+        json!({ "module": MATH, "level": 2, "by": "lehrer1" })
+    );
+
+    // The world does it and reports its modules with the new level.
+    let job = jobs["jobs"][0]["id"].as_str().unwrap();
+    setup
+        .world(
+            Method::POST,
+            &format!("/api/world/v1/jobs/{job}/result"),
+            Some(json!({ "ok": true, "message": "set" })),
+        )
+        .await;
+    setup
+        .report(json!([{
+            "id": "m2", "kind": "modules", "time": 1700000100,
+            "payload": { "modules": [{ "id": MATH, "title": "Kopfrechnen", "start_level": 2,
+                "levels": [
+                    { "stage": false, "tasks": [{ "id": "add", "title": "Addieren", "required": 5 }] },
+                    { "stage": true, "tasks": [{ "id": "sub", "title": "Subtrahieren", "required": 5 }] }
+                ] }] }
+        }]))
+        .await;
+    let (_, shown) = setup
+        .web(Method::GET, &setup.progress(&setup.first), &teacher, None)
+        .await;
+    assert_eq!(shown["modules"][0]["start_level"], 2);
+    assert!(shown["modules"][0].get("start_change").is_none());
+    let cell = &shown["students"][0]["modules"][0];
+    assert_eq!(cell["started"], false);
+    assert_eq!(cell["level"], 2);
 }
