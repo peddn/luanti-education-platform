@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 57 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 58 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -1148,7 +1148,12 @@ Der Jahresabschluss ist ein einziger Schalter für die ganze Schule. Er ist der 
 - Löscht alle archivierten Welten und alle Sicherungen (Abschnitt 11.3).
 - Zeigt vorher an, was gelöscht wird, auch die archivierten Gruppen, und bietet einen Export an. Eine versehentlich archivierte Gruppe lässt sich an dieser Stelle noch wiederherstellen.
 - Das Backend schickt den Welten den Auftrag, ihre lokalen Kopien zu löschen.
-- Die Löschung wird ohne Inhalte vermerkt: wer, wann, welcher Umfang.
+- Die Löschung wird ohne Inhalte vermerkt: wer, wann, welcher Umfang. Dieser Vermerk bleibt dauerhaft, sonst wüsste nach dem Löschen niemand, dass es geschehen ist.
+- Ausgelöst wird er von der Schulverwaltung in der Web-Anwendung. Zur Bestätigung tippt sie ein festes Wort ein.
+- Jahresdaten sind alle Protokolle: in den Welten, ihre Kopien im Backend und die Liste der Exporte. Fortschritt, Trophäen, Wunschnamen und Konten bleiben.
+- Eine Welt, die gerade nicht läuft, löscht, sobald sie sich wieder meldet. Die Seite zeigt je Gruppe, ob die Welt schon gelöscht hat.
+- Einträge, die eine Welt vor dem Jahresabschluss geschrieben, aber noch nicht gemeldet hat, nimmt das Backend danach nicht mehr auf.
+- Gebaut ist zunächst dieser Teil. Das Löschen der archivierten Welten und der Sicherungen kommt mit dem Agenten in Schritt 7.
 
 **Löschen auf Verlangen**
 
