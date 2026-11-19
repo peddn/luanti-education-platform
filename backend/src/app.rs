@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 use tower_http::services::{ServeDir, ServeFile};
 
+use crate::changes::Changes;
 use crate::failure::Failure;
 use crate::jobs::Waiters;
 use crate::mail::Mailer;
@@ -27,6 +28,9 @@ pub struct AppState {
     pub db: SqlitePool,
     /// Wakes the worlds that wait for a job.
     pub waiters: Waiters,
+    /// Tells open pages that something about a group changed, and every
+    /// open request that the backend stops.
+    pub changes: Changes,
     /// The way mails leave the backend.
     pub mailer: Mailer,
     /// Address of the web application as browsers reach it, for links in
@@ -45,6 +49,7 @@ impl AppState {
         Self {
             db,
             waiters: Waiters::default(),
+            changes: Changes::default(),
             mailer,
             public_url: public_url.into(),
         }
@@ -81,6 +86,7 @@ impl AppState {
         web_api::reroll_student,
         web_api::remove_student,
         web_api::create_students,
+        web_api::watch_changes,
         web_api::show_progress,
         web_api::remove_display_name,
         web_api::lock_display_name,
@@ -130,6 +136,7 @@ impl AppState {
         lep_protocol::world::DisplayName,
         lep_protocol::world::RemoveDisplayName,
         lep_protocol::world::SetDisplayLocked,
+        lep_protocol::web::ChangeTopic,
         lep_protocol::web::GroupProgress,
         lep_protocol::web::ProgressModule,
         lep_protocol::web::StudentProgress,
@@ -204,7 +211,7 @@ pub fn has_frontend(folder: &Path) -> bool {
 }
 
 fn api(state: AppState) -> Router {
-    let web = web_api::router();
+    let web = web_api::router(&state);
     let world = world_api::router();
 
     Router::new()

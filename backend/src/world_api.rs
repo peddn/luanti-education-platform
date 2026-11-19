@@ -11,6 +11,7 @@ use axum::http::header::AUTHORIZATION;
 use axum::http::request::Parts;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use lep_protocol::web::ChangeTopic;
 use lep_protocol::world::{
     Done, EventBatch, EventBatchResult, EventResult, JobList, JobResult, MAX_BATCH,
     MAX_WAIT_SECONDS,
@@ -124,7 +125,11 @@ pub async fn fetch_jobs(
     }
     // Woken or not, look again: jobs can also be put in by another
     // process, which rings no bell here.
-    let _ = tokio::time::timeout(wait, rung).await;
+    // The wait also ends when the backend stops.
+    tokio::select! {
+        _ = tokio::time::timeout(wait, rung) => {}
+        () = state.changes.stopped() => {}
+    }
     let waiting = jobs::take_waiting(&state.db, &world.id).await?;
     Ok(Json(JobList { jobs: waiting }))
 }
@@ -157,6 +162,10 @@ pub async fn report_result(
     if !jobs::finish(&state.db, &world.id, &job_id, &result).await? {
         return Err(Failure::not_found("no such job"));
     }
+    // What waited for the world is done or refused now.
+    state
+        .changes
+        .tell(&world.id, &[ChangeTopic::Students, ChangeTopic::Progress]);
     Ok(Json(Done {}))
 }
 

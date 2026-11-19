@@ -5,22 +5,34 @@
 //! need no session: there the token from the mail is the proof.
 
 use axum::extract::rejection::JsonRejection;
-use axum::extract::{FromRequestParts, Path, State};
+use axum::extract::{FromRequestParts, Path, Request, State};
 use axum::http::header::{COOKIE, SET_COOKIE};
 use axum::http::request::Parts;
-use axum::http::{HeaderMap, StatusCode};
-use axum::response::{AppendHeaders, IntoResponse};
+use axum::http::{HeaderMap, Method, StatusCode};
+use axum::middleware::{self, Next};
+use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
+use axum::response::{AppendHeaders, IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
+use futures_util::stream::{self, Stream};
 use lep_protocol::web::{
-    AccessSlips, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory, DraftRequest, Group,
-    GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest, MailTransport, Me,
-    ProgressChange, Status, Students, TeacherList,
+    AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
+    DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
+    MailTransport, Me, ProgressChange, Status, Students, TeacherList,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
 
+use std::collections::VecDeque;
+use std::convert::Infallible;
+use std::future::Future;
+use std::pin::Pin;
+use std::time::Duration;
+
+use tokio::sync::broadcast;
+
 use crate::app::AppState;
+use crate::changes;
 use crate::display_names;
 use crate::failure::Failure;
 use crate::groups::{self, ChangeError};
@@ -33,8 +45,9 @@ use crate::{clock, mail, web_access};
 /// Name of the cookie that holds the session.
 pub const SESSION_COOKIE: &str = "lep_session";
 
-pub fn router() -> Router<AppState> {
+pub fn router(state: &AppState) -> Router<AppState> {
     Router::new()
+        .route("/v1/groups/{id}/changes", get(watch_changes))
         .route("/v1/confirm", post(confirm))
         .route("/v1/login/link", post(request_login_link))
         .route("/v1/login", post(log_in))
@@ -78,6 +91,7 @@ pub fn router() -> Router<AppState> {
             "/v1/groups/{id}/progress/{account}/{module}",
             post(change_progress),
         )
+        .layer(middleware::from_fn_with_state(state.clone(), tell_changes))
 }
 
 /// Reads a JSON body, with our own answer if it cannot be read.
@@ -742,6 +756,92 @@ pub async fn display_name_history(
             "no such account that exists in the world",
         )),
     }
+}
+
+/// Returns the group a path of this interface is about, if any.
+fn group_in(path: &str) -> Option<&str> {
+    let rest = path.split_once("/groups/")?.1;
+    let id = rest.split('/').next().unwrap_or_default();
+    (!id.is_empty()).then_some(id)
+}
+
+/// After every request that changed something about a group, tells the
+/// pages that have the group open. One place for all ways, so none is
+/// forgotten: a page that loads once too often does no harm.
+async fn tell_changes(State(state): State<AppState>, request: Request, next: Next) -> Response {
+    let changed = (request.method() != Method::GET)
+        .then(|| group_in(request.uri().path()).map(str::to_owned))
+        .flatten();
+    let response = next.run(request).await;
+    if let Some(group) = changed {
+        if response.status().is_success() {
+            state.changes.tell(&group, &changes::ALL);
+        }
+    }
+    response
+}
+
+/// What a page that watches a group is waiting for.
+struct Watch {
+    signals: broadcast::Receiver<ChangeTopic>,
+    /// Topics still to send after the page fell behind.
+    missed: VecDeque<ChangeTopic>,
+    stopped: Pin<Box<dyn Future<Output = ()> + Send>>,
+    session_over: Pin<Box<tokio::time::Sleep>>,
+}
+
+fn change_event(topic: ChangeTopic) -> Result<SseEvent, Infallible> {
+    Ok(SseEvent::default().event("change").data(topic.as_str()))
+}
+
+/// Keeps the request open and sends an event named "change" whenever a
+/// part of the group changed. Its data is one of the words of
+/// `ChangeTopic`, never the changed data itself: the page loads that
+/// part again. The request ends when the session does, and when the
+/// backend stops.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/changes",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "A stream of server-sent events named \"change\", each with a ChangeTopic as data", content_type = "text/event-stream", body = String),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or not one of the teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn watch_changes(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Sse<impl Stream<Item = Result<SseEvent, Infallible>>>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    let left = u64::try_from(teacher.expires_at - clock::now()).unwrap_or(0);
+    let watch = Watch {
+        signals: state.changes.listen(&id),
+        missed: VecDeque::new(),
+        stopped: Box::pin(state.changes.stopped()),
+        session_over: Box::pin(tokio::time::sleep(Duration::from_secs(left))),
+    };
+    let events = stream::unfold(watch, |mut watch| async move {
+        if let Some(topic) = watch.missed.pop_front() {
+            return Some((change_event(topic), watch));
+        }
+        tokio::select! {
+            signal = watch.signals.recv() => match signal {
+                Ok(topic) => Some((change_event(topic), watch)),
+                // The page fell behind: it loads everything again.
+                Err(broadcast::error::RecvError::Lagged(_)) => {
+                    watch.missed.extend(&changes::ALL[1..]);
+                    Some((change_event(changes::ALL[0]), watch))
+                }
+                Err(broadcast::error::RecvError::Closed) => None,
+            },
+            () = &mut watch.stopped => None,
+            () = &mut watch.session_over => None,
+        }
+    });
+    Ok(Sse::new(events).keep_alive(KeepAlive::new().interval(Duration::from_secs(15))))
 }
 
 /// Shows where the students of a group stand: level and workload per

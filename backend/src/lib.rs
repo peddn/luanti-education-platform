@@ -1,6 +1,7 @@
 //! Web application of the Luanti Education Platform.
 
 pub mod app;
+pub mod changes;
 pub mod cli;
 pub mod clock;
 pub mod config;

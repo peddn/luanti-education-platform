@@ -88,6 +88,29 @@ export interface paths {
         patch: operations["change_group"];
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Keeps the request open and sends an event named "change" whenever a
+         *     part of the group changed. Its data is one of the words of
+         *     `ChangeTopic`, never the changed data itself: the page loads that
+         *     part again. The request ends when the session does, and when the
+         *     backend stops.
+         */
+        get: operations["watch_changes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/progress": {
         parameters: {
             query?: never;
@@ -506,6 +529,13 @@ export interface components {
          * @enum {string}
          */
         ChangeState: "pending" | "refused";
+        /**
+         * @description A part of a group that changed. The way
+         *     `/api/web/v1/groups/{id}/changes` sends it as the data of an event
+         *     named "change"; a page then loads that part again.
+         * @enum {string}
+         */
+        ChangeTopic: "group" | "students" | "progress";
         /** @description Request to confirm an address with the token from a mail. */
         ConfirmRequest: {
             token: string;
@@ -1297,6 +1327,47 @@ export interface operations {
             };
             /** @description Another group has this name (name_taken) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    watch_changes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A stream of server-sent events named "change", each with a ChangeTopic as data */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or not one of the teacher (not_found) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

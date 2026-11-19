@@ -5,6 +5,7 @@ import { createMemoryHistory } from 'vue-router'
 
 import { createLepI18n } from '@/i18n'
 import { createLepRouter } from '@/router'
+import { fakeEventSource, settled } from '@/test/fakeEventSource'
 
 import StudentsPage from './StudentsPage.vue'
 
@@ -351,6 +352,66 @@ describe('students page', () => {
     expect(page.get('[data-test=no-match]').text()).toBe('Kein Konto passt zur Suche.')
     await page.get('input[name=search]').setValue('')
     expect(names()).toHaveLength(3)
+  })
+
+  it('shows by itself what the world has done', async () => {
+    const opened = fakeEventSource()
+    let state = 'creating'
+    let entries = [{ time: 1700000000, action: 'chosen', name: 'Lena', by: 'klugeEule' }]
+    backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: () => [200, students([['klugeEule', state]])],
+      [`GET ${BASE}/students/klugeEule/display-names`]: () => [200, { entries }],
+    })
+    const page = await show()
+    expect(opened.map((source) => source.url)).toEqual([`${BASE}/changes`])
+    expect(page.get('[data-test=pending-hint]').text()).toContain('aktualisiert sich von selbst')
+    await page.get('input[name=search]').setValue('kluge')
+
+    state = 'active'
+    opened[0].change('students')
+    await settled()
+    await flushPromises()
+    expect(page.findAll('[data-test=student] td')[2].text()).toBe('angelegt')
+    expect(page.find('[data-test=pending-hint]').exists()).toBe(false)
+    // What was typed stays.
+    expect(/** @type {HTMLInputElement} */ (page.get('input[name=search]').element).value).toBe('kluge')
+
+    // A history that is open is loaded again with the list.
+    await page.get('[data-test=display-history]').trigger('click')
+    await flushPromises()
+    expect(page.findAll('[data-test=history] li')).toHaveLength(1)
+    entries = [{ time: 1700100000, action: 'removed', name: 'Lena', by: 'lehrer1' }, ...entries]
+    opened[0].change('students')
+    await settled()
+    await flushPromises()
+    expect(page.findAll('[data-test=history] li')).toHaveLength(2)
+    // Changes of other parts of the group load nothing.
+    entries = []
+    opened[0].change('progress')
+    await settled()
+    await flushPromises()
+    expect(page.findAll('[data-test=history] li')).toHaveLength(2)
+  })
+
+  it('loads nothing while the slips with the passwords are shown', async () => {
+    const opened = fakeEventSource()
+    const send = backend({
+      [`GET ${BASE}`]: [200, GROUP],
+      [`GET ${BASE}/students`]: [200, students([['klugeEule', 'draft']])],
+      [`POST ${BASE}/students/create`]: [200, { slips: [{ account: 'klugeEule', password: 'wolke-apfel-47' }] }],
+    })
+    const page = await show()
+    await page.get('[data-test=create]').trigger('click')
+    await flushPromises()
+    expect(page.text()).toContain('wolke-apfel-47')
+    const before = calls(send).length
+
+    opened[0].change('students')
+    await settled()
+    await flushPromises()
+    expect(calls(send)).toHaveLength(before)
+    expect(page.text()).toContain('wolke-apfel-47')
   })
 
   it('offers no reset for accounts that do not exist in the world', async () => {

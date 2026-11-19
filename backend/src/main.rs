@@ -67,6 +67,7 @@ async fn serve() -> Result<()> {
         ),
     }
     let state = AppState::with(pool.clone(), mailer, &config.public_url);
+    let changes = state.changes.clone();
     let router = if app::has_frontend(&config.frontend) {
         tracing::info!(folder = %config.frontend.display(), "serving the frontend");
         app::router_with_frontend(state, &config.frontend)
@@ -81,7 +82,12 @@ async fn serve() -> Result<()> {
     tokio::spawn(clean_up_hourly(pool.clone()));
 
     axum::serve(listener, router)
-        .with_graceful_shutdown(shutdown())
+        .with_graceful_shutdown(async move {
+            shutdown().await;
+            // Requests that are kept open would hold the backend up:
+            // worlds waiting for jobs, pages waiting for changes.
+            changes.stop();
+        })
         .await?;
 
     pool.close().await;

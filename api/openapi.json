@@ -268,6 +268,63 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/changes": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Keeps the request open and sends an event named \"change\" whenever a\npart of the group changed. Its data is one of the words of\n`ChangeTopic`, never the changed data itself: the page loads that\npart again. The request ends when the session does, and when the\nbackend stops.",
+        "operationId": "watch_changes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A stream of server-sent events named \"change\", each with a ChangeTopic as data",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or not one of the teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/progress": {
       "get": {
         "tags": [
@@ -1526,6 +1583,15 @@
         "enum": [
           "pending",
           "refused"
+        ]
+      },
+      "ChangeTopic": {
+        "type": "string",
+        "description": "A part of a group that changed. The way\n`/api/web/v1/groups/{id}/changes` sends it as the data of an event\nnamed \"change\"; a page then loads that part again.",
+        "enum": [
+          "group",
+          "students",
+          "progress"
         ]
       },
       "ConfirmRequest": {

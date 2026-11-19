@@ -412,9 +412,23 @@ Gibt es einen gewürfelten Namen in der Welt schon, etwa aus der Zeit, als man s
 
 Die Welt setzt ein Passwort nur für ein gewöhnliches Konto. Hat das Konto mehr als die Privilegien eines neuen Spielers, lehnt sie ab. Privilegien, die ein Ort vergibt, zählen nicht mit: `lep_places.get_granted_privileges(name)` nennt sie, auch für Spieler, die nicht da sind. In der Liste steht dann „neues Passwort von der Welt abgelehnt“, im Log der Welt `password for … not set: staff`. Das Passwort einer Lehrkraft setzt der Admin im Spiel.
 
+### Seiten, die sich selbst aktualisieren
+
+Die Seiten einer Gruppe („Gruppe“, „Schüler“, „Fortschritt“) halten eine Verbindung zum Backend offen: `GET /api/web/v1/groups/{id}/changes`, Server-Sent Events. Das Backend schickt darüber nur ein Signal, welcher Teil sich geändert hat (`group`, `students` oder `progress`), nie die Daten. Die Seite lädt den Teil dann über die üblichen Wege neu.
+
+- Ein Signal gibt es, wenn die Welt etwas meldet, wenn sie einen Auftrag beantwortet und wenn jemand im Browser etwas an der Gruppe ändert.
+- Mehrere Signale kurz hintereinander werden zu einem Laden.
+- Aufgeklappte Teile und Eingaben bleiben beim Laden erhalten. Solange Zugangszettel gezeigt werden, lädt die Seite nichts.
+- Ist die Verbindung weg, steht das in einer Zeile auf der Seite. Der Browser verbindet sich von selbst wieder, danach lädt die Seite einmal alles.
+- Die Verbindung endet mit der Sitzung und wenn das Backend beendet wird.
+
+Zum Zusehen: `curl -N -b cookies.txt http://127.0.0.1:8080/api/web/v1/groups/<id>/changes` zeigt die Signale im Terminal.
+
+Das Backend endet bei Strg+C jetzt sofort. Vorher wartete es bis zu 25 Sekunden auf die Anfrage einer verbundenen Welt.
+
 ### Fortschritt
 
-Auf der Seite einer Gruppe führt „Fortschritt“ zur Tabelle der Schüler und Module. Sie zeigt, was die Welt zuletzt gemeldet hat, und lädt nicht von selbst neu: Dafür gibt es den Knopf „Neu laden“.
+Auf der Seite einer Gruppe führt „Fortschritt“ zur Tabelle der Schüler und Module. Sie zeigt, was die Welt zuletzt gemeldet hat, und aktualisiert sich von selbst.
 
 Ein Klick auf ein Feld klappt die Aufgaben des Niveaus auf. Dort lässt sich ein Niveau setzen und der Aufstieg sperren oder freigeben. Beides ist ein Auftrag an die Welt:
 
