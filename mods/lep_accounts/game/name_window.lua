@@ -39,7 +39,7 @@ end
 local function add_restore(fs, y)
 	fs:separator(y)
 	fs:label(PAD, y + 0.45, S("You can go back to your account name at any time:"))
-	fs:element("style", "give_up", "bgcolor=#B05A2A")
+	fs:highlight("give_up", formspec.OTHER)
 	fs:button(PAD, y + 0.8, 4.4, 0.8, "give_up", S("Restore account name"))
 end
 
@@ -55,8 +55,8 @@ local function start(player_name, height, text)
 	return fs, TOP + 1.9
 end
 
-local function finish(player_name, fs, height)
-	fs:button_exit(WIDTH - PAD - 1.5, height - PAD - 0.8, 1.5, 0.8, "close", S("Close"))
+local function finish(player_name, fs)
+	fs:close(S("Close"))
 	open[player_name] = true
 	core.show_formspec(player_name, FORM, fs:build())
 end
@@ -70,7 +70,7 @@ local function show_closed(player_name, reason)
 	if restore then
 		add_restore(fs, y)
 	end
-	finish(player_name, fs, height)
+	finish(player_name, fs)
 end
 
 local function show(player_name, typed, message)
@@ -92,7 +92,7 @@ local function show(player_name, typed, message)
 	if state.display then
 		add_restore(fs, y + 2.7)
 	end
-	finish(player_name, fs, height)
+	finish(player_name, fs)
 end
 
 local function close(player_name, message)

@@ -42,8 +42,9 @@ show = function(player_name, pos)
 	local may_manage = lep_quest_chest.may_manage(player_name)
 	local pad = formspec.PADDING
 	local width = 9
-	local fs = formspec.new(width, may_manage and 5.6 or 4.5)
-		:label(pad, 0.55, S("Task chest"))
+	local top = formspec.CONTENT_TOP
+	local fs = formspec.new(width, top + 4.5)
+		:title(S("Task chest"))
 
 	runs = runs + 1
 	local run = runs
@@ -51,10 +52,10 @@ show = function(player_name, pos)
 
 	local wait = attempts:wait_left(player_name, pos, now)
 	if store:has_solved(pos, player_name) then
-		fs:label(pad, 1.6, S("You have already solved this chest."))
+		fs:label(pad, top + 0.25, S("You have already solved this chest."))
 	elseif wait > 0 then
-		fs:label(pad, 1.6, S("That was wrong."))
-		fs:label(pad, 2.2, S("You get a new task in @1 seconds.", wait))
+		fs:label(pad, top + 0.25, S("That was wrong."))
+		fs:label(pad, top + 0.85, S("You get a new task in @1 seconds.", wait))
 		-- Show the new task by itself when the time is up.
 		core.after(wait + 0.2, function()
 			local current = open[player_name]
@@ -71,23 +72,23 @@ show = function(player_name, pos)
 			end
 		end
 		if task then
-			fs:element("style_type", "label", "font_size=*1.6")
-			fs:label(pad, 1.5, task.text)
-			fs:element("style_type", "label", "font_size=*1")
-			fs:field(pad, 2.1, 4.5, 0.8, "answer", "", "")
+			fs:big_label(pad, top + 0.3, task.text)
+			fs:field(pad, top + 0.9, 4.5, 0.8, "answer", "", "")
 			fs:submit_on_enter("answer")
-			fs:button(pad + 4.75, 2.1, width - 2 * pad - 4.75, 0.8, "check", S("Check"))
+			fs:button(pad + 4.75, top + 0.9, width - 2 * pad - 4.75, 0.8, "check", S("Check"))
 			for index, line in ipairs(info_lines(player_name, task)) do
-				fs:label(pad, 3.4 + (index - 1) * 0.5, line)
+				fs:label(pad, top + 2.2 + (index - 1) * 0.5, line)
 			end
 		else
-			fs:label(pad, 1.6, S("There are no tasks at the moment."))
+			fs:label(pad, top + 0.25, S("There are no tasks at the moment."))
 		end
 	end
 
 	if may_manage then
-		fs:button_exit(pad, 4.45, width - 2 * pad, 0.8, "remove", S("Remove this chest"))
+		fs:button_exit(pad, top + 4.5 - pad - 0.8, width - 3 * pad - formspec.CLOSE_WIDTH, 0.8,
+			"remove", S("Remove this chest"))
 	end
+	fs:close(S("Close"))
 	core.show_formspec(player_name, FORM, fs:build())
 end
 

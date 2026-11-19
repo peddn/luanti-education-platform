@@ -22,6 +22,29 @@ describe("lep_core formspec", function()
 		assert.is_true(formspec.CONTENT_TOP > 1.05)
 	end)
 
+	it("adds headings and large text and sets the font back", function()
+		local fs = formspec.new(9, 5):heading(1, 2, "Part [1]"):big_label(1, 3, "3 + 4"):build()
+		assert.is_truthy(fs:find("style_type[label;font=bold]label[1,2;Part \\[1\\]]"
+			.. "style_type[label;font=normal]", 1, true))
+		assert.is_truthy(fs:find("style_type[label;font_size=*1.6]label[1,3;3 + 4]"
+			.. "style_type[label;font_size=*1]", 1, true))
+	end)
+
+	it("makes buttons stand out in one of two colours", function()
+		local fs = formspec.new(9, 5)
+			:highlight("on", formspec.ACTIVE):button(1, 1, 2, 0.8, "on", "On")
+			:highlight("back", formspec.OTHER):button(1, 2, 2, 0.8, "back", "Back")
+			:build()
+		assert.is_truthy(fs:find("style[on;bgcolor=#30C030]button[1,1;2,0.8;on;On]", 1, true))
+		assert.is_truthy(fs:find("style[back;bgcolor=#B05A2A]button[1,2;2,0.8;back;Back]", 1, true))
+		assert.has_error(function() formspec.new(9, 5):highlight("x", "pink") end)
+	end)
+
+	it("puts the button that closes the window into the bottom right corner", function()
+		local fs = formspec.new(9, 5):close("Close"):build()
+		assert.is_truthy(fs:find("button_exit[6.625,3.825;2,0.8;close;Close]", 1, true))
+	end)
+
 	it("adds a line across the window", function()
 		local fs = formspec.new(6, 5):separator(3):build()
 		assert.is_truthy(fs:find("box[0.375,3;5.25,0.03;#FFFFFF80]", 1, true))

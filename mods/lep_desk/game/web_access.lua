@@ -248,7 +248,7 @@ local function build(fs, teacher_name, area)
 	local info = lep_desk.get_web_access(teacher_name)
 	local x, y = area.x, area.y + 0.3
 
-	fs:label(x, y, S("Web access for @1", teacher_name))
+	fs:heading(x, y, S("Web access for @1", teacher_name))
 	y = y + 0.7
 	if not is_available() then
 		fs:label(x, y, S("This world is not connected to the web application."))
