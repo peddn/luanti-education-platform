@@ -231,7 +231,8 @@ Regeln:
 - Eindeutig pro Welt, mit einer einfachen Regel: Ein Name ist vergeben, wenn es ihn schon als Kontonamen oder als Wunschnamen gibt. Groß- und Kleinschreibung macht dabei keinen Unterschied. Ähnlichkeit wird nicht geprüft.
 - Für alle Konten gilt dasselbe. Auch Lehrkräfte setzen einen Wunschnamen, mit denselben Regeln und derselben Frist. Entfernt oder gesperrt werden nur die Namen von Schülern: Lehrkräften wird vertraut. Ob die Schulverwaltung den Wunschnamen einer Lehrkraft löschen können soll, wird mit Schritt 7 entschieden.
 - 2 bis 16 Zeichen: Buchstaben, auch Umlaute und ß, Ziffern, dazu einzelne Leerzeichen und Bindestriche in der Mitte.
-- Ein Schüler kann seinen Namen einmal im Monat ändern. Solange die Frist läuft oder das Wählen gesperrt ist, lässt sich nichts ändern, auch nicht zurück zum Kontonamen. Das Fenster zeigt dann nur den Grund und lässt sich schließen. Wer sich vertan hat, bittet eine Lehrkraft, den Namen zu entfernen.
+- Ein Schüler kann seinen Namen einmal im Monat ändern. Solange die Frist läuft oder das Wählen gesperrt ist, zeigt das Fenster kein Eingabefeld, nur den Grund.
+- Den Kontonamen wiederherstellen kann er jederzeit, auch während der Frist und bei gesperrtem Wählen. Das Fenster bietet es als eigene, abgesetzte Möglichkeit an. Die Frist verkürzt das nicht.
 - Hat die Lehrkraft einen Namen entfernt, darf der Schüler sofort einen neuen setzen, wenn er nicht gesperrt ist.
 - Eine Sperre gilt, bis die Lehrkraft sie aufhebt. Sie entfernt den Namen nicht von selbst.
 - Das Protokoll hält fest, wer wann welchen Namen gesetzt hat und welche Lehrkraft einen Namen entfernt oder gesperrt hat. Es gehört zu den Protokollen der Welt und wird mit ihnen gelöscht.

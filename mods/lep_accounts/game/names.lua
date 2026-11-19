@@ -78,7 +78,7 @@ end
 --- Returns what is known about the display name of an account: a table
 -- with display (nil while the account name is shown), changed_at (when
 -- the player chose a name last, or nil), locked, and next_change (time
--- from which the player can change the name, nil if now).
+-- from which a new name can be chosen, nil if now).
 function lep_accounts.get_display_state(account)
 	local state = state_of(account)
 	return {
@@ -127,7 +127,8 @@ function lep_accounts.choose_display_name(account, text)
 		return false, why
 	end
 	if name == account then
-		return lep_accounts.give_up_display_name(account)
+		lep_accounts.give_up_display_name(account)
+		return true
 	end
 	local state = state_of(account)
 	if state.display == name then
@@ -141,21 +142,13 @@ function lep_accounts.choose_display_name(account, text)
 	return true
 end
 
---- Lets a player go back to the account name. Like choosing a name it
--- is not possible while choosing is locked or during the wait.
--- @return true  or  false, why not (LOCKED or WAIT), and for WAIT the
---   time from which a change is possible
+--- Lets a player go back to the account name. That is always possible,
+-- also during the wait and while choosing a name is locked.
 function lep_accounts.give_up_display_name(account)
 	local state = state_of(account)
-	if not state.display then
-		return true
+	if state.display then
+		store(account, names.give_up(state), lep_accounts.NAME_GIVEN_UP)
 	end
-	local new_state, why, from = names.give_up(state, os.time())
-	if not new_state then
-		return false, why, from
-	end
-	store(account, new_state, lep_accounts.NAME_GIVEN_UP)
-	return true
 end
 
 --- Takes the display name of an account away.

@@ -122,7 +122,7 @@ function names.next_change(state, now)
 	return nil
 end
 
---- Says whether a player may change anything about their name now.
+--- Says whether a player may choose a name now.
 -- @return true  or  false, why not (LOCKED or WAIT), and for WAIT the
 --   time from which a change is possible
 function names.may_change(state, now)
@@ -153,16 +153,11 @@ function names.choose(state, name, now, is_taken)
 	return { display = name, changed_at = now, locked = false }
 end
 
---- Lets a player go back to the account name. That is a change like
--- any other: not while choosing is locked, and not during the wait.
--- @return new state  or  nil, why not (LOCKED or WAIT), and for WAIT
---   the time from which a change is possible
-function names.give_up(state, now)
-	local ok, why, from = names.may_change(state, now)
-	if not ok then
-		return nil, why, from
-	end
-	return { changed_at = state.changed_at, locked = false }
+--- Lets a player go back to the account name. That is always possible,
+-- also during the wait and while choosing is locked, but it does not
+-- shorten the wait for the next name.
+function names.give_up(state)
+	return { changed_at = state.changed_at, locked = state.locked }
 end
 
 --- Takes the name away, as a teacher does. The player may choose a new

@@ -5,7 +5,7 @@ local S = core.get_translator("lep_accounts")
 local formspec = lep_core.formspec
 
 local FORM = "lep_accounts:name"
-local WIDTH, HEIGHT = 9, 6.2
+local WIDTH = 9
 local REFUSALS = lep_accounts.NAME_REFUSALS
 
 -- Players who have the window open. Fields from anybody else are ignored.
@@ -31,15 +31,30 @@ local function explain(why, from)
 	return S("Only letters, digits, and single spaces and hyphens between them are allowed.")
 end
 
--- A window that only says why nothing can be changed now. Offering a
--- field and buttons that will not work would only confuse.
+-- Going back to the account name is always possible. It is another
+-- matter than choosing a name, so it stands apart: below a line, with a
+-- sentence of its own and a button in another colour.
+local function add_restore(fs, y)
+	fs:element("box", { 0.5, y }, { WIDTH - 1, 0.03 }, "#FFFFFF80")
+	fs:label(0.5, y + 0.45, S("You can go back to your account name at any time:"))
+	fs:element("style", "give_up", "bgcolor=#B05A2A")
+	fs:button(0.5, y + 0.8, 4.4, 0.8, "give_up", S("Restore account name"))
+end
+
+-- A window that says why no name can be chosen now. It has no field
+-- and no button for choosing: they would not work and only confuse.
 local function show_closed(player_name, reason)
-	local fs = formspec.new(WIDTH, 3.9)
+	local restore = lep_accounts.get_display_state(player_name).display ~= nil
+	local height = restore and 5.8 or 3.9
+	local fs = formspec.new(WIDTH, height)
 	fs:label(0.5, 0.6, S("Your display name"))
 	fs:label(0.5, 1.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
 	-- A text area without a name only shows its text, and breaks lines.
 	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "", formspec.escape(reason))
-	fs:button_exit(WIDTH - 2, 2.7, 1.5, 0.8, "close", S("Close"))
+	if restore then
+		add_restore(fs, 2.9)
+	end
+	fs:button_exit(WIDTH - 2, height - 1.2, 1.5, 0.8, "close", S("Close"))
 	open[player_name] = true
 	core.show_formspec(player_name, FORM, fs:build())
 end
@@ -52,22 +67,23 @@ local function show(player_name, typed, message)
 		return show_closed(player_name, explain(REFUSALS.WAIT, state.next_change))
 	end
 
-	local fs = formspec.new(WIDTH, HEIGHT)
+	local height = state.display and 7.9 or 5.8
+	local fs = formspec.new(WIDTH, height)
 	fs:label(0.5, 0.6, S("Your display name"))
 	fs:label(0.5, 1.2, S("Others see you as: @1", lep_accounts.get_display_name(player_name)))
 	local hint = S("You can choose a new name once in 30 days.") .. " "
-		.. S("Until then nothing can be changed. Your teachers see every name.")
+		.. S("Your teachers see every name.")
 	-- A text area without a name only shows its text, and breaks lines.
 	fs:element("textarea", { 0.5, 1.6 }, { WIDTH - 1, 1.1 }, "", "",
 		formspec.escape(message or hint))
 
 	fs:field(0.5, 3.3, WIDTH - 1, 0.8, "name", S("New name"), typed or state.display or "")
 	fs:submit_on_enter("name")
-	fs:button(0.5, 4.5, 2.5, 0.8, "apply", S("Apply"))
+	fs:button(0.5, 4.4, 2.5, 0.8, "apply", S("Apply"))
 	if state.display then
-		fs:button(3.2, 4.5, 3.6, 0.8, "give_up", S("Back to account name"))
+		add_restore(fs, 5.6)
 	end
-	fs:button_exit(WIDTH - 2, 4.5, 1.5, 0.8, "close", S("Close"))
+	fs:button_exit(WIDTH - 2, height - 1.2, 1.5, 0.8, "close", S("Close"))
 	open[player_name] = true
 	core.show_formspec(player_name, FORM, fs:build())
 end
@@ -100,12 +116,8 @@ core.register_on_player_receive_fields(function(player, formname, fields)
 	-- When the change is made the window closes, and the chat says what
 	-- counts now. It stays open only to say why a name does not fit.
 	if fields.give_up then
-		local ok, why, from = lep_accounts.give_up_display_name(player_name)
-		if ok then
-			close(player_name, S("You are shown under your account name again."))
-		else
-			show_closed(player_name, explain(why, from))
-		end
+		lep_accounts.give_up_display_name(player_name)
+		close(player_name, S("You are shown under your account name again."))
 	elseif fields.apply or fields.key_enter_field == "name" then
 		local typed = type(fields.name) == "string" and fields.name:sub(1, 200) or ""
 		local ok, why, from = lep_accounts.choose_display_name(player_name, typed)

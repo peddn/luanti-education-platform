@@ -195,7 +195,8 @@ Ein Rechtsklick auf das Türschild des eigenen Raums in der Lobby öffnet das Fe
 
 - Erlaubt sind 2 bis 16 Zeichen: Buchstaben, auch ä, ö, ü und ß, Ziffern, dazu einzelne Leerzeichen und Bindestriche in der Mitte.
 - Vergeben ist ein Name, den es als Kontonamen oder als Wunschnamen schon gibt, ohne Rücksicht auf Groß- und Kleinschreibung.
-- Ein neuer Name ist 30 Tage nach dem letzten möglich. Solange die Frist läuft oder das Wählen gesperrt ist, zeigt das Fenster nur den Grund und „Schließen“. Auch „Zurück zum Kontonamen“ geht dann nicht.
+- Ein neuer Name ist 30 Tage nach dem letzten möglich. Solange die Frist läuft oder das Wählen gesperrt ist, zeigt das Fenster kein Eingabefeld, nur den Grund.
+- „Kontoname wiederherstellen“ geht immer, auch dann, und steht im Fenster abgesetzt unter einer Linie. Die Frist verkürzt es nicht.
 - Wer das Pult öffnen darf und im Spiel ist, bekommt bei jeder Änderung eine Nachricht mit Konto und neuem Namen.
 - Jede Änderung steht im Protokoll `lep_protocols/names.tsv` im Ordner der Welt.
 
