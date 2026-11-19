@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 62 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 63 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -1061,6 +1061,8 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 - Belohnungstabellen pro Gruppe.
 - Alle Protokolle der Gruppe einsehen, nach Konto und Zeitraum filtern und als CSV exportieren. Das Protokoll des Pults sieht nur die Schulverwaltung.
 - Jahresabschluss.
+- Lehrkräfte: Die Schulverwaltung legt ihre Konten auf der Seite „Lehrkräfte“ an, setzt Passwörter zurück und löscht Konten. Die Seite zeigt je Konto den Stand, den Web-Zugang und die Gruppen. Konten der Schulverwaltung und das eigene Konto stehen in der Liste, lassen sich dort aber nicht ändern.
+- Einzelne Schülerkonten auf Verlangen löschen, mit der Seite „Löschungen“ für die Vermerke (Abschnitt 12).
 
 ### 11.6 Zuständigkeiten
 
