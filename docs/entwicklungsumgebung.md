@@ -235,6 +235,23 @@ Ohne Browser, und zum Ausprobieren, gibt es drei Debug-Befehle:
 
 Andere Mods fragen `lep_accounts.get_display_name(name)` und speichern den Namen nie. Mit `lep_accounts.register_on_display_name_changed` erfahren sie von Änderungen.
 
+### Konto löschen
+
+Ein Konto lässt sich mit allem löschen, was die Welt darüber weiß (Konzept, Abschnitt 12). Die Seite in der Web-Anwendung folgt; bis dahin gibt es einen Debug-Befehl:
+
+| Befehl | Wirkung |
+|---|---|
+| `/lep_account_remove <konto>` | löscht das Konto, wie es die Schulverwaltung darf |
+| `/lep_account_remove <konto> unused` | löscht es nur, wenn sich noch nie jemand damit angemeldet hat, wie es die Lehrkraft darf |
+
+- Wer gerade im Spiel ist, bekommt eine Meldung und wird getrennt. Danach kommt niemand mehr mit diesem Namen herein.
+- Konten von Lehrkräften und des Admins werden abgelehnt (`staff`), unbekannte Namen auch (`unknown`). Mit `unused` wird ein benutztes Konto abgelehnt (`used`).
+- Gelöscht werden: Zugang, Wunschname, Fortschritt, Trophäen, der Inhalt der Belohnungstruhe, gemerkte Orte und Inventar, das eigene Portal, die Zähler des Awards-Mods, das Bett als Wiedereinstiegspunkt und die Einträge des Kontos in allen Protokollen samt der privaten Nachrichten an das Konto.
+- Das Zimmer in der Lobby wird leer zurückgebaut, das Schild ist blank. Das nächste neue Konto zieht dort ein. Lernräume werden geleert und nicht wieder vergeben.
+- Nicht gelöscht wird, was in der Karte steht: Bauwerke, Schilder, Bücher und geschützte Bereiche in der Survival-Welt. Auch Luantis Logdatei bleibt. Der Awards-Mod kann einen Eintrag nur leeren: Der Kontoname bleibt dort ohne Daten stehen.
+
+Ein Mod, der etwas über Spieler speichert, meldet mit `lep_core.register_on_forget_account(function(konto) … end)` eine Funktion an, die es löscht. Wirft sie einen Fehler, bleibt das Konto bestehen und die Löschung lässt sich wiederholen. `lep_accounts.remove(name, { only_unused = …, by = … }, callback)` löst alles aus.
+
 ### Hinweise
 
 - Die Skripte setzen `LUANTI_USER_PATH` und zusätzlich das ältere `MINETEST_USER_PATH`. Neuere Luanti-Versionen geben für das ältere eine Warnung aus, die sich ignorieren lässt.
