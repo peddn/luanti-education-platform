@@ -7,7 +7,9 @@ local chat = load("src/chat")
 local S = core.get_translator("lep_chat")
 
 local chat_protocol = lep_core.protocols.open("chat",
-	{ "account", "kind", "recipient", "text" })
+	{ "account", "kind", "recipient", "text" },
+	-- A private message is also an entry of the one it was written to.
+	{ "account", "recipient" })
 local sign_protocol = lep_core.protocols.open("signs", { "account", "pos", "text" })
 
 lep_chat.KIND_CHAT = chat.KIND_CHAT

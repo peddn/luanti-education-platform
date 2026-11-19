@@ -116,3 +116,10 @@ lep_desk.register_action("lep_chat:unmute", {
 		return S("Unmuted: @1 of @2", count, #targets)
 	end,
 })
+
+-- An account that is removed is taken off the list of muted players.
+lep_core.register_on_forget_account(function(account)
+	if mutes:unmute(account) then
+		save()
+	end
+end)

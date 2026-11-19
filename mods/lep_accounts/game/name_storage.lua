@@ -19,6 +19,11 @@ function storage.save(account, state)
 	mod_storage:set_string(PREFIX .. account, core.write_json(state))
 end
 
+--- Deletes the stored state of an account.
+function storage.remove(account)
+	mod_storage:set_string(PREFIX .. account, "")
+end
+
 --- Returns the names of all accounts with a stored state.
 function storage.accounts()
 	local list = {}

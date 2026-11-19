@@ -148,3 +148,11 @@ core.register_on_joinplayer(function(player)
 		end
 	end)
 end)
+
+-- An account that is removed is forgotten: the mode and where it was
+-- taken from.
+lep_core.register_on_forget_account(function(account)
+	if list:forget(account) then
+		save()
+	end
+end)

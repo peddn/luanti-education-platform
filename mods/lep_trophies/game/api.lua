@@ -101,3 +101,7 @@ end
 --- Registers a function(player_name, trophy_id) called when a player
 -- earns a trophy.
 lep_trophies.register_on_awarded = dispatcher:registrar("awarded")
+
+-- An account that is removed takes its trophies along. The pedestals
+-- stand in its room, which the lobby empties.
+lep_core.register_on_forget_account(storage.remove)

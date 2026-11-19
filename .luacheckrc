@@ -17,7 +17,13 @@ read_globals = {
 	"VoxelArea",
 	"ItemStack",
 	-- Global of the beds mod from Minetest Game.
-	"beds",
+	beds = {
+		other_fields = true,
+		fields = {
+			-- lep_survival forgets the bed of an account that is removed.
+			spawn = { other_fields = true, read_only = false },
+		},
+	},
 	-- Sound helpers of the default mod from Minetest Game.
 	"default",
 	-- Door mechanics of Minetest Game.

@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 58 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 59 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
 
 ## 1. Ziel
 
@@ -1159,12 +1159,21 @@ Der Jahresabschluss ist ein einziger Schalter für die ganze Schule. Er ist der 
 
 Verlangen Eltern oder ein Schüler die Löschung, wartet die Schule nicht auf den Jahresabschluss.
 
-- Die Schulverwaltung löscht ein einzelnes Konto sofort: Kontodaten, Stand und die Einträge des Kontos in den Protokollen, im Backend und in der Welt.
-- Die Löschung wird ohne Inhalte vermerkt: wer, wann, welches Konto.
+- Gelöscht wird ein einzelnes Konto sofort: Kontodaten, Stand und die Einträge des Kontos in den Protokollen, in der Welt und im Backend.
+- Wer löschen darf, hängt davon ab, ob das Konto je benutzt wurde. Ein Konto, mit dem sich noch nie jemand angemeldet hat, löscht die Lehrkraft der Gruppe: Sie hat es angelegt, und es hängen keine Daten eines Kindes daran. Ein benutztes Konto löscht nur die Schulverwaltung. Ob ein Konto benutzt wurde, prüft die Welt selbst. Luanti merkt sich zu jedem Konto die letzte Anmeldung.
+- Gelöscht werden nur gewöhnliche Konten. Das Konto einer Lehrkraft oder des Admins nimmt die Welt auf diesem Weg nicht an, wie beim Zurücksetzen eines Passworts.
+- Die Welt führt. Sie löscht zuerst, das Backend löscht seine Kopien, sobald die Welt die Löschung bestätigt hat.
+- Ist das Kind gerade im Spiel, bekommt es eine kurze Meldung und wird getrennt. Bis die Löschung fertig ist, kommt niemand mit diesem Namen herein.
+- Jeder Mod räumt seine eigenen Daten weg. Er meldet dafür bei `lep_core` eine Funktion an, und `lep_accounts` ruft sie alle auf. Meldet einer einen Fehler, bleibt das Konto bestehen und die Löschung lässt sich wiederholen. Das Konto selbst verschwindet zuletzt.
+- Was die Welt löscht: Zugang und Passwort, Wunschname, Fortschritt, Trophäen, den Inhalt der Belohnungstruhe, das persönliche Zimmer in der Lobby mit Schild und Podesten, die Lernräume, das eigene Portal, die gemerkten Orte, das Inventar und die Zähler des Awards-Mods. Zimmer und Lernräume werden leer zurückgebaut.
+- In den Protokollen verschwinden die Einträge, die das Konto selbst verursacht hat, und die privaten Nachrichten an das Konto. Zeilen anderer, in denen das Konto nur genannt wird, bleiben bis zum Jahresabschluss, etwa der Eintrag am Pult, dass eine Lehrkraft den Schüler geholt hat.
+- Die Löschung wird ohne Inhalte vermerkt: wer, wann, welches Konto. Dieser Vermerk bleibt dauerhaft. Der Kontoname steht darin, sonst ließe sich die Löschung niemandem nachweisen. Er ist zufällig gewählt und sagt ohne die Liste der Lehrkraft nichts über die Person.
+- Was nicht gelöscht werden kann, sagt die Web-Anwendung vorher ehrlich: Bauwerke, Schilder, Bücher und geschützte Bereiche des Kontos in der Karte der Survival-Welt, Luantis eigene Logdatei auf dem Spielserver und Dateien, die jemand exportiert hat. Was in der Karte steht, verschwindet erst mit der Welt. Der Awards-Mod kann den Eintrag eines Spielers nur leeren: Der Kontoname bleibt dort ohne Daten stehen.
 - Aus einer Sicherung lässt sich ein einzelnes Konto nicht entfernen. Deshalb werden alle Sicherungen der betroffenen Welt sofort gelöscht. Die Welt wird danach frisch gesichert.
 - Dasselbe gilt für eine archivierte Welt, in der das Konto liegt: Sie wird endgültig gelöscht.
 - Die Web-Anwendung zeigt vorher an, welche Sicherungen und welche archivierten Welten dabei verschwinden.
 - Das ist die Ausnahme. Der gewöhnliche Weg bleibt der Jahresabschluss.
+- Gebaut ist zunächst der Teil in der Welt. Die Seite in der Web-Anwendung und der Vermerk im Backend folgen. Das Löschen der Sicherungen und der archivierten Welten kommt mit dem Agenten in Schritt 7.
 
 **Außerhalb des Backends**
 
@@ -1215,7 +1224,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 
 | Mod | Aufgabe |
 |---|---|
-| `lep_core` | Gemeinsame Hilfen: Anzeigename, Formspec-Hilfsschicht, Einstellungen |
+| `lep_core` | Gemeinsame Hilfen: Anzeigename, Formspec-Hilfsschicht, Einstellungen, Protokolle. Anmeldestelle für das, was beim Löschen eines Kontos wegzuräumen ist |
 | `lep_places` | Ortsverwaltung: Ortswechsel, Inventare, Rechte |
 | `lep_lobby` | Gemeinsamer Bereich, persönliche Räume, Schutzzone |
 | `lep_portals` | Festes und persönliches Portalpaar, Lernhalle mit den Portalen der Module |
@@ -1229,7 +1238,7 @@ Alle eigenen Mods liegen als Modpack unter `mods/`. Die Namen sind auf ContentDB
 | `lep_desk` | Lehrerpult: Zielauswahl, Aktionen, Web-Zugang, Ernennen |
 | `lep_attention` | Aufmerksamkeitsmodus: Zelle, schwarzes Vollbild mit Text, Chat-Sperre |
 | `lep_chat` | Protokoll für Chat und Schildtexte, Stummschalten, Verteilung der Nachrichten |
-| `lep_accounts` | Geschlossene Welt: wer hinein darf. Konten anlegen und Passwörter setzen auf Auftrag. Wunschnamen: Regeln, Speicher, Fenster und die eine Funktion für den Anzeigenamen |
+| `lep_accounts` | Geschlossene Welt: wer hinein darf. Konten anlegen und Passwörter setzen auf Auftrag. Wunschnamen: Regeln, Speicher, Fenster und die eine Funktion für den Anzeigenamen. Löschen eines Kontos auf Verlangen |
 | `lep_bridge` | Verbindung zum Backend: Warteschlange für Ereignisse, Aufträge per Long Polling |
 | `lep_quiz` | Textfragen: Fragensets, Dialogfenster |
 | `lep_tz` | Technisches Zeichnen: Datenmodell, Generator, Prüfung, Baustein, Raum |

@@ -336,3 +336,8 @@ lep_desk.register_tab(TAB, {
 	build = build,
 	on_fields = on_fields,
 })
+
+-- An account that is removed: the copy of how its web access stands goes.
+lep_core.register_on_forget_account(function(account)
+	mod_storage:set_string(KEY_PREFIX .. account, "")
+end)

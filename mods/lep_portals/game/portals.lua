@@ -416,3 +416,7 @@ end)
 core.register_on_leaveplayer(function(player)
 	dwell[player:get_player_name()] = nil
 end)
+
+-- An account that is removed: its portal goes out. The frame stays where
+-- the player built it; the portal in its room goes with the room.
+lep_core.register_on_forget_account(extinguish)

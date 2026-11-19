@@ -70,4 +70,42 @@ describe("lep_core protocol", function()
 		assert.are.same(list, protocol.tail(list, nil))
 		assert.are.same({}, protocol.tail({}, 3))
 	end)
+
+	describe("entries of an account", function()
+		local columns = { "account", "kind", "recipient", "text" }
+		local lines = {
+			protocol.encode("t1", columns, { account = "anna", kind = "chat", text = "hi bert" }),
+			protocol.encode("t2", columns, { account = "bert", kind = "private",
+				recipient = "anna", text = "psst" }),
+			protocol.encode("t3", columns, { account = "bert", kind = "chat", text = "anna" }),
+			protocol.encode("t4", columns, { account = "anna2", kind = "chat", text = "x" }),
+		}
+
+		it("finds the numbers of the named columns", function()
+			assert.same({ 1, 3 }, protocol.positions(columns, { "account", "recipient" }))
+			assert.same({}, protocol.positions(columns, { "nothing" }))
+		end)
+
+		it("drops what the account wrote and what was written to it alone", function()
+			local kept, removed = protocol.without_account(lines, "anna",
+				protocol.positions(columns, { "account", "recipient" }))
+			assert.equal(2, removed)
+			assert.same({ lines[3], lines[4] }, kept)
+		end)
+
+		it("keeps lines of others that only mention the account", function()
+			local kept, removed = protocol.without_account(lines, "anna", { 1 })
+			assert.equal(1, removed)
+			assert.equal(3, #kept)
+		end)
+
+		it("compares the whole name, also when it had to be escaped", function()
+			local odd = protocol.encode("t", { "account" }, { account = "a\tb" })
+			assert.is_true(protocol.concerns(odd, "a\tb", { 1 }))
+			assert.is_false(protocol.concerns(odd, "a", { 1 }))
+			assert.is_false(protocol.concerns("", "a", { 1 }))
+			-- The time is never taken for a name.
+			assert.is_false(protocol.concerns(lines[1], "t1", { 1 }))
+		end)
+	end)
 end)

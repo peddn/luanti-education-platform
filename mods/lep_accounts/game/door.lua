@@ -13,6 +13,10 @@ core.register_on_prejoinplayer(function(name)
 	if core.is_singleplayer() then
 		return nil
 	end
+	if lep_accounts.is_being_removed(name) then
+		-- Nobody comes in under a name while its account is taken apart.
+		return core.get_translated_string("de", MESSAGE)
+	end
 	if accounts.may_join(name, lep_accounts.exists(name), core.settings:get("name")) then
 		return nil
 	end

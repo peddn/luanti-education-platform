@@ -9,4 +9,6 @@ if core.get_modpath("awards") and core.get_modpath("lep_trophies") then
 	load("game/achievements")
 end
 
+load("game/forget")
+
 core.log("action", "[lep_survival] loaded")

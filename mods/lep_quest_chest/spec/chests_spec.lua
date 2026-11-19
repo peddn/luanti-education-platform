@@ -136,6 +136,23 @@ describe("lep_quest_chest store", function()
 		assert.are.equal(7 + 1800, store:expires_at(B))
 		assert.are.same({}, chests.new_store("broken"):positions())
 	end)
+
+	it("forgets which chests a player solved", function()
+		local store = chests.new_store()
+		store:add(A, 100, true)
+		store:add(B, 100)
+		store:mark_solved(A, "anna", 110)
+		store:mark_solved(B, "anna", 120)
+		store:mark_solved(B, "ben", 130)
+		assert.is_true(store:forget("anna"))
+		assert.is_false(store:forget("anna"))
+		assert.is_false(store:has_solved(A, "anna"))
+		assert.is_false(store:has_solved(B, "anna"))
+		assert.is_true(store:has_solved(B, "ben"))
+		for _, chest in ipairs(store:data()) do
+			assert.is_nil(chest.solved.anna)
+		end
+	end)
 end)
 
 describe("lep_quest_chest attempts", function()

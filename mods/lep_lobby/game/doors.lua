@@ -69,11 +69,13 @@ function room_doors.is_door(node_name)
 end
 
 --- Makes sure a room has its door. An existing door is left alone, so it
--- keeps being open or closed. A new door starts open.
+-- keeps being open or closed; only its owner is set, because a room can
+-- lose its owner and get a new one. A new door starts open.
 -- @param pos Position of the lower half.
 -- @param look_dir Direction from the corridor into the room, { x, z }.
 function room_doors.ensure(pos, look_dir, owner)
 	if room_doors.is_door(core.get_node(pos).name) then
+		core.get_meta(pos):set_string("owner", owner)
 		return
 	end
 	local facedir = core.dir_to_facedir({ x = look_dir.x, y = 0, z = look_dir.z })

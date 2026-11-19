@@ -357,3 +357,29 @@ end
 --- Registers a function(owner, type_id, geometry, is_rebuild) that is called
 -- after a room was built. On a rebuild everything inside was lost.
 lep_rooms.register_on_room_built = dispatcher:registrar("room_built")
+
+-- An account that is removed loses its learning rooms. They are built
+-- again empty, and their slots are never given to somebody else.
+lep_core.register_on_forget_account(function(account)
+	lep_rooms.release(account)
+	local removed = book:remove(account)
+	if #removed == 0 then
+		return
+	end
+	save()
+	for _, room in ipairs(removed) do
+		local def = types:get(room.type_id)
+		if def then
+			local geometry = rooms.geometry(def, room.slot)
+			build.room(geometry, function()
+				-- Writing the room leaves the metadata of what stood in it.
+				for _, pos in ipairs(core.find_nodes_with_meta(
+						geometry.interior_min, geometry.interior_max)) do
+					core.remove_node(pos)
+				end
+				core.log("action", "[lep_rooms] emptied a room of type '" .. room.type_id
+					.. "' at " .. core.pos_to_string(geometry.spawn))
+			end)
+		end
+	end
+end)

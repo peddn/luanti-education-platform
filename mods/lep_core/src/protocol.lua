@@ -75,6 +75,54 @@ function protocol.decode(columns, line)
 	return record
 end
 
+--- Returns true if one line is an entry of an account: one of the
+-- given columns holds exactly its name.
+-- @param positions List of column numbers, 1 for the first column after
+--   the time.
+function protocol.concerns(line, account, positions)
+	if type(line) ~= "string" or line == "" then
+		return false
+	end
+	local values = {}
+	for value in (line .. "\t"):gmatch("(.-)\t") do
+		values[#values + 1] = value
+	end
+	for _, position in ipairs(positions) do
+		local value = values[position + 1]
+		if value and protocol.unescape(value) == account then
+			return true
+		end
+	end
+	return false
+end
+
+--- Returns the lines that are no entries of an account, and how many
+-- were left out. See protocol.concerns.
+function protocol.without_account(lines, account, positions)
+	local kept, removed = {}, 0
+	for _, line in ipairs(lines) do
+		if protocol.concerns(line, account, positions) then
+			removed = removed + 1
+		else
+			kept[#kept + 1] = line
+		end
+	end
+	return kept, removed
+end
+
+--- Returns the numbers of the named columns, for protocol.concerns.
+function protocol.positions(columns, names)
+	local positions = {}
+	for _, wanted in ipairs(names) do
+		for index, column in ipairs(columns) do
+			if column == wanted then
+				positions[#positions + 1] = index
+			end
+		end
+	end
+	return positions
+end
+
 --- Returns the last `limit` entries of a list, oldest first.
 function protocol.tail(records, limit)
 	if not limit or limit >= #records then

@@ -33,4 +33,9 @@ function storage.players()
 	return names
 end
 
+--- Deletes everything stored about a player.
+function storage.remove(player_name)
+	mod_storage:set_string(key(player_name), "")
+end
+
 return storage

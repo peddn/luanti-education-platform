@@ -164,4 +164,11 @@ core.register_globalstep(function(dtime)
 	end
 end)
 
+-- An account that is removed is forgotten at every chest it solved.
+lep_core.register_on_forget_account(function(account)
+	if store:forget(account) then
+		save()
+	end
+end)
+
 return M

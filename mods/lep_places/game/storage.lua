@@ -47,6 +47,12 @@ function storage.read_granted(player_name)
 	return set
 end
 
+--- Forgets the privileges kept by name. Everything else is in the
+-- metadata of the player and goes with it.
+function storage.forget(player_name)
+	mod_storage:set_string(GRANTED_PREFIX .. player_name, "")
+end
+
 --- Returns the stored return positions: a table from place id to
 -- position, see lep_places.set_return.
 function storage.read_returns(player)
