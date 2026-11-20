@@ -500,12 +500,13 @@ Jede Welt hat eine Belohnungstabelle: je Anlass ein Gegenstand mit Anzahl, dazu 
 
 | Anlass | Vorgabe |
 |---|---|
-| `task`: Aufgabe gelöst | 1 Stahlbarren |
+| `task`: Niveauaufgabe gelöst | 1 Stahlbarren |
+| `daily`: Tagesaufgabe gelöst | 1 Goldbarren |
 | `level`: Niveau abgeschlossen | 1 Goldbarren |
 | `stage`: Etappe abgeschlossen | 1 Diamant |
 | `module`: Modul abgeschlossen | 3 Diamanten |
 
-- Der Aufwand vervielfacht die Anzahl: gering einfach, normal doppelt, hoch dreifach. Ein Modul nennt seinen Aufwand beim Anmelden (`effort`, ohne Angabe gering), eine Tagesaufgabe beim Melden (ohne Angabe normal). Die Aufgabentruhe in der Wildnis ist eine Tagesaufgabe mit normalem Aufwand und bringt deshalb das Doppelte der Zeile „Aufgabe“.
+- Der Aufwand vervielfacht die Anzahl: gering einfach, normal doppelt, hoch dreifach. Ein Modul nennt seinen Aufwand beim Anmelden (`effort`, ohne Angabe gering), eine Tagesaufgabe beim Melden (ohne Angabe normal). Die Aufgabentruhe in der Wildnis ist eine Tagesaufgabe mit normalem Aufwand und bringt deshalb das Doppelte der Zeile „Tagesaufgabe“.
 - Für einen Abschluss gibt es genau eine Belohnung. Das letzte Niveau eines Moduls ist nie eine Etappe: Es bringt die Belohnung für das Modul und die goldene Trophäe „… abgeschlossen“.
 - `lep_rewards.get_table()`, `lep_rewards.set_table(tabelle)` und `lep_rewards.reset_table()` lesen und ändern die Tabelle zur Laufzeit. Sie wird nur als Ganzes angenommen. Eine Änderung gilt ab der nächsten Belohnung.
 - Im Spiel zeigt `/lep_rewards`, was es wofür gibt.

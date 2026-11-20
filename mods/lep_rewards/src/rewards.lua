@@ -4,11 +4,14 @@ local rewards = {}
 
 -- What a reward is paid for. The table of a world says per occasion
 -- which item and how many.
-rewards.TASK = "task"      -- a solved task
+rewards.TASK = "task"      -- a solved level task
+rewards.DAILY = "daily"    -- a solved daily task
 rewards.LEVEL = "level"    -- a completed level
 rewards.STAGE = "stage"    -- a completed stage
 rewards.MODULE = "module"  -- a completed module
-rewards.OCCASIONS = { rewards.TASK, rewards.LEVEL, rewards.STAGE, rewards.MODULE }
+rewards.OCCASIONS = {
+	rewards.TASK, rewards.DAILY, rewards.LEVEL, rewards.STAGE, rewards.MODULE,
+}
 
 -- Kinds of tasks, as in lep_progress.
 rewards.KIND_TASK = "task"
@@ -37,6 +40,7 @@ rewards.MAX_DAILY_LIMIT = 20
 -- occasion, and how many daily tasks are rewarded per player and day.
 rewards.DEFAULT_TABLE = {
 	task = { name = "default:steel_ingot", count = 1 },
+	daily = { name = "default:gold_ingot", count = 1 },
 	level = { name = "default:gold_ingot", count = 1 },
 	stage = { name = "default:diamond", count = 1 },
 	module = { name = "default:diamond", count = 3 },
@@ -83,7 +87,7 @@ function rewards.for_result(result)
 			return nil
 		end
 		local effort = rewards.FACTOR[result.effort] and result.effort or rewards.EFFORT_NORMAL
-		return rewards.TASK, rewards.REASON_DAILY, effort
+		return rewards.DAILY, rewards.REASON_DAILY, effort
 	end
 	if result.counted ~= true then
 		return nil

@@ -17,6 +17,7 @@ core.register_chatcommand("lep_rewards", {
 		end
 		local lines = {
 			S("For a solved task: @1", items(lep_rewards.TASK)),
+			S("For a daily task: @1", items(lep_rewards.DAILY)),
 			S("For a completed level: @1", items(lep_rewards.LEVEL)),
 			S("For a completed stage: @1", items(lep_rewards.STAGE)),
 			S("For a completed module: @1", items(lep_rewards.MODULE)),

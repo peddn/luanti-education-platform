@@ -86,7 +86,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
 | Niveau | Beliebig viele Niveaus pro Modul, von der Lehrkraft pro Schüler gesetzt |
 | Aufstieg | Automatisch beim Abschluss eines Niveaus, von der Lehrkraft sperrbar |
 | Belohnt wird | Nur für Aufgaben auf dem eigenen Niveau und darüber |
-| Anlässe | Aufgabe gelöst, Niveau abgeschlossen, Etappe abgeschlossen, Modul abgeschlossen. Der Aufwand vervielfacht die Menge |
+| Anlässe | Aufgabe gelöst, Tagesaufgabe gelöst, Niveau abgeschlossen, Etappe abgeschlossen, Modul abgeschlossen. Der Aufwand vervielfacht die Menge |
 | Begrenzung | Niveauaufgaben bringen nur Lohn, solange sie fürs Pensum zählen. Tagesaufgaben: 5 pro Tag |
 | Textfragen | Belohnung nur beim ersten Lösen |
 | Multiple Choice | Volle Belohnung nur im ersten Versuch |
@@ -454,17 +454,18 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 **Anlässe**
 
 - Naturalien.
-- Vier Anlässe, jeder mit einem Gegenstand und einer Anzahl. Die Tabelle gilt für die ganze Gruppe, also für die Welt. Die zuständige Lehrkraft füllt sie in der Web-Anwendung. Bis dahin gilt die Voreinstellung.
+- Fünf Anlässe, jeder mit einem Gegenstand und einer Anzahl. Die Tabelle gilt für die ganze Gruppe, also für die Welt. Die zuständige Lehrkraft füllt sie in der Web-Anwendung. Bis dahin gilt die Voreinstellung.
 
 | Anlass | Voreinstellung |
 |---|---|
-| Aufgabe gelöst: eine Niveauaufgabe, die fürs Pensum zählt, oder eine Tagesaufgabe | 1 Eisenbarren |
+| Aufgabe gelöst: eine Niveauaufgabe, die fürs Pensum zählt | 1 Eisenbarren |
+| Tagesaufgabe gelöst | 1 Goldbarren |
 | Niveau abgeschlossen | 1 Goldbarren |
 | Etappe abgeschlossen | 1 Diamant |
 | Modul abgeschlossen | 3 Diamanten |
 
 - Es gibt bewusst nur diese eine Tabelle und keine je Modul: Was eine Belohnung wert ist, soll überall dasselbe heißen, und die Aufgabentruhe, die ihr Modul per Zufall wählt, soll allen dasselbe bringen.
-- **Aufwand:** Module sind unterschiedlich schwer. Deshalb gibt an, wer eine Aufgabe stellt, wie aufwendig sie ist: gering, normal oder hoch. Der Aufwand vervielfacht die Anzahl aus der Tabelle: einfach, doppelt oder dreifach. Ein Modul nennt seinen Aufwand einmal für sich als Ganzes. Er gilt für seine Niveauaufgaben und für den Abschluss seiner Niveaus, seiner Etappen und des Moduls. Ohne Angabe gilt gering. Eine Tagesaufgabe nennt ihren Aufwand selbst, ohne Angabe gilt normal. Ein Modul weiß damit, wie schwer es ist, aber weiterhin nichts von Diamanten.
+- **Aufwand:** Module sind unterschiedlich schwer. Deshalb gibt an, wer eine Aufgabe stellt, wie aufwendig sie ist: gering, normal oder hoch. Der Aufwand vervielfacht die Anzahl aus der Tabelle: einfach, doppelt oder dreifach. Ein Modul nennt seinen Aufwand einmal für sich als Ganzes. Er gilt für seine Niveauaufgaben und für den Abschluss seiner Niveaus, seiner Etappen und des Moduls. Ohne Angabe gilt gering. Eine Tagesaufgabe nennt ihren Aufwand selbst, ohne Angabe gilt normal. Sie hat eine eigene Zeile, damit sie sich von der Niveauaufgabe abhebt und nicht nur ein Vielfaches davon ist. Ein Modul weiß damit, wie schwer es ist, aber weiterhin nichts von Diamanten.
 - Für jeden Abschluss gibt es genau eine Belohnung, die höchste, die zutrifft: Ein Niveau, das eine Etappe beendet, bringt die der Etappe, das letzte Niveau die des Moduls.
 
 **Etappen**

@@ -18,6 +18,7 @@ local dispatcher = lep_core.events.new(function(event_name, err)
 end)
 
 lep_rewards.TASK = rewards.TASK
+lep_rewards.DAILY = rewards.DAILY
 lep_rewards.LEVEL = rewards.LEVEL
 lep_rewards.STAGE = rewards.STAGE
 lep_rewards.MODULE = rewards.MODULE

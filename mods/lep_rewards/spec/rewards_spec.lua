@@ -41,7 +41,8 @@ describe("lep_rewards rules", function()
 	end)
 
 	it("pays a daily task by the effort it names, normal without one", function()
-		assert.are.same({ rewards.TASK, rewards.REASON_DAILY, "normal" },
+		-- A daily task has a row of its own in the table.
+		assert.are.same({ rewards.DAILY, rewards.REASON_DAILY, "normal" },
 			{ rewards.for_result(daily()) })
 		assert.are.equal("low", select(3, rewards.for_result(daily({ effort = "low" }))))
 		assert.are.equal("high", select(3, rewards.for_result(daily({ effort = "high" }))))
@@ -106,6 +107,8 @@ describe("lep_rewards table", function()
 			rewards.items(default, rewards.TASK, "normal"))
 		assert.are.same({ { name = "default:diamond", count = 9 } },
 			rewards.items(default, rewards.MODULE, "high"))
+		assert.are.same({ { name = "default:gold_ingot", count = 2 } },
+			rewards.items(default, rewards.DAILY, "normal"))
 		-- Without an effort it is paid once.
 		assert.are.equal(1, rewards.items(default, rewards.LEVEL)[1].count)
 		assert.is_nil(rewards.items(default, "nothing", "low"))
@@ -129,6 +132,7 @@ describe("lep_rewards table", function()
 			{ "level", function(t) t.level.count = 100 end },
 			{ "stage", function(t) t.stage.count = 1.5 end },
 			{ "module", function(t) t.module = nil end },
+			{ "daily", function(t) t.daily = nil end },
 			{ "daily_limit", function(t) t.daily_limit = 21 end },
 			{ "daily_limit", function(t) t.daily_limit = -1 end },
 			{ "daily_limit", function(t) t.daily_limit = nil end },
@@ -163,6 +167,8 @@ describe("lep_rewards table", function()
 		assert.are.same(rewards.DEFAULT_TABLE.level, repaired.level)
 		assert.are.same(rewards.DEFAULT_TABLE.stage, repaired.stage)
 		assert.are.same(rewards.DEFAULT_TABLE.module, repaired.module)
+		-- A table from before daily tasks had a row of their own.
+		assert.are.same(rewards.DEFAULT_TABLE.daily, repaired.daily)
 		assert.are.equal(8, repaired.daily_limit)
 	end)
 end)
