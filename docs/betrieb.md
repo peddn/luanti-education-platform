@@ -257,10 +257,10 @@ Welche Welten laufen sollen, merkt sich systemd. Stürzt eine Welt ab, startet s
 
 ## 10. Der erste Web-Zugang und Gruppen im Browser
 
-Der Server-Admin hat in jeder Welt alle Privilegien, auch die der Schulverwaltung und das für den Web-Zugang. Mit der ersten Welt richtet er sich den Zugang zur Web-Anwendung ein:
+Der Server-Admin hat in jeder Welt das Privileg für den Web-Zugang. Das Privileg der Schulverwaltung hat er nicht von selbst: Wer den Server betreibt, sieht nicht automatisch alle Gruppen und Schülerlisten. Mit der ersten Welt macht er sich oder jemand anderen zur Schulverwaltung und richtet den Zugang zur Web-Anwendung ein:
 
-1. Im Spiel in der ersten Welt anmelden und mit `/pult` das Lehrerpult öffnen, Reiter „Web-Zugang“.
-2. Die eigene Mailadresse eintragen.
+1. Im Spiel in der ersten Welt anmelden und das Privileg der Schulverwaltung vergeben, an das eigene Konto oder an das einer Lehrkraft: `/grant <name> lep_manage_school`. Wer es in einer Welt hat, ist für das Backend Schulverwaltung aller Gruppen.
+2. Mit `/pult` das Lehrerpult öffnen, Reiter „Web-Zugang“, und die eigene Mailadresse eintragen.
 3. Den Link aus der Mail im Browser öffnen und die Adresse bestätigen. Ohne Mailserver steht die Mail im Log des Backends. Dieser Befehl zeigt den neuesten Link vollständig:
 
    ```sh

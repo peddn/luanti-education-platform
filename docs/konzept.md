@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 74 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 75 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -932,7 +932,7 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
   | `archive/<Kennung>/` | Welten, die aus dem Betrieb genommen sind |
 
   Ordner heißen nach der festen Kennung der Welt, nie nach dem Namen der Gruppe. Der Name kann sich ändern, und er käme sonst aus einer Eingabe im Browser in einen Pfad.
-- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports (ohne Angabe 30000 bis 30099), der Kontoname des Server-Admins und der Pfad des Luanti-Servers (ohne Angabe `/usr/local/bin/luantiserver`). Die Datei ist nur für `lep` lesbar.
+- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports (ohne Angabe 30000 bis 30099), der Kontoname des Server-Admins, der Pfad des Luanti-Servers (ohne Angabe `/usr/local/bin/luantiserver`) und der Name, unter dem Spieler den Spielserver erreichen. Die Datei ist nur für `lep` lesbar.
 - **Server-Admin der Welten:** Der Agent trägt den Kontonamen aus seinen Einstellungen in jede neue Welt ein. So hat eine frische Welt einen ersten Zugang, bevor Lehrkräfte verteilt sind. Ohne diesen Namen legt der Agent keine Welt an.
 - **Ports:** Der Agent vergibt jeder Welt einen Port aus einem festen Bereich und meldet ihn dem Backend. Die Firewall öffnet der Server-Admin einmal für den ganzen Bereich.
 
@@ -1002,6 +1002,8 @@ Es gibt einen einzigen Zeitpunkt, zu dem Welten endgültig verschwinden: den Jah
 **Folgen für die Web-Anwendung**
 
 - Mit dem Agenten legt die Schulverwaltung Gruppen im Browser an (Abschnitt 5). Das Backend schickt den Auftrag an den Agenten und zeigt, wie es um die Welt steht: wird eingerichtet, läuft, gestoppt oder abgelehnt, mit dem Grund des Agenten im Wortlaut.
+- Starten, Stoppen und Neustarten einer Welt geht im Browser. Die Lehrkräfte einer Gruppe dürfen das für ihre Gruppe, die Schulverwaltung für alle. Stoppen trennt, wer gerade spielt, und verlangt deshalb eine Bestätigung.
+- Die Adresse einer Welt für die Zugangszettel entsteht aus dem Namen des Spielservers, den der Agent meldet, und dem Port der Welt. Für Welten des Agenten trägt sie niemand mehr von Hand ein. Fehlt der Name in den Einstellungen des Agenten, bleibt es beim Eintragen.
 - Eine abgelehnte Gruppe kann die Schulverwaltung erneut einrichten lassen oder verwerfen. Verwerfen gibt es nur, solange die Welt nie entstanden ist: Es gibt dann keine Karte, keine Konten und keine Protokolle. Das ist kein „Gruppe löschen“. Eine Gruppe, deren Welt es einmal gab, verschwindet nur über Archiv und Jahresabschluss.
 - Die allererste Welt legt der Server-Admin mit einem Befehl an, denn im Browser anmelden kann sich erst, wer in einer Welt Web-Zugang bekommen hat.
 - Ohne Agenten legt der Server-Admin Gruppe und Welt weiter von Hand an.
