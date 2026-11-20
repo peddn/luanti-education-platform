@@ -378,7 +378,8 @@ Die Welt meldet den Fall einmal deutlich im Terminal (`THE BACKEND DOES NOT KNOW
 | Befehl | Wirkung |
 |---|---|
 | `scripts/backend-run.sh` | startet den Server |
-| `scripts/backend-run.sh world add <name>` | legt eine Welt an und zeigt ihren Schlüssel, nur dieses eine Mal |
+| `scripts/backend-run.sh world add <name>` | legt eine Welt an, die von Hand eingerichtet wird, und zeigt ihren Schlüssel, nur dieses eine Mal |
+| `scripts/backend-run.sh world create <name>` | legt eine Welt an und beauftragt den Agenten, sie auf dem Spielserver einzurichten. Den Schlüssel sieht niemand |
 | `scripts/backend-run.sh world rekey <name>` | gibt einer Welt einen neuen Schlüssel, der alte gilt nicht mehr |
 | `scripts/backend-run.sh world list` | listet die Welten mit letztem Kontakt |
 | `scripts/backend-run.sh world ping <name>` | stellt einen Ping-Auftrag ein, um den Weg zur Welt und zurück zu prüfen |
@@ -394,7 +395,7 @@ Die Befehle arbeiten direkt auf der Datenbank und brauchen keinen laufenden Serv
 
 ### Agent
 
-Der Agent ist ein eigenes Rust-Programm im Ordner `agent/`. Im Betrieb läuft er auf dem Spielserver (Konzept, Abschnitt 11.3). Bisher meldet er dem Backend alle 30 Sekunden seine Version, den freien Speicherplatz und die Version seiner Vorlage für Welten. Welten legt er noch nicht an.
+Der Agent ist ein eigenes Rust-Programm im Ordner `agent/`. Im Betrieb läuft er auf dem Spielserver (Konzept, Abschnitt 11.3). Er meldet dem Backend alle 30 Sekunden seine Version, den freien Speicherplatz, die Version seiner Vorlage und seine Welten. Er holt Aufträge beim Backend ab, bisher einen: „Welt anlegen“. Starten kann er Welten noch nicht.
 
 In der Testumgebung läuft er neben dem Backend, in einem dritten Terminal:
 
@@ -433,6 +434,8 @@ data_dir = "/var/lib/lep"
 - `backend`: Adresse des Backends. Sie muss mit `https://` beginnen, weil der Schlüssel mit jeder Anfrage mitreist. Nur ein Backend auf derselben Maschine darf mit `http://` erreicht werden.
 - `key`: der Schlüssel aus `agent key`.
 - `data_dir`: Ordner für alles, was der Agent anfasst. Ohne Angabe `/var/lib/lep`.
+- `admin`: Kontoname des Server-Admins, den der Agent in jede neue Welt einträgt. Ohne Angabe legt er keine Welten an. `scripts/agent-run.sh` übernimmt beim ersten Start den Namen aus `.dev/minetest.conf`.
+- `ports`: Bereich der Ports für die Welten, ohne Angabe `30000-30099`.
 
 Der Agent liest die Datei aus `/etc/lep/agent.toml` oder von dem Pfad hinter `--config`. Ist das Backend nicht erreichbar oder lehnt es den Schlüssel ab, läuft der Agent weiter und versucht es alle 30 Sekunden erneut. Im Terminal steht nur, wenn sich etwas ändert.
 
