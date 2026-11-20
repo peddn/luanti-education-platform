@@ -47,6 +47,7 @@ use crate::students::{self, DraftError};
 use crate::teachers::{self, ConfirmError};
 use crate::year_end;
 use crate::{clock, mail, web_access};
+use lep_protocol::web::{GroupRewards, RewardsChange};
 use serde::Deserialize;
 
 /// Name of the cookie that holds the session.
@@ -107,6 +108,10 @@ pub fn router(state: &AppState) -> Router<AppState> {
         .route("/v1/staff", get(list_staff).post(create_staff))
         .route("/v1/staff/{account}/password", post(reset_staff_password))
         .route("/v1/staff/{account}/removal", post(remove_staff))
+        .route(
+            "/v1/groups/{id}/rewards",
+            get(show_rewards).put(change_rewards),
+        )
         .route("/v1/groups/{id}/progress", get(show_progress))
         .route("/v1/groups/{id}/progress/export", get(export_progress))
         .route(
@@ -1358,6 +1363,71 @@ pub async fn show_progress(
 ) -> Result<Json<GroupProgress>, Failure> {
     group_of(&state, &teacher.account, &id).await?;
     Ok(Json(progress::of_group(&state.db, &id).await?))
+}
+
+/// Returns the reward table of a group: what is paid for which
+/// occasion, and the items that can be chosen.
+#[utoipa::path(
+    get,
+    path = "/api/web/v1/groups/{id}/rewards",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The reward table of the group", body = GroupRewards),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or not one of the teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn show_rewards(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Json<GroupRewards>, Failure> {
+    group_of(&state, &teacher.account, &id).await?;
+    Ok(Json(crate::rewards::of_group(&state.db, &id).await?))
+}
+
+/// Orders a new reward table for a group, or the default of its world
+/// if no table is given. The world checks it, takes it as a whole or
+/// not at all, and reports the table it has then. It counts from the
+/// next reward on.
+#[utoipa::path(
+    put,
+    path = "/api/web/v1/groups/{id}/rewards",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    request_body = RewardsChange,
+    responses(
+        (status = 200, description = "The table that counts, with the change on its way", body = GroupRewards),
+        (status = 400, description = "A count or the daily limit is out of range, an item cannot be chosen, or the world has not reported its table yet (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group, or not one of the teacher (not_found)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn change_rewards(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+    wanted: Result<Json<RewardsChange>, JsonRejection>,
+) -> Result<Json<GroupRewards>, Failure> {
+    let wanted = body(wanted)?;
+    group_of(&state, &teacher.account, &id).await?;
+    match crate::rewards::order(&state.db, &id, wanted.table, &teacher.account).await? {
+        Ok(()) => {}
+        Err(crate::rewards::OrderError::Invalid) => {
+            return Err(Failure::invalid_request(
+                "a count or the daily limit is out of range, or an item cannot be chosen",
+            ))
+        }
+        Err(crate::rewards::OrderError::NotReported) => {
+            return Err(Failure::invalid_request(
+                "the world has not reported its reward table yet",
+            ))
+        }
+    }
+    state.waiters.wake(&id);
+    tracing::info!(account = %teacher.account, group = %id, "reward table ordered");
+    Ok(Json(crate::rewards::of_group(&state.db, &id).await?))
 }
 
 /// Orders the level new students start a module on. It counts for

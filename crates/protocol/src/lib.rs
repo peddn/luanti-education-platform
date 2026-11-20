@@ -117,6 +117,14 @@ pub mod world {
     /// student in a module.
     pub const JOB_SET_LOCKED: &str = "set_locked";
 
+    /// Kind of the event that carries the reward table of a world and
+    /// the items a teacher may choose from.
+    pub const EVENT_REWARDS: &str = "rewards";
+
+    /// Kind of the job that makes a world set its reward table, or put
+    /// the default back.
+    pub const JOB_SET_REWARDS: &str = "set_rewards";
+
     /// Kind of the job that makes a world set the level new players
     /// start a module on.
     pub const JOB_SET_START_LEVEL: &str = "set_start_level";
@@ -483,6 +491,61 @@ pub mod world {
         pub module: String,
         /// The new level, counted from 1.
         pub level: u32,
+        /// Account name of the teacher who ordered it.
+        pub by: String,
+    }
+
+    /// What is paid for one occasion: an item and how many. How hard a
+    /// task or a module was multiplies the count.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct RewardRow {
+        /// Technical name of the item, like "default:diamond".
+        pub name: String,
+        pub count: u32,
+    }
+
+    /// The reward table of a world, which is the one of a group.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct RewardTable {
+        /// For a solved level task that counts for the workload.
+        pub task: RewardRow,
+        /// For a solved daily task.
+        pub daily: RewardRow,
+        /// For a completed level.
+        pub level: RewardRow,
+        /// For a completed stage.
+        pub stage: RewardRow,
+        /// For a completed module.
+        pub module: RewardRow,
+        /// How many daily tasks are rewarded per student and day.
+        pub daily_limit: u32,
+    }
+
+    /// An item a teacher may choose as a reward.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct RewardChoice {
+        pub name: String,
+        /// Name for people, in the language of the world.
+        pub title: String,
+    }
+
+    /// Payload of the event "rewards".
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct Rewards {
+        pub table: RewardTable,
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub choices: Vec<RewardChoice>,
+    }
+
+    /// Payload of the job "set_rewards". The world checks the table,
+    /// takes it as a whole or not at all, and writes the change into
+    /// the protocol of the desk. It answers with a fixed word: "set", or
+    /// the row that is wrong.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetRewards {
+        /// The new table. Missing to put the default back.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub table: Option<RewardTable>,
         /// Account name of the teacher who ordered it.
         pub by: String,
     }
@@ -929,6 +992,32 @@ pub mod web {
         /// on its way.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub start_change: Option<ChangeState>,
+    }
+
+    /// The reward table of a group, as its world reported it.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct GroupRewards {
+        /// Missing as long as the world has not reported its table.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub table: Option<crate::world::RewardTable>,
+        /// The items that can be chosen.
+        pub choices: Vec<crate::world::RewardChoice>,
+        /// Missing in the usual case: no change is on its way.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub change: Option<ChangeState>,
+        /// The most that can be paid for one occasion, before the effort
+        /// multiplies it.
+        pub max_count: u32,
+        /// The highest number of rewarded daily tasks per day.
+        pub max_daily_limit: u32,
+    }
+
+    /// Request to set the reward table of a group.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct RewardsChange {
+        /// The new table. Missing to put the default of the world back.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub table: Option<crate::world::RewardTable>,
     }
 
     /// Request to set the level new students start a module on.

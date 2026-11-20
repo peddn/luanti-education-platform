@@ -163,9 +163,14 @@ pub async fn report_result(
         return Err(Failure::not_found("no such job"));
     }
     // What waited for the world is done or refused now.
-    state
-        .changes
-        .tell(&world.id, &[ChangeTopic::Students, ChangeTopic::Progress]);
+    state.changes.tell(
+        &world.id,
+        &[
+            ChangeTopic::Students,
+            ChangeTopic::Progress,
+            ChangeTopic::Group,
+        ],
+    );
     Ok(Json(Done {}))
 }
 
