@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 69 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 70 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -949,9 +949,12 @@ Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner 
 **Vorlage einer Welt**
 
 - Spiel und Mods stecken im Programm des Agenten. Wer den Agenten in einer Version installiert, hat genau die Mods dieser Version. Agent und Vorlage können nicht auseinanderlaufen, und auf dem Spielserver braucht es weder Git noch Zugriff auf fremde Quellen.
-- Beim Bau des Agenten werden die fremden Mods in der festen Version aus `third_party/mods.toml` geladen und eingepackt. Das Repository enthält weiter keine Kopien.
+- Vor dem Bau des Agenten lädt ein Skript Minetest Game in der festen Version aus `third_party/game.toml` und die fremden Mods in der festen Version aus `third_party/mods.toml` und packt sie mit den eigenen Mods zu einem Archiv. Der Bau bettet das Archiv ein. Das Repository enthält weiter keine Kopien. Die Testumgebung nutzt dieselben festen Versionen.
 - Der Agent enthält damit fremde Mods und liefert ihre Lizenztexte mit. Das stellt der Bau sicher.
-- Beim ersten Bedarf packt der Agent seine Vorlage nach `templates/<Version>/` aus. Jede Welt verweist auf eine Version.
+- Die Version einer Vorlage ist der Anfang der Prüfsumme ihres Archivs. Gleicher Inhalt ergibt dieselbe Version, jede Änderung an Spiel oder Mods eine neue.
+- Beim Start packt der Agent seine Vorlage nach `templates/<Version>/` aus. Jede Welt verweist auf eine Version. Ältere Versionen bleiben liegen, solange Welten sie nutzen können.
+- Die Vorlage enthält eine Liste ihrer Dateien mit Prüfsummen. Der Agent prüft sie nach dem Auspacken und bei jedem Start. Eine beschädigte Vorlage packt er neu aus.
+- Der Agent meldet dem Backend die Version seiner Vorlage. Ein Agent ohne eingebettete Vorlage läuft, kann aber keine Welten anlegen.
 - Den Agenten installiert und aktualisiert der Server-Admin von Hand. Er lädt sich nicht selbst nach.
 
 **Aufträge**
