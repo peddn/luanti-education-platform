@@ -473,7 +473,7 @@ Der Weg `/api/health` bleibt ohne Anmeldung erreichbar, für Prüfungen von auß
 
 ### Gruppen
 
-Eine Gruppe ist eine Welt, eins zu eins. Angelegt wird sie vom Server-Admin mit `scripts/backend-run.sh world add <name>`, für die Testwelt erledigt das `scripts/dev-bridge.sh`. In der Oberfläche steht sie unter „Gruppen“.
+Eine Gruppe ist eine Welt, eins zu eins. Mit einem Agenten legt die Schulverwaltung sie auf der Seite „Gruppen“ an (`POST /api/web/v1/groups`), der Agent richtet die Welt ein. Die Seite zeigt den Zustand der Welt: von Hand eingerichtet, wird eingerichtet, läuft, gestoppt oder abgelehnt. Eine abgelehnte Gruppe lässt sich erneut einrichten (`POST /api/web/v1/groups/{id}/setup`) oder verwerfen (`DELETE /api/web/v1/groups/{id}`), beides nur durch die Schulverwaltung und nur, solange die Welt nie entstanden ist. Ohne Agenten legt der Server-Admin die Gruppe mit `scripts/backend-run.sh world add <name>` an, für die Testwelt erledigt das `scripts/dev-bridge.sh`.
 
 | Rolle | Privileg im Spiel | Sieht | Darf |
 |---|---|---|---|
