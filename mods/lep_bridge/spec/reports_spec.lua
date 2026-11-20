@@ -208,4 +208,43 @@ describe("lep_bridge reports", function()
 		assert.are.equal(1, payload.modules[2].start_level)
 		assert.are.equal("set_start_level", reports.JOB_SET_START_LEVEL)
 	end)
+	it("reports the reward table and the items to choose from", function()
+		local table_ = {
+			task = { name = "default:steel_ingot", count = 1 },
+			daily = { name = "default:gold_ingot", count = 1 },
+			level = { name = "default:gold_ingot", count = 1 },
+			stage = { name = "default:diamond", count = 1 },
+			module = { name = "default:diamond", count = 3 },
+			daily_limit = 5,
+		}
+		local payload = reports.rewards(table_, {
+			{ name = "default:diamond", title = "Diamant" },
+			{ name = "default:torch" },
+			"nonsense",
+		})
+		assert.is_true(fits("Rewards", payload))
+		assert.are.same(table_, payload.table)
+		assert.are.same({ { name = "default:diamond", title = "Diamant" },
+			{ name = "default:torch", title = "default:torch" } }, payload.choices)
+		assert.is_nil(reports.rewards(table_, {}).choices)
+		assert.are.equal("rewards", reports.EVENT_REWARDS)
+		assert.are.equal("set_rewards", reports.JOB_SET_REWARDS)
+	end)
+
+	it("reads a reward table only if every row is there", function()
+		local table_ = {
+			task = { name = "a:b", count = 2.9 }, daily = { name = "a:b", count = 1 },
+			level = { name = "a:b", count = 1 }, stage = { name = "a:b", count = 1 },
+			module = { name = "a:b", count = 1 }, daily_limit = 3, extra = true,
+		}
+		local read = reports.reward_table(table_)
+		assert.are.equal(2, read.task.count)
+		assert.is_nil(read.extra)
+		table_.stage = nil
+		assert.is_nil(reports.reward_table(table_))
+		table_.stage = { count = 1 }
+		assert.is_nil(reports.reward_table(table_))
+		assert.is_nil(reports.reward_table({ daily_limit = "5" }))
+		assert.is_nil(reports.reward_table(nil))
+	end)
 end)

@@ -119,4 +119,17 @@ describe("lep_bridge orders", function()
 		end
 		assert.is_nil(orders.parse_start_level(nil))
 	end)
+	it("reads the order to set or reset the reward table", function()
+		local function read_table(source)
+			return type(source) == "table" and source.ok and { read = true } or nil
+		end
+		assert.are.same({ by = "lehrer1", table = { read = true } },
+			orders.parse_rewards({ by = "lehrer1", table = { ok = true } }, read_table))
+		-- Without a table the default comes back.
+		assert.are.same({ by = "lehrer1", reset = true },
+			orders.parse_rewards({ by = "lehrer1" }, read_table))
+		assert.is_nil(orders.parse_rewards({ by = "lehrer1", table = { ok = false } }, read_table))
+		assert.is_nil(orders.parse_rewards({ table = { ok = true } }, read_table))
+		assert.is_nil(orders.parse_rewards(nil, read_table))
+	end)
 end)

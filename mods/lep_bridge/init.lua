@@ -17,6 +17,7 @@ load("game/progress")
 load("game/names")
 load("game/year_end")
 load("game/removal")
+load("game/rewards")
 load("game/commands")
 
 core.log("action", "[lep_bridge] loaded")
