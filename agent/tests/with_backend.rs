@@ -39,14 +39,19 @@ async fn the_backend_shows_what_the_agent_reports() {
     let folder = tempfile::tempdir().unwrap();
     let config = settings(&address, &key, folder.path());
 
-    service::report_once(&config, &Backend::new(&config).unwrap())
-        .await
-        .unwrap();
+    service::report_once(
+        &config,
+        &Backend::new(&config).unwrap(),
+        Some("bdbbf00c8a29"),
+    )
+    .await
+    .unwrap();
 
     let server = game_server::describe(&pool).await.unwrap().unwrap();
     assert!(server.connected);
     assert_eq!(server.version.as_deref(), Some(env!("CARGO_PKG_VERSION")));
     assert!(server.free_disk_bytes.unwrap() > 0);
+    assert_eq!(server.template.as_deref(), Some("bdbbf00c8a29"));
 }
 
 #[tokio::test]
@@ -58,7 +63,12 @@ async fn a_wrong_key_is_refused() {
     let folder = tempfile::tempdir().unwrap();
 
     let config = settings(&address, "lepa_wrong", folder.path());
-    let result = service::report_once(&config, &Backend::new(&config).unwrap()).await;
+    let result = service::report_once(
+        &config,
+        &Backend::new(&config).unwrap(),
+        Some("bdbbf00c8a29"),
+    )
+    .await;
     assert_eq!(result, Err(CallError::Refused));
     // The message tells what to do and nothing about the key.
     assert!(!CallError::Refused.to_string().contains("lepa_wrong"));
@@ -78,7 +88,7 @@ async fn a_backend_out_of_reach_is_no_reason_to_end() {
     let config = settings(&address, "lepa_0123", folder.path());
     let backend = Backend::new(&config).unwrap();
 
-    let result = service::report_once(&config, &backend).await;
+    let result = service::report_once(&config, &backend, None).await;
     assert!(
         matches!(result, Err(CallError::Unreachable(_))),
         "{result:?}"
@@ -88,7 +98,7 @@ async fn a_backend_out_of_reach_is_no_reason_to_end() {
     let stop = tokio::time::sleep(Duration::from_millis(300));
     tokio::time::timeout(
         Duration::from_secs(10),
-        service::run_every(&config, &backend, Duration::from_millis(50), stop),
+        service::run_every(&config, &backend, None, Duration::from_millis(50), stop),
     )
     .await
     .expect("the agent did not stop");
@@ -122,7 +132,7 @@ async fn the_agent_reports_again_and_again() {
     };
     tokio::time::timeout(
         Duration::from_secs(10),
-        service::run_every(&config, &backend, Duration::from_millis(30), stop),
+        service::run_every(&config, &backend, None, Duration::from_millis(30), stop),
     )
     .await
     .expect("the agent did not report twice");
