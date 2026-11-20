@@ -112,7 +112,11 @@ export interface paths {
          */
         get: operations["list_groups"];
         put?: never;
-        post?: never;
+        /**
+         * Creates a group and asks the agent to set its world up. Only the
+         *     school administration may do this.
+         */
+        post: operations["create_group"];
         delete?: never;
         options?: never;
         head?: never;
@@ -133,7 +137,11 @@ export interface paths {
         get: operations["show_group"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Removes a group whose world the agent refused. Such a world never
+         *     existed. Only the school administration may do this.
+         */
+        delete: operations["discard_group"];
         options?: never;
         head?: never;
         /**
@@ -314,6 +322,26 @@ export interface paths {
          */
         put: operations["change_rewards"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/v1/groups/{id}/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Asks the agent again to set up the world of a group it refused. Only
+         *     the school administration may do this.
+         */
+        post: operations["retry_group"];
         delete?: never;
         options?: never;
         head?: never;
@@ -990,7 +1018,7 @@ export interface components {
          *     the language of the user.
          * @enum {string}
          */
-        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "forbidden" | "name_taken" | "no_names" | "account_taken" | "invalid_token" | "address_taken" | "internal";
+        ErrorCode: "unauthorized" | "not_found" | "too_large" | "invalid_request" | "forbidden" | "name_taken" | "no_game_server" | "wrong_state" | "no_names" | "account_taken" | "invalid_token" | "address_taken" | "internal";
         /** @description One thing that happened in a world. */
         Event: {
             /**
@@ -1075,10 +1103,22 @@ export interface components {
             /** @description Name for people. It can be changed. */
             name: string;
             /**
+             * Format: int32
+             * @description Port players reach the world on, once the agent created it.
+             */
+            port?: number | null;
+            /**
+             * @description Why the agent refused to set the world up, in its own words.
+             *     Only with `refused`.
+             */
+            refusal?: string | null;
+            /**
              * @description Account names of the teachers who are assigned to the group,
              *     sorted.
              */
             teachers: string[];
+            /** @description How it stands with the world of the group on the game server. */
+            world: components["schemas"]["WorldSetup"];
         };
         /** @description Request to change a group. */
         GroupChange: {
@@ -1252,6 +1292,11 @@ export interface components {
             name: string;
             /** @description The start password. The world stores only its hash. */
             password: string;
+        };
+        /** @description Request to create a group. Its world is set up by the agent. */
+        NewGroup: {
+            /** @description Name for people, 1 to 60 characters. */
+            name: string;
         };
         /**
          * @description How far a new start password for an account is.
@@ -1766,6 +1811,11 @@ export interface components {
             /** @description Fixed identifier of the world. */
             world: string;
         };
+        /**
+         * @description How it stands with the world of a group on the game server.
+         * @enum {string}
+         */
+        WorldSetup: "manual" | "pending" | "refused" | "running" | "stopped";
         /** @description Payload of the event "world_started". */
         WorldStarted: {
             /** @description Version of the game engine, as it names itself. */
@@ -2061,6 +2111,66 @@ export interface operations {
             };
         };
     };
+    create_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewGroup"];
+            };
+        };
+        responses: {
+            /** @description The new group, its world still pending */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description The name cannot be used (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Another group has this name (name_taken), or there is no agent that could set the world up (no_game_server) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     show_group: {
         parameters: {
             query?: never;
@@ -2093,6 +2203,65 @@ export interface operations {
             };
             /** @description No such group for this teacher (not_found) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    discard_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group is gone */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Done"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The agent did not refuse this group (wrong_state) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2615,6 +2784,65 @@ export interface operations {
             };
             /** @description No such group, or not one of the teacher (not_found) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    retry_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group, its world pending again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not the school administration (forbidden) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The agent did not refuse this group (wrong_state) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

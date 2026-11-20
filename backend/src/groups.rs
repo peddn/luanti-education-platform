@@ -6,10 +6,11 @@
 //! every request, not in the frontend.
 
 use anyhow::Result;
-use lep_protocol::web::{Group, GroupChange};
+use lep_protocol::agent::{CreateWorld, JOB_CREATE_WORLD};
+use lep_protocol::web::{Group, GroupChange, WorldSetup};
 use sqlx::{Row, SqlitePool};
 
-use crate::teachers;
+use crate::{game_server, jobs, teachers, worlds};
 
 /// Longest name of a group.
 const MAX_NAME: usize = 60;
@@ -64,7 +65,7 @@ async fn teachers_of(pool: &SqlitePool, world_id: &str) -> Result<Vec<String>> {
 pub async fn visible_to(pool: &SqlitePool, account: &str) -> Result<Vec<Group>> {
     let everything = is_school_admin(pool, account).await?;
     let rows = sqlx::query(
-        "SELECT id, name, last_seen_at, address FROM worlds
+        "SELECT id, name, last_seen_at, address, port, running FROM worlds
          WHERE ? OR EXISTS (SELECT 1 FROM group_teachers
                             WHERE group_teachers.world_id = worlds.id
                               AND group_teachers.account = ?)
@@ -77,15 +78,149 @@ pub async fn visible_to(pool: &SqlitePool, account: &str) -> Result<Vec<Group>> 
     let mut groups = Vec::with_capacity(rows.len());
     for row in rows {
         let id: String = row.get("id");
+        let port = row
+            .get::<Option<i64>, _>("port")
+            .and_then(|port| u16::try_from(port).ok());
+        let running: Option<bool> = row.get("running");
+        let (world, refusal) = setup_of(pool, &id, port, running).await?;
         groups.push(Group {
             teachers: teachers_of(pool, &id).await?,
             id,
             name: row.get("name"),
             last_seen_at: row.get("last_seen_at"),
             address: row.get("address"),
+            world,
+            refusal,
+            port,
         });
     }
     Ok(groups)
+}
+
+/// Works out how it stands with the world of a group: from what the
+/// agent reported, and before that from how the job to create it went.
+async fn setup_of(
+    pool: &SqlitePool,
+    world_id: &str,
+    port: Option<u16>,
+    running: Option<bool>,
+) -> Result<(WorldSetup, Option<String>)> {
+    if port.is_some() {
+        let setup = if running == Some(true) {
+            WorldSetup::Running
+        } else {
+            WorldSetup::Stopped
+        };
+        return Ok((setup, None));
+    }
+    Ok(
+        match jobs::last_for_agent(pool, world_id, JOB_CREATE_WORLD).await? {
+            None => (WorldSetup::Manual, None),
+            Some(job) if job.finished && job.ok == Some(false) => {
+                (WorldSetup::Refused, Some(job.message.unwrap_or_default()))
+            }
+            // Waiting for the agent, or done and not reported yet.
+            Some(_) => (WorldSetup::Pending, None),
+        },
+    )
+}
+
+/// Why a group could not be created.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CreateError {
+    /// The name is empty or too long.
+    InvalidName,
+    /// Another group has this name.
+    NameTaken,
+    /// There is no agent that could set the world up.
+    NoGameServer,
+}
+
+/// Creates a group and asks the agent to set its world up and start it.
+/// Returns the identifier of the group. The key of the world travels in
+/// the job and is shown to nobody.
+pub async fn create(pool: &SqlitePool, name: &str) -> Result<Result<String, CreateError>> {
+    let Some(name) = check_name(name) else {
+        return Ok(Err(CreateError::InvalidName));
+    };
+    if game_server::describe(pool).await?.is_none() {
+        return Ok(Err(CreateError::NoGameServer));
+    }
+    let taken: Option<i64> =
+        sqlx::query_scalar("SELECT 1 FROM worlds WHERE name = ? COLLATE NOCASE")
+            .bind(name)
+            .fetch_optional(pool)
+            .await?;
+    if taken.is_some() {
+        return Ok(Err(CreateError::NameTaken));
+    }
+    let (world, key) = worlds::add(pool, name).await?;
+    order_setup(pool, &world.id, key).await?;
+    Ok(Ok(world.id))
+}
+
+async fn order_setup(pool: &SqlitePool, world_id: &str, bridge_key: String) -> Result<()> {
+    let payload = serde_json::to_value(CreateWorld {
+        world: world_id.to_owned(),
+        bridge_key,
+    })?;
+    jobs::add_for_agent(pool, world_id, JOB_CREATE_WORLD, &payload).await?;
+    Ok(())
+}
+
+/// Why a refused group could not be tried again or discarded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RefusedError {
+    /// There is no such group.
+    NotFound,
+    /// The group is not one the agent refused: its world waits, exists,
+    /// or was set up by hand.
+    NotRefused,
+}
+
+/// Returns the name of a group the agent refused, or why it is none.
+async fn refused(pool: &SqlitePool, id: &str) -> Result<Result<String, RefusedError>> {
+    let row = sqlx::query("SELECT name, port, running FROM worlds WHERE id = ?")
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+    let Some(row) = row else {
+        return Ok(Err(RefusedError::NotFound));
+    };
+    let port = row
+        .get::<Option<i64>, _>("port")
+        .and_then(|port| u16::try_from(port).ok());
+    let (setup, _) = setup_of(pool, id, port, row.get("running")).await?;
+    if setup != WorldSetup::Refused {
+        return Ok(Err(RefusedError::NotRefused));
+    }
+    Ok(Ok(row.get("name")))
+}
+
+/// Asks the agent again to set up the world of a group it refused. The
+/// world gets a new key: the old one was forgotten with the old job.
+pub async fn retry(pool: &SqlitePool, id: &str) -> Result<Result<(), RefusedError>> {
+    let name = match refused(pool, id).await? {
+        Ok(name) => name,
+        Err(why) => return Ok(Err(why)),
+    };
+    let key = worlds::rekey(pool, &name).await?;
+    order_setup(pool, id, key).await?;
+    Ok(Ok(()))
+}
+
+/// Removes a group the agent refused. Its world never existed, so there
+/// is no map, no account and no protocol to lose. Returns its name.
+pub async fn discard(pool: &SqlitePool, id: &str) -> Result<Result<String, RefusedError>> {
+    let name = match refused(pool, id).await? {
+        Ok(name) => name,
+        Err(why) => return Ok(Err(why)),
+    };
+    sqlx::query("DELETE FROM worlds WHERE id = ?")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(Ok(name))
 }
 
 /// Returns one group, if the account may see it.
@@ -216,6 +351,197 @@ mod tests {
 
     fn names(list: &[&str]) -> Vec<String> {
         list.iter().map(|name| (*name).to_owned()).collect()
+    }
+
+    async fn refuse(pool: &SqlitePool, why: &str) {
+        let job = jobs::take_waiting_for_agent(pool).await.unwrap();
+        let result = lep_protocol::world::JobResult {
+            ok: false,
+            message: why.to_owned(),
+        };
+        jobs::finish_for_agent(pool, &job[0].id, &result)
+            .await
+            .unwrap();
+    }
+
+    async fn only_group(pool: &SqlitePool) -> Group {
+        // "leitung" is made school administration by the caller.
+        let mut all = visible_to(pool, "leitung").await.unwrap();
+        all.retain(|group| group.name != "Erste");
+        assert_eq!(all.len(), 1);
+        all.remove(0)
+    }
+
+    /// A first world that was set up by hand, with "leitung" as school
+    /// administration, and an agent.
+    async fn school() -> SqlitePool {
+        let pool = db::open_in_memory().await.unwrap();
+        let (first, _) = worlds::add(&pool, "Erste").await.unwrap();
+        set_school_admins(&pool, &first.id, &["leitung".to_owned()])
+            .await
+            .unwrap();
+        game_server::rekey(&pool).await.unwrap();
+        pool
+    }
+
+    #[tokio::test]
+    async fn a_new_group_waits_for_the_agent_and_then_runs() {
+        let pool = school().await;
+        let id = create(&pool, " Klasse 7b ").await.unwrap().unwrap();
+
+        let group = only_group(&pool).await;
+        assert_eq!(group.id, id);
+        assert_eq!(group.name, "Klasse 7b");
+        assert_eq!(group.world, WorldSetup::Pending);
+        assert_eq!(group.port, None);
+
+        // The job carries a key the world will be known by.
+        let waiting = jobs::take_waiting_for_agent(&pool).await.unwrap();
+        assert_eq!(waiting.len(), 1);
+        let payload: CreateWorld = serde_json::from_value(waiting[0].payload.clone()).unwrap();
+        assert_eq!(payload.world, id);
+        let found = worlds::find_by_key(&pool, &payload.bridge_key)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(found.id, id);
+
+        // Done, but not reported yet: still waiting.
+        let done = lep_protocol::world::JobResult {
+            ok: true,
+            message: "created on port 30000, and it runs".to_owned(),
+        };
+        jobs::finish_for_agent(&pool, &waiting[0].id, &done)
+            .await
+            .unwrap();
+        assert_eq!(only_group(&pool).await.world, WorldSetup::Pending);
+
+        let mut state = lep_protocol::agent::WorldState {
+            id: id.clone(),
+            port: 30000,
+            template: "bdbbf00c8a29".to_owned(),
+            running: true,
+        };
+        worlds::note_agent_state(&pool, std::slice::from_ref(&state))
+            .await
+            .unwrap();
+        let group = only_group(&pool).await;
+        assert_eq!(group.world, WorldSetup::Running);
+        assert_eq!(group.port, Some(30000));
+
+        state.running = false;
+        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        assert_eq!(only_group(&pool).await.world, WorldSetup::Stopped);
+    }
+
+    #[tokio::test]
+    async fn a_group_needs_a_free_name_and_an_agent() {
+        let pool = db::open_in_memory().await.unwrap();
+        assert_eq!(
+            create(&pool, "7b").await.unwrap(),
+            Err(CreateError::NoGameServer)
+        );
+        game_server::rekey(&pool).await.unwrap();
+        for name in ["", "   ", &"x".repeat(61), "7\nb"] {
+            assert_eq!(
+                create(&pool, name).await.unwrap(),
+                Err(CreateError::InvalidName)
+            );
+        }
+        create(&pool, "Klasse 7b").await.unwrap().unwrap();
+        assert_eq!(
+            create(&pool, "klasse 7B").await.unwrap(),
+            Err(CreateError::NameTaken)
+        );
+        // Nothing was stored for the attempts that failed.
+        assert_eq!(worlds::list(&pool).await.unwrap().len(), 1);
+        assert_eq!(jobs::take_waiting_for_agent(&pool).await.unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn a_refused_group_can_be_tried_again() {
+        let pool = school().await;
+        let id = create(&pool, "Klasse 7b").await.unwrap().unwrap();
+        // Not refused yet: nothing to try again or to discard.
+        assert_eq!(
+            retry(&pool, &id).await.unwrap(),
+            Err(RefusedError::NotRefused)
+        );
+        assert_eq!(
+            discard(&pool, &id).await.unwrap(),
+            Err(RefusedError::NotRefused)
+        );
+
+        let first = jobs::take_waiting_for_agent(&pool).await.unwrap();
+        let old_key = first[0].payload["bridge_key"].as_str().unwrap().to_owned();
+        refuse(&pool, "no port is free").await;
+        let group = only_group(&pool).await;
+        assert_eq!(group.world, WorldSetup::Refused);
+        assert_eq!(group.refusal.as_deref(), Some("no port is free"));
+
+        retry(&pool, &id).await.unwrap().unwrap();
+        assert_eq!(only_group(&pool).await.world, WorldSetup::Pending);
+        let second = jobs::take_waiting_for_agent(&pool).await.unwrap();
+        assert_eq!(second.len(), 1);
+        // The world gets a new key, and the old one is worth nothing.
+        let new_key = second[0].payload["bridge_key"].as_str().unwrap();
+        assert_ne!(new_key, old_key);
+        assert!(worlds::find_by_key(&pool, &old_key)
+            .await
+            .unwrap()
+            .is_none());
+        assert!(worlds::find_by_key(&pool, new_key).await.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn only_a_refused_group_can_be_discarded() {
+        let pool = school().await;
+        let (by_hand, _) = worlds::add(&pool, "Von Hand").await.unwrap();
+        assert_eq!(
+            discard(&pool, &by_hand.id).await.unwrap(),
+            Err(RefusedError::NotRefused)
+        );
+        assert_eq!(
+            discard(&pool, "no-such-group").await.unwrap(),
+            Err(RefusedError::NotFound)
+        );
+        assert_eq!(
+            retry(&pool, "no-such-group").await.unwrap(),
+            Err(RefusedError::NotFound)
+        );
+
+        let id = create(&pool, "Probe").await.unwrap().unwrap();
+        refuse(&pool, "the settings of the agent name no admin").await;
+        assert_eq!(discard(&pool, &id).await.unwrap(), Ok("Probe".to_owned()));
+        let names: Vec<String> = worlds::list(&pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|world| world.name)
+            .collect();
+        assert_eq!(names, ["Erste", "Von Hand"]);
+        // Its jobs went with it, and the name is free again.
+        let left: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM jobs")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(left, 0);
+        create(&pool, "Probe").await.unwrap().unwrap();
+
+        // A world that exists is never discarded, whatever its jobs say.
+        let running = create(&pool, "Klasse 8a").await.unwrap().unwrap();
+        let state = lep_protocol::agent::WorldState {
+            id: running.clone(),
+            port: 30001,
+            template: "bdbbf00c8a29".to_owned(),
+            running: false,
+        };
+        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        refuse(&pool, "created on port 30001, but it could not be started").await;
+        assert_eq!(
+            discard(&pool, &running).await.unwrap(),
+            Err(RefusedError::NotRefused)
+        );
     }
 
     fn rename(name: &str) -> GroupChange {

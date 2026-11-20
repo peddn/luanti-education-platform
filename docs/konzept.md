@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 73 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 74 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -1001,8 +1001,10 @@ Es gibt einen einzigen Zeitpunkt, zu dem Welten endgültig verschwinden: den Jah
 
 **Folgen für die Web-Anwendung**
 
-- Mit dem Agenten legt die Schulverwaltung Gruppen im Browser an (Abschnitt 5). Das Backend schickt den Auftrag an den Agenten und zeigt, wann die Welt läuft.
-- Bis dahin legt der Server-Admin Gruppe und Welt von Hand an.
+- Mit dem Agenten legt die Schulverwaltung Gruppen im Browser an (Abschnitt 5). Das Backend schickt den Auftrag an den Agenten und zeigt, wie es um die Welt steht: wird eingerichtet, läuft, gestoppt oder abgelehnt, mit dem Grund des Agenten im Wortlaut.
+- Eine abgelehnte Gruppe kann die Schulverwaltung erneut einrichten lassen oder verwerfen. Verwerfen gibt es nur, solange die Welt nie entstanden ist: Es gibt dann keine Karte, keine Konten und keine Protokolle. Das ist kein „Gruppe löschen“. Eine Gruppe, deren Welt es einmal gab, verschwindet nur über Archiv und Jahresabschluss.
+- Die allererste Welt legt der Server-Admin mit einem Befehl an, denn im Browser anmelden kann sich erst, wer in einer Welt Web-Zugang bekommen hat.
+- Ohne Agenten legt der Server-Admin Gruppe und Welt weiter von Hand an.
 
 **Testumgebung**
 

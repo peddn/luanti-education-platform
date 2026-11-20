@@ -13,9 +13,20 @@ import GroupsPage from './GroupsPage.vue'
 /** @typedef {import('@/api/client').Group} Group */
 
 /** @type {Group} */
-const G7B = { id: 'id-7b', name: '7b', teachers: ['lehrer1'], last_seen_at: 1700000000 }
+const G7B = {
+  id: 'id-7b',
+  name: '7b',
+  teachers: ['lehrer1'],
+  last_seen_at: 1700000000,
+  world: 'running',
+  port: 30000,
+}
 /** @type {Group} */
-const G8A = { id: 'id-8a', name: '8a', teachers: [] }
+const G8A = { id: 'id-8a', name: '8a', teachers: [], world: 'manual' }
+/** @type {Group} */
+const G9C = { id: 'id-9c', name: '9c', teachers: [], world: 'pending' }
+/** @type {Group} */
+const REFUSED = { ...G9C, world: 'refused', refusal: 'no port is free: all from 30000 to 30099 are taken' }
 
 /**
  * Logs somebody in for the page and mounts it.
@@ -75,6 +86,80 @@ describe('groups page', () => {
     expect(rows[1].text()).toContain('noch nie verbunden')
     expect(rows[0].get('a').attributes('href')).toBe('/groups/id-7b')
     expect(page.text()).toContain('Als Schulverwaltung')
+    expect(rows[0].get('[data-test=world-state]').text()).toBe('läuft')
+    expect(rows[1].get('[data-test=world-state]').text()).toBe('von Hand eingerichtet')
+  })
+
+  it('lets only the school administration create groups', async () => {
+    backend({ 'GET /api/web/v1/groups': [200, { groups: [G7B] }] })
+    const teacher = await show(GroupsPage, false)
+    expect(teacher.find('[data-test=create]').exists()).toBe(false)
+    const admin = await show(GroupsPage, true)
+    expect(admin.find('[data-test=create]').exists()).toBe(true)
+  })
+
+  it('creates a group and shows by itself when its world runs', async () => {
+    vi.useFakeTimers()
+    try {
+      let list = [G7B]
+      /** @type {{ method: string, path: string, body: unknown }[]} */
+      const sent = []
+      /** @type {(path: string, init?: RequestInit) => Promise<Response>} */
+      const answer = async (path, init) => {
+        const method = init?.method ?? 'GET'
+        sent.push({ method, path, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+        if (method === 'POST') {
+          list = [G7B, G9C]
+          return new Response(JSON.stringify(G9C))
+        }
+        return new Response(JSON.stringify({ groups: list }))
+      }
+      vi.stubGlobal('fetch', vi.fn(answer))
+      const page = await show(GroupsPage, true)
+
+      // An empty name is not sent.
+      await page.get('[data-test=create]').trigger('submit')
+      expect(page.get('[data-test=invalid]').text()).toContain('1 bis 60 Zeichen')
+      expect(sent.filter((call) => call.method === 'POST')).toHaveLength(0)
+
+      await page.get('input[name=new-name]').setValue('  9c ')
+      await page.get('[data-test=create]').trigger('submit')
+      await flushPromises()
+      const posted = sent.filter((call) => call.method === 'POST')
+      expect(posted).toEqual([{ method: 'POST', path: '/api/web/v1/groups', body: { name: '9c' } }])
+      let rows = page.findAll('[data-test=group]')
+      expect(rows).toHaveLength(2)
+      expect(rows[1].get('[data-test=world-state]').text()).toBe('wird eingerichtet …')
+      expect(/** @type {HTMLInputElement} */ (page.get('input[name=new-name]').element).value).toBe('')
+
+      // The agent reports the world. The page asks again by itself.
+      list = [G7B, { ...G9C, world: 'running', port: 30001 }]
+      await vi.advanceTimersByTimeAsync(3100)
+      await flushPromises()
+      rows = page.findAll('[data-test=group]')
+      expect(rows[1].get('[data-test=world-state]').text()).toBe('läuft')
+
+      // Nothing is pending any more, so the asking ends.
+      const asked = sent.length
+      await vi.advanceTimersByTimeAsync(10000)
+      expect(sent).toHaveLength(asked)
+      page.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('says why a group could not be created', async () => {
+    backend({
+      'GET /api/web/v1/groups': [200, { groups: [G7B] }],
+      'POST /api/web/v1/groups': [409, { code: 'no_game_server', message: 'x' }],
+    })
+    const page = await show(GroupsPage, true)
+    await page.get('input[name=new-name]').setValue('9c')
+    await page.get('[data-test=create]').trigger('submit')
+    await flushPromises()
+    expect(page.get('[data-test=create] [role=alert]').text()).toContain('kein Spielserver eingerichtet')
+    expect(page.findAll('[data-test=group]')).toHaveLength(1)
   })
 
   it('tells a teacher without a group who assigns them', async () => {
@@ -83,10 +168,11 @@ describe('groups page', () => {
     expect(page.get('[data-test=empty]').text()).toContain('Das macht die Schulverwaltung.')
   })
 
-  it('tells the school administration who creates groups', async () => {
+  it('offers the school administration to create the first group', async () => {
     backend({ 'GET /api/web/v1/groups': [200, { groups: [] }] })
     const page = await show(GroupsPage, true)
-    expect(page.get('[data-test=empty]').text()).toContain('Server-Admin')
+    expect(page.get('[data-test=empty]').text()).toContain('Es gibt noch keine Gruppe.')
+    expect(page.find('[data-test=create]').exists()).toBe(true)
   })
 
   it('shows a failure', async () => {
@@ -109,6 +195,68 @@ describe('group page', () => {
     expect(page.text()).toContain('Ändern kann das nur die Schulverwaltung.')
     // The list of all teachers is not asked for.
     expect(send).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows state and port of the world', async () => {
+    backend({ 'GET /api/web/v1/groups/id-7b': [200, G7B] })
+    const page = await show(GroupPage, false, { id: 'id-7b' })
+    expect(page.get('[data-test=world-state]').text()).toBe('läuft')
+    expect(page.get('[data-test=port]').text()).toContain('Port 30000')
+    expect(page.find('[data-test=refused]').exists()).toBe(false)
+  })
+
+  it('shows a teacher why the world was refused, without anything to do', async () => {
+    backend({ 'GET /api/web/v1/groups/id-9c': [200, REFUSED] })
+    const page = await show(GroupPage, false, { id: 'id-9c' })
+    expect(page.get('[data-test=world-state]').text()).toBe('abgelehnt')
+    expect(page.get('[data-test=refusal]').text()).toBe('no port is free: all from 30000 to 30099 are taken')
+    expect(page.find('[data-test=retry]').exists()).toBe(false)
+    expect(page.find('[data-test=discard]').exists()).toBe(false)
+  })
+
+  it('lets the school administration try a refused group again', async () => {
+    const send = backend({
+      'GET /api/web/v1/groups/id-9c': [200, REFUSED],
+      'GET /api/web/v1/teachers': [200, { teachers: [] }],
+      'POST /api/web/v1/groups/id-9c/setup': [200, G9C],
+    })
+    const page = await show(GroupPage, true, { id: 'id-9c' })
+    await page.get('[data-test=retry]').trigger('click')
+    await flushPromises()
+    const [path, init] = send.mock.calls[2]
+    expect(path).toBe('/api/web/v1/groups/id-9c/setup')
+    expect(init?.method).toBe('POST')
+    expect(page.get('[data-test=world-state]').text()).toBe('wird eingerichtet …')
+    expect(page.find('[data-test=refused]').exists()).toBe(false)
+  })
+
+  it('lets the school administration discard a refused group', async () => {
+    const send = backend({
+      'GET /api/web/v1/groups/id-9c': [200, REFUSED],
+      'GET /api/web/v1/teachers': [200, { teachers: [] }],
+      'DELETE /api/web/v1/groups/id-9c': [200, {}],
+      'GET /api/web/v1/groups': [200, { groups: [G7B] }],
+    })
+    const page = await show(GroupPage, true, { id: 'id-9c' })
+    await page.get('[data-test=discard]').trigger('click')
+    await flushPromises()
+    const [path, init] = send.mock.calls[2]
+    expect(path).toBe('/api/web/v1/groups/id-9c')
+    expect(init?.method).toBe('DELETE')
+    // Back to the list, where the group is gone.
+    expect(page.vm.$router.currentRoute.value.name).toBe('groups')
+  })
+
+  it('says when a refused group can no longer be handled', async () => {
+    backend({
+      'GET /api/web/v1/groups/id-9c': [200, REFUSED],
+      'GET /api/web/v1/teachers': [200, { teachers: [] }],
+      'DELETE /api/web/v1/groups/id-9c': [409, { code: 'wrong_state', message: 'x' }],
+    })
+    const page = await show(GroupPage, true, { id: 'id-9c' })
+    await page.get('[data-test=discard]').trigger('click')
+    await flushPromises()
+    expect(page.get('[data-test=refused]').text()).toContain('Das geht in diesem Zustand der Gruppe nicht mehr.')
   })
 
   it('lets the school administration rename and assign', async () => {

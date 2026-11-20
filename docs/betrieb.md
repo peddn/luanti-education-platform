@@ -2,7 +2,7 @@
 
 Diese Anleitung richtet Backend und Agent als Dienste auf einem Server mit **Debian 13** ein. Beide laufen auf derselben Maschine. Die Regeln dahinter stehen im [Konzept](konzept.md), Abschnitt 11.3.
 
-**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie. Gruppen im Browser anlegen folgt mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
+**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie. Die Schulverwaltung legt Gruppen im Browser an. Starten und Stoppen im Browser und Lehrkräfte in neuen Welten folgen mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
 
 **Noch nicht für den echten Betrieb mit Schülerdaten:** Die Anleitung endet ohne HTTPS. Ohne HTTPS reisen Anmeldung und Startpasswörter ungeschützt durch das Netz. Für einen Versuch auf einer eigenen VM reicht das, für eine Schule nicht.
 
@@ -216,9 +216,9 @@ Nach einem Neustart der Maschine (`sudo reboot`) müssen beide Befehle ohne weit
 
 Die Web-Anwendung zeigt den Spielserver auf der Seite „Zustand“. Anmelden kann sich dort aber erst eine Lehrkraft mit Web-Zugang, und die entsteht in einer Welt. Solange der Agent keine Welten anlegt, bleibt zur Prüfung der Befehl `agent show`.
 
-## 8. Eine Welt anlegen
+## 8. Die erste Welt anlegen
 
-Eine Welt gehört zu einer Gruppe. Bis die Schulverwaltung Gruppen im Browser anlegt, löst der Server-Admin das mit einem Befehl aus:
+Eine Welt gehört zu einer Gruppe. Gruppen legt die Schulverwaltung im Browser an (Abschnitt 10). Im Browser anmelden kann sich aber nur, wer in einer Welt Web-Zugang bekommen hat. Die allererste Welt legt deshalb der Server-Admin mit einem Befehl an:
 
 ```sh
 lep-admin world create "Klasse 7b"
@@ -254,6 +254,27 @@ lep-admin world restart "Klasse 7b"
 Jeder Befehl stellt dem Agenten einen Auftrag hin, den er innerhalb einer halben Minute abholt. `world list` zeigt danach `running` oder `stopped`.
 
 Welche Welten laufen sollen, merkt sich systemd. Stürzt eine Welt ab, startet systemd sie nach zehn Sekunden neu. Kann eine Welt gar nicht starten, lehnt der Agent den Auftrag ab und nennt den Befehl, der den Grund zeigt.
+
+## 10. Der erste Web-Zugang und Gruppen im Browser
+
+Der Server-Admin hat in jeder Welt alle Privilegien, auch die der Schulverwaltung und das für den Web-Zugang. Mit der ersten Welt richtet er sich den Zugang zur Web-Anwendung ein:
+
+1. Im Spiel in der ersten Welt anmelden und mit `/pult` das Lehrerpult öffnen, Reiter „Web-Zugang“.
+2. Die eigene Mailadresse eintragen.
+3. Den Link aus der Mail im Browser öffnen und die Adresse bestätigen. Ohne Mailserver steht die Mail im Log des Backends. Dieser Befehl zeigt den neuesten Link vollständig:
+
+   ```sh
+   sudo journalctl -u lep-backend --no-pager -o cat | grep -o 'http[^ ]*' | tail -n 1
+   ```
+
+   Ohne `--no-pager` schneidet `journalctl` lange Zeilen am Rand des Terminals ab, und ein abgeschnittener Link gilt nicht. Ein Link gilt 15 Minuten und einmal, und jede neue Anforderung macht ältere ungültig.
+4. In der Web-Anwendung unter der Adresse aus `LEP_PUBLIC_URL` mit dieser Mailadresse anmelden. Auch dieser Link kommt per Mail oder steht im Log.
+
+Danach legt die Schulverwaltung weitere Gruppen auf der Seite „Gruppen“ an: Name eintragen, „Gruppe anlegen“. Der Agent richtet die Welt ein und startet sie, die Seite zeigt den Zustand von selbst: „wird eingerichtet …“, dann „läuft“.
+
+Lehnt der Agent ab, steht bei der Gruppe „abgelehnt“. Auf ihrer Seite steht der Grund im Wortlaut des Agenten, mit zwei Knöpfen: „Erneut versuchen“, nachdem die Ursache behoben ist, und „Gruppe verwerfen“. Verwerfen gibt es nur für Gruppen, deren Welt nie entstanden ist.
+
+Eine im Browser angelegte Welt kennt zunächst nur den Server-Admin. Dass die Lehrkräfte dort ankommen, folgt mit dem nächsten Teil.
 
 `world add` gibt es weiter. Es legt eine Welt nur im Backend an und zeigt ihren Schlüssel, für eine Welt, die von Hand eingerichtet wird.
 
@@ -298,6 +319,6 @@ Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die 
 ## Was noch fehlt
 
 - **HTTPS:** ein Webserver mit Zertifikat vor dem Backend. Dann lauscht das Backend nur auf `127.0.0.1`.
-- **Gruppen im Browser anlegen**, statt mit `world create`.
+- **Welten im Browser starten und stoppen**, und die Adresse einer Welt für die Zugangszettel vom Agenten.
 - **Lehrkräfte in neuen Welten:** Eine frische Welt kennt nur den Server-Admin.
 - **Sicherung** der Datenbank des Backends.

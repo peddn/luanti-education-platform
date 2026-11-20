@@ -5,8 +5,8 @@ use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use lep_backend::app::{self, AppState};
-use lep_backend::{clock, db, groups, logins, teachers, worlds};
-use lep_protocol::world::{WebAccessAction, WebAccessRequest};
+use lep_backend::{clock, db, game_server, groups, jobs, logins, teachers, worlds};
+use lep_protocol::world::{JobResult, WebAccessAction, WebAccessRequest};
 use serde_json::{json, Value};
 use sqlx::SqlitePool;
 use tower::ServiceExt;
@@ -197,6 +197,113 @@ async fn a_teacher_cannot_change_groups_or_look_at_foreign_ones() {
     let (status, json) = setup.get(&path, &teacher).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(json["code"], "not_found");
+}
+
+#[tokio::test]
+async fn the_administration_creates_retries_and_discards_groups() {
+    let setup = Setup::new().await;
+    let pool = &setup.state.db;
+    let leitung = log_in(pool, "leitung").await;
+    let lehrer = log_in(pool, "lehrer1").await;
+    const GROUPS: &str = "/api/web/v1/groups";
+    let new = |name: &str| Some(json!({ "name": name }));
+
+    // The two groups of the setup were made by hand.
+    let (_, json) = setup.get(GROUPS, &leitung).await;
+    assert_eq!(json["groups"][0]["world"], "manual");
+
+    // Without an agent nobody could set a world up.
+    let (status, json) = setup
+        .call(Method::POST, GROUPS, Some(&leitung), new("9c"))
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(json["code"], "no_game_server");
+    game_server::rekey(pool).await.unwrap();
+
+    // Only the school administration creates groups.
+    let (status, json) = setup
+        .call(Method::POST, GROUPS, Some(&lehrer), new("9c"))
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(json["code"], "forbidden");
+    let (status, _) = setup.call(Method::POST, GROUPS, None, new("9c")).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let (status, json) = setup
+        .call(Method::POST, GROUPS, Some(&leitung), new("9c"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["name"], "9c");
+    assert_eq!(json["world"], "pending");
+    // Neither the answer nor the list shows the key of the world.
+    assert!(!json.to_string().contains("lepw_"));
+    let id = json["id"].as_str().unwrap().to_owned();
+    assert_eq!(setup.group_names(&leitung).await, ["7b", "8a", "9c"]);
+
+    let (status, json) = setup
+        .call(Method::POST, GROUPS, Some(&leitung), new("9C"))
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(json["code"], "name_taken");
+    let (status, json) = setup
+        .call(Method::POST, GROUPS, Some(&leitung), new("  "))
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(json["code"], "invalid_request");
+
+    // While the agent has not answered, there is nothing to retry or to
+    // discard.
+    let one = format!("{GROUPS}/{id}");
+    let setup_path = format!("{one}/setup");
+    for (method, path) in [(Method::POST, &setup_path), (Method::DELETE, &one)] {
+        let (status, json) = setup.call(method, path, Some(&leitung), None).await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        assert_eq!(json["code"], "wrong_state");
+    }
+
+    let waiting = jobs::take_waiting_for_agent(pool).await.unwrap();
+    let refused = JobResult {
+        ok: false,
+        message: "no port is free".to_owned(),
+    };
+    jobs::finish_for_agent(pool, &waiting[0].id, &refused)
+        .await
+        .unwrap();
+    let (_, json) = setup.get(&one, &leitung).await;
+    assert_eq!(json["world"], "refused");
+    assert_eq!(json["refusal"], "no port is free");
+
+    // A teacher may neither retry nor discard.
+    for (method, path) in [(Method::POST, &setup_path), (Method::DELETE, &one)] {
+        let (status, _) = setup.call(method, path, Some(&lehrer), None).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+    }
+
+    let (status, json) = setup
+        .call(Method::POST, &setup_path, Some(&leitung), None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["world"], "pending");
+    let waiting = jobs::take_waiting_for_agent(pool).await.unwrap();
+    assert_eq!(waiting.len(), 1);
+    jobs::finish_for_agent(pool, &waiting[0].id, &refused)
+        .await
+        .unwrap();
+
+    let (status, _) = setup.call(Method::DELETE, &one, Some(&leitung), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(setup.group_names(&leitung).await, ["7b", "8a"]);
+    let (status, _) = setup.call(Method::DELETE, &one, Some(&leitung), None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // A group that was set up by hand cannot be discarded.
+    let by_hand = format!("{GROUPS}/{}", setup.second);
+    let (status, json) = setup
+        .call(Method::DELETE, &by_hand, Some(&leitung), None)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(json["code"], "wrong_state");
+    assert_eq!(setup.group_names(&leitung).await, ["7b", "8a"]);
 }
 
 #[tokio::test]

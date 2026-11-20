@@ -4,13 +4,14 @@
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use lep_protocol::agent::{
-    CreateWorld, WorldJob, JOB_CREATE_WORLD, JOB_RESTART_WORLD, JOB_START_WORLD, JOB_STOP_WORLD,
+    WorldJob, JOB_CREATE_WORLD, JOB_RESTART_WORLD, JOB_START_WORLD, JOB_STOP_WORLD,
 };
 use lep_protocol::world::{JOB_PING, JOB_SYNC_STATE};
 use serde_json::json;
 use sqlx::SqlitePool;
 
 use crate::config::Config;
+use crate::groups::{self, CreateError};
 use crate::mail::{self, Mailer};
 use crate::{app, game_server, jobs, state, teachers, worlds};
 
@@ -233,15 +234,22 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
             ))
         }
         WorldCommand::Create { name } => {
-            if game_server::describe(pool).await?.is_none() {
-                bail!("there is no agent yet that could set the world up: lep-backend agent key");
-            }
-            let (world, key) = worlds::add(pool, &name).await?;
-            let payload = serde_json::to_value(CreateWorld {
-                world: world.id.clone(),
-                bridge_key: key,
-            })?;
-            jobs::add_for_agent(pool, &world.id, JOB_CREATE_WORLD, &payload).await?;
+            let id = match groups::create(pool, &name).await? {
+                Ok(id) => id,
+                Err(CreateError::NoGameServer) => bail!(
+                    "there is no agent yet that could set the world up: lep-backend agent key"
+                ),
+                Err(CreateError::InvalidName) => {
+                    bail!("the name of a world needs 1 to 60 characters")
+                }
+                Err(CreateError::NameTaken) => {
+                    bail!("there is already a world called '{}'", name.trim())
+                }
+            };
+            let world = worlds::find_by_name(pool, &name)
+                .await?
+                .context("the new world is missing")?;
+            debug_assert_eq!(world.id, id);
             Ok(format!(
                 "World '{}' created.\nid: {}\nThe agent sets it up on the game server and \
                  starts it within half a minute. How it went: lep-backend world list",
@@ -394,7 +402,8 @@ mod tests {
         let waiting = jobs::take_waiting_for_agent(&pool).await.unwrap();
         assert_eq!(waiting.len(), 1);
         assert_eq!(waiting[0].kind, JOB_CREATE_WORLD);
-        let payload: CreateWorld = serde_json::from_value(waiting[0].payload.clone()).unwrap();
+        let payload: lep_protocol::agent::CreateWorld =
+            serde_json::from_value(waiting[0].payload.clone()).unwrap();
         assert_eq!(payload.world, world.id);
         // The key in the job is the one the world will call with.
         let found = worlds::find_by_key(&pool, &payload.bridge_key)

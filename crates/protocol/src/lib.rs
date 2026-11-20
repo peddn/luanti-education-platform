@@ -753,6 +753,39 @@ pub mod web {
         /// access slips. Missing until somebody entered it.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub address: Option<String>,
+        /// How it stands with the world of the group on the game server.
+        pub world: WorldSetup,
+        /// Why the agent refused to set the world up, in its own words.
+        /// Only with `refused`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub refusal: Option<String>,
+        /// Port players reach the world on, once the agent created it.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub port: Option<u16>,
+    }
+
+    /// How it stands with the world of a group on the game server.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum WorldSetup {
+        /// The world was set up by hand. The agent does not know it.
+        Manual,
+        /// The agent was asked to set the world up and has not answered
+        /// or not reported it yet.
+        Pending,
+        /// The agent refused to set the world up. It never existed.
+        Refused,
+        /// The world runs.
+        Running,
+        /// The world is there, but does not run.
+        Stopped,
+    }
+
+    /// Request to create a group. Its world is set up by the agent.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct NewGroup {
+        /// Name for people, 1 to 60 characters.
+        pub name: String,
     }
 
     /// How far the account of a student is.
@@ -1344,6 +1377,10 @@ pub enum ErrorCode {
     Forbidden,
     /// Another group already has this name.
     NameTaken,
+    /// There is no agent that could set a world up.
+    NoGameServer,
+    /// The group is not in a state that allows this.
+    WrongState,
     /// No free account name turned up.
     NoNames,
     /// The account name is taken at the school, or was deleted there.
