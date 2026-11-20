@@ -12,6 +12,7 @@ Dieses Projekt ist unabhängig und gehört nicht zum Luanti-Projekt. Es wird von
 
 - [Konzept](docs/konzept.md): Ziele, Entscheidungen, Aufbau, Reihenfolge der Umsetzung
 - [Entwicklungsumgebung](docs/entwicklungsumgebung.md): Einrichtung unter Arch Linux
+- [Betrieb](docs/betrieb.md): Backend und Agent als Dienste auf einem Debian-Server
 - [CLAUDE.md](CLAUDE.md): Arbeitsregeln und Git-Vorgehensweise
 
 ## Aufbau des Repositorys
@@ -57,6 +58,7 @@ luanti-education-platform/
 ├── api/                         erzeugte OpenAPI-Beschreibung
 │
 ├── world-template/              Vorlage für eine neue Welt
+├── deploy/                      Dienste und Vorlagen der Einstellungen für den Server
 ├── scripts/                     Hilfsskripte
 └── .github/workflows/           automatische Prüfungen
 ```
