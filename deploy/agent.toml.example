@@ -11,3 +11,12 @@ key = "lepa_..."
 
 # Folder for everything the agent touches.
 data_dir = "/var/lib/lep"
+
+# Account name of the server admin. The agent enters it into every world
+# it creates, so a new world has a first way in. Without it the agent
+# creates no worlds. 1 to 19 characters: letters, digits, - and _.
+admin = "admin"
+
+# Ports the worlds get, first and last. The firewall must let UDP
+# through for all of them.
+ports = "30000-30099"

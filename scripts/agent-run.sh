@@ -45,6 +45,12 @@ if [ ! -f "$settings" ]; then
 		echo "backend = \"$url\""
 		echo "key = \"$key\""
 		echo "data_dir = \"$repo/.dev/agent\""
+		# The admin of the test world is the admin of the worlds the
+		# agent creates.
+		admin="$(sed -n 's/^name[[:space:]]*=[[:space:]]*//p' "$repo/.dev/minetest.conf" 2>/dev/null | head -n 1)"
+		if [[ "$admin" =~ ^[A-Za-z0-9_-]{1,19}$ ]]; then
+			echo "admin = \"$admin\""
+		fi
 	} >"$settings"
 	echo "The settings with a new key are in .dev/agent.toml."
 fi
