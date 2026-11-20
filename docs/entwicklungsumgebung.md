@@ -187,7 +187,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_chests` | listet alle Aufgabentruhen mit Position und Restzeit |
 | `/lep_chests spawn` | lässt sofort eine Aufgabentruhe in 30 bis 80 Blöcken Entfernung erscheinen und nennt Position und Richtung |
 | `/lep_chests age <minuten>` | macht die erzeugten Truhen älter, als wären so viele Minuten vergangen. Damit lässt sich das Verschwinden prüfen, ohne zu warten |
-| `/lep_report <aufgabe> [fail \| daily \| daily_low \| daily_high] [<niveau>]` | meldet eine Aufgabe des Testmoduls: gelöst als Niveauaufgabe, falsch, oder gelöst als Tagesaufgabe mit normalem, geringem oder hohem Aufwand. Niveau 2 und 4 sind Etappen. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
+| `/lep_report <aufgabe> [fail \| daily \| daily_low \| daily_high] [<niveau>]` | meldet eine Aufgabe des Testmoduls: gelöst als Niveauaufgabe, falsch, oder gelöst als Tagesaufgabe mit normalem, geringem oder hohem Aufwand. Niveau 2 ist eine Etappe, Niveau 4 schließt das Modul ab. Der Befehl meldet für das eigene Konto und braucht `lep_debug`. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
 
 ### Fenster im Spiel
 
@@ -511,6 +511,7 @@ Jede Welt hat eine Belohnungstabelle: je Anlass ein Gegenstand mit Anzahl, dazu 
 - `lep_rewards.get_table()`, `lep_rewards.set_table(tabelle)` und `lep_rewards.reset_table()` lesen und ändern die Tabelle zur Laufzeit. Sie wird nur als Ganzes angenommen. Eine Änderung gilt ab der nächsten Belohnung.
 - Im Spiel zeigt `/lep_rewards`, was es wofür gibt.
 - Die Gegenstände, aus denen eine Lehrkraft wählen kann, legt der Admin mit der Einstellung `lep_rewards_choices` fest (Namen mit Komma getrennt). Ohne Einstellung gilt eine Liste aus Barren, Kohle, Diamant, Mesekristall, Apfel, Brot, Fackel und Buch. Was die Welt nicht kennt, fällt heraus.
+- Im Browser: Auf der Seite einer Gruppe führt „Belohnungen“ zur Tabelle. Dort wählt die Lehrkraft je Anlass Gegenstand und Anzahl, stellt das Tageslimit ein und kann die Vorgabe wiederherstellen. Bis die Welt geantwortet hat, steht dort „Änderung wartet auf die Welt“.
 - Mit Backend: Die Welt meldet Tabelle und Auswahlliste mit dem Ereignis `rewards`, bei jedem Start und nach jeder Änderung. `GET /api/web/v1/groups/{id}/rewards` zeigt beides, `PUT` auf dieselbe Adresse bestellt eine neue Tabelle (`{"table": …}`) oder die Vorgabe (`{}`). Die Welt prüft noch einmal und schreibt `web:set_rewards` oder `web:reset_rewards` ins Protokoll des Pults. Ändern dürfen die Lehrkräfte der Gruppe und die Schulverwaltung.
 - Die früheren Einstellungen `lep_rewards_small`, `lep_rewards_medium`, `lep_rewards_large` und `lep_rewards_daily_limit` gibt es nicht mehr.
 - Im Protokoll der Belohnungen steht statt der Größe jetzt der Aufwand. Ältere Einträge zeigen in dieser Spalte nichts.

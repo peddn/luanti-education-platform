@@ -74,7 +74,8 @@
     "address": "Address of the world",
     "noAddress": "not entered yet",
     "addressHint": "How the children reach the world, for example “spiel.schule.example, port 30000”. The address is printed on the access slips.",
-    "protocols": "Protocols"
+    "protocols": "Protocols",
+    "rewards": "Rewards"
   },
   "students": {
     "titleFor": "Student accounts of the group {group}",
@@ -297,6 +298,41 @@
         "unlocked": "choosing unlocked"
       }
     }
+  },
+  "rewards": {
+    "back": "Back to the group",
+    "loading": "Loading rewards …",
+    "title": "Rewards: {name}",
+    "intro": "Here you decide what the children of this group get for what. There is one table for all modules.",
+    "notReported": "The world has not reported its rewards yet. It does so once it has started with the new version.",
+    "refused": "The world refused the last change. What stands here still counts.",
+    "occasion": "Occasion",
+    "item": "Item",
+    "count": "Count",
+    "occasions": {
+      "task": "Task solved",
+      "daily": "Daily task solved",
+      "level": "Level completed",
+      "stage": "Stage completed",
+      "module": "Module completed"
+    },
+    "hints": {
+      "task": "A level task that counts for the workload. This happens most often.",
+      "daily": "For example a task chest in the wild. It names its effort itself, mostly normal.",
+      "level": "All tasks of a level are done.",
+      "stage": "A level the module marks as a stage.",
+      "module": "The last level is done. A golden trophy comes with it."
+    },
+    "effortHint": "The count is for low effort. Normal effort earns twice as much, high effort three times. How hard something is, the module or the task says.",
+    "dailyLimit": "Rewarded daily tasks per day",
+    "dailyLimitHint": "This many daily tasks earn a child a reward on the same day, {max} at most. With 0 daily tasks earn nothing.",
+    "invalid": "The count has to be a whole number from 1 to {max}, the daily limit one from 0 to {limit}.",
+    "save": "Save",
+    "discard": "Discard changes",
+    "reset": "Restore the default",
+    "resetConfirm": "The table is put back to the default.",
+    "resetYes": "Yes, put it back",
+    "fromNow": "A change counts from the next reward on. What lies in a chest stays."
   },
   "staff": {
     "title": "Teachers",

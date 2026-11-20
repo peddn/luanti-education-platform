@@ -74,7 +74,8 @@
     "address": "Adresse der Welt",
     "noAddress": "noch nicht eingetragen",
     "addressHint": "So erreichen die Kinder die Welt, zum Beispiel „spiel.schule.example, Port 30000“. Die Adresse steht auf den Zugangszetteln.",
-    "protocols": "Protokolle"
+    "protocols": "Protokolle",
+    "rewards": "Belohnungen"
   },
   "students": {
     "titleFor": "Schülerkonten der Gruppe {group}",
@@ -297,6 +298,41 @@
         "unlocked": "Wählen freigegeben"
       }
     }
+  },
+  "rewards": {
+    "back": "Zurück zur Gruppe",
+    "loading": "Belohnungen werden geladen …",
+    "title": "Belohnungen: {name}",
+    "intro": "Hier legst du fest, was die Kinder dieser Gruppe wofür bekommen. Es gibt eine Tabelle für alle Module.",
+    "notReported": "Die Welt hat ihre Belohnungen noch nicht gemeldet. Das geschieht, sobald sie mit der neuen Version gestartet ist.",
+    "refused": "Die Welt hat die letzte Änderung abgelehnt. Es gilt weiter, was hier steht.",
+    "occasion": "Anlass",
+    "item": "Gegenstand",
+    "count": "Anzahl",
+    "occasions": {
+      "task": "Aufgabe gelöst",
+      "daily": "Tagesaufgabe gelöst",
+      "level": "Niveau abgeschlossen",
+      "stage": "Etappe abgeschlossen",
+      "module": "Modul abgeschlossen"
+    },
+    "hints": {
+      "task": "Eine Niveauaufgabe, die fürs Pensum zählt. Das kommt am häufigsten vor.",
+      "daily": "Zum Beispiel eine Aufgabentruhe in der Wildnis. Sie nennt ihren Aufwand selbst, meist normal.",
+      "level": "Alle Aufgaben eines Niveaus sind geschafft.",
+      "stage": "Ein Niveau, das das Modul als Etappe kennzeichnet.",
+      "module": "Das letzte Niveau ist geschafft. Dazu gibt es eine goldene Trophäe."
+    },
+    "effortHint": "Die Anzahl gilt für geringen Aufwand. Bei normalem Aufwand gibt es das Doppelte, bei hohem das Dreifache. Wie aufwendig etwas ist, sagt das Modul oder die Aufgabe.",
+    "dailyLimit": "Belohnte Tagesaufgaben pro Tag",
+    "dailyLimitHint": "So viele Tagesaufgaben bringen einem Kind am selben Tag eine Belohnung, höchstens {max}. Bei 0 gibt es für Tagesaufgaben keine.",
+    "invalid": "Die Anzahl muss eine ganze Zahl von 1 bis {max} sein, das Tageslimit eine von 0 bis {limit}.",
+    "save": "Speichern",
+    "discard": "Änderungen verwerfen",
+    "reset": "Vorgabe wiederherstellen",
+    "resetConfirm": "Die Tabelle wird auf die Vorgabe zurückgestellt.",
+    "resetYes": "Ja, zurückstellen",
+    "fromNow": "Eine Änderung gilt ab der nächsten Belohnung. Was schon in einer Truhe liegt, bleibt."
   },
   "staff": {
     "title": "Lehrkräfte",

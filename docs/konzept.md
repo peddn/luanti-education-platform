@@ -1068,6 +1068,7 @@ Ohne Anmeldung sagt das Backend über sich nur, ob es arbeiten kann. Version und
 - Belohnungstabellen pro Gruppe.
 - Alle Protokolle der Gruppe einsehen, nach Konto und Zeitraum filtern und als CSV exportieren. Das Protokoll des Pults sieht nur die Schulverwaltung.
 - Jahresabschluss.
+- Belohnungen: Auf der Seite „Belohnungen“ einer Gruppe stellt die Lehrkraft die Tabelle ein (Abschnitt 8.3): je Anlass Gegenstand und Anzahl, dazu das Tageslimit. Sie kann die Voreinstellung wiederherstellen.
 - Lehrkräfte: Die Schulverwaltung legt ihre Konten auf der Seite „Lehrkräfte“ an, setzt Passwörter zurück und löscht Konten. Die Seite zeigt je Konto den Stand, den Web-Zugang und die Gruppen. Konten der Schulverwaltung und das eigene Konto stehen in der Liste, lassen sich dort aber nicht ändern.
 - Einzelne Schülerkonten auf Verlangen löschen, mit der Seite „Löschungen“ für die Vermerke (Abschnitt 12).
 

@@ -11,6 +11,7 @@ import OverviewPage from './pages/OverviewPage.vue'
 import ProgressPage from './pages/ProgressPage.vue'
 import ProtocolsPage from './pages/ProtocolsPage.vue'
 import RemovalsPage from './pages/RemovalsPage.vue'
+import RewardsPage from './pages/RewardsPage.vue'
 import StaffPage from './pages/StaffPage.vue'
 import YearEndPage from './pages/YearEndPage.vue'
 import { useAuthStore } from './stores/auth'
@@ -25,6 +26,7 @@ export const routes = [
   { path: '/groups/:id', name: 'group', component: GroupPage, props: true },
   { path: '/groups/:id/students', name: 'students', component: StudentsPage, props: true },
   { path: '/groups/:id/progress', name: 'progress', component: ProgressPage, props: true },
+  { path: '/groups/:id/rewards', name: 'rewards', component: RewardsPage, props: true },
   {
     path: '/groups/:id/protocols',
     name: 'protocols',
