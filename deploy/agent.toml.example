@@ -20,3 +20,7 @@ admin = "admin"
 # Ports the worlds get, first and last. The firewall must let UDP
 # through for all of them.
 ports = "30000-30099"
+
+# The Luanti server the worlds run with. scripts/luanti-build.sh and
+# "sudo cmake --install target/luanti/build" put it here.
+luanti = "/usr/local/bin/luantiserver"

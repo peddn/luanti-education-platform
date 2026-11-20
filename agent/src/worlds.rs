@@ -91,6 +91,14 @@ pub struct Plan<'a> {
     pub backend: &'a str,
     /// Key the bridge calls the backend with.
     pub bridge_key: &'a str,
+    /// False on a machine without IPv6. Luanti does not start there
+    /// unless it is told.
+    pub ipv6: bool,
+}
+
+/// Returns true if this machine can open sockets for IPv6.
+pub fn machine_has_ipv6() -> bool {
+    std::net::UdpSocket::bind("[::]:0").is_ok()
 }
 
 /// What `create` did.
@@ -135,15 +143,22 @@ pub fn list(data_dir: &Path) -> Result<Vec<(WorldId, Note)>> {
 }
 
 /// Returns the worlds as the report to the backend names them.
-pub fn states(data_dir: &Path) -> Result<Vec<WorldState>> {
+/// `running` holds the worlds that run.
+pub fn states(data_dir: &Path, running: &BTreeSet<WorldId>) -> Result<Vec<WorldState>> {
     Ok(list(data_dir)?
         .into_iter()
         .map(|(id, note)| WorldState {
+            running: running.contains(&id),
             id: id.as_str().to_owned(),
             port: note.port,
             template: note.template,
         })
         .collect())
+}
+
+/// Returns true if the agent has this world.
+pub fn exists(data_dir: &Path, id: &WorldId) -> bool {
+    read_note(&folder(data_dir, id)).is_ok()
 }
 
 impl PartialOrd for Note {
@@ -260,6 +275,10 @@ fn write_settings(folder: &Path, note: &Note, plan: &Plan<'_>) -> Result<()> {
     line("server_announce", "false")?;
     line("creative_mode", "false")?;
     line("enable_damage", "true")?;
+    if !plan.ipv6 {
+        line("ipv6_server", "false")?;
+        line("enable_ipv6", "false")?;
+    }
     for (key, value) in &plan.manifest.settings {
         line(key, value)?;
     }
@@ -306,6 +325,7 @@ pub(crate) mod testing {
             admin: "peddn",
             backend: "http://127.0.0.1:8080",
             bridge_key: "lepw_0123abcd",
+            ipv6: true,
         }
     }
 }
@@ -365,6 +385,7 @@ mod tests {
         ] {
             assert!(settings.contains(line), "{line}");
         }
+        assert!(!settings.contains("ipv6"));
         // The settings hold a key.
         let mode = fs::metadata(world.join(SETTINGS))
             .unwrap()
@@ -410,6 +431,14 @@ mod tests {
         );
         let settings = fs::read_to_string(world.join(SETTINGS)).unwrap();
         assert!(settings.contains("lep_bridge_key = lepw_new\n"));
+        assert!(!settings.contains("ipv6"));
+
+        // On a machine without IPv6 the world is told, or Luanti would
+        // not start.
+        again.ipv6 = false;
+        create(&id, &again).unwrap();
+        let settings = fs::read_to_string(world.join(SETTINGS)).unwrap();
+        assert!(settings.contains("ipv6_server = false\nenable_ipv6 = false\n"));
         assert!(settings.contains("port = 30000\n"));
         assert!(!settings.contains("lepw_0123abcd"));
     }
@@ -439,7 +468,15 @@ mod tests {
         assert!(format!("{refused:#}").contains("no port is free"));
         assert!(!folder(data.path(), &id).exists());
         assert_eq!(list(data.path()).unwrap().len(), 3);
-        assert_eq!(states(data.path()).unwrap().len(), 3);
+        let first = WorldId::parse(ids[0]).unwrap();
+        let running = BTreeSet::from([first.clone()]);
+        let states = states(data.path(), &running).unwrap();
+        assert_eq!(states.len(), 3);
+        for state in &states {
+            assert_eq!(state.running, state.id == first.as_str());
+        }
+        assert!(exists(data.path(), &first));
+        assert!(!exists(data.path(), &id));
     }
 
     #[test]

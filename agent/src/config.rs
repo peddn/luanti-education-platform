@@ -18,6 +18,9 @@ pub const DEFAULT_PATH: &str = "/etc/lep/agent.toml";
 /// Folder that holds everything the agent touches, if nothing else is
 /// said.
 pub const DEFAULT_DATA_DIR: &str = "/var/lib/lep";
+/// The Luanti server the worlds run with, if nothing else is said. It
+/// is where scripts/luanti-build.sh installs it.
+pub const DEFAULT_LUANTI: &str = "/usr/local/bin/luantiserver";
 /// Ports the worlds get, if nothing else is said.
 pub const DEFAULT_PORTS: RangeInclusive<u16> = 30000..=30099;
 /// Start of every key of an agent.
@@ -33,6 +36,7 @@ struct File {
     data_dir: Option<PathBuf>,
     admin: Option<String>,
     ports: Option<String>,
+    luanti: Option<PathBuf>,
 }
 
 /// The checked settings.
@@ -49,6 +53,8 @@ pub struct Config {
     pub admin: Option<String>,
     /// Ports the worlds get, first and last.
     pub ports: RangeInclusive<u16>,
+    /// The Luanti server the worlds run with.
+    pub luanti: PathBuf,
 }
 
 /// The key never gets into a log, not even by accident.
@@ -60,6 +66,7 @@ impl fmt::Debug for Config {
             .field("data_dir", &self.data_dir)
             .field("admin", &self.admin)
             .field("ports", &self.ports)
+            .field("luanti", &self.luanti)
             .finish()
     }
 }
@@ -108,12 +115,17 @@ impl Config {
             Some(text) => parse_ports(text)?,
             None => DEFAULT_PORTS,
         };
+        let luanti = file.luanti.unwrap_or_else(|| PathBuf::from(DEFAULT_LUANTI));
+        if !luanti.is_absolute() {
+            bail!("'luanti' must be a full path that starts with /");
+        }
         Ok(Self {
             backend,
             key,
             data_dir,
             admin,
             ports,
+            luanti,
         })
     }
 }
@@ -216,6 +228,13 @@ mod tests {
         let config = Config::parse(&base).unwrap();
         assert_eq!(config.admin, None);
         assert_eq!(config.ports, DEFAULT_PORTS);
+        assert_eq!(config.luanti, PathBuf::from(DEFAULT_LUANTI));
+        let other = format!("{base}luanti = \"/opt/luanti/bin/luantiserver\"\n");
+        assert_eq!(
+            Config::parse(&other).unwrap().luanti,
+            PathBuf::from("/opt/luanti/bin/luantiserver")
+        );
+        assert!(Config::parse(&format!("{base}luanti = \"luantiserver\"\n")).is_err());
 
         let config = Config::parse(&format!(
             "{base}admin = \"peddn\"\nports = \"31000-31009\"\n"

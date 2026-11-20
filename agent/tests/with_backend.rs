@@ -1,12 +1,14 @@
 //! The agent against a real backend on this machine.
 
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 use lep_agent::backend::{Backend, CallError};
 use lep_agent::config::Config;
 use lep_agent::service::{self, Agent, Prepared, Timing};
 use lep_agent::template::Manifest;
+use lep_agent::units::testing::FakeUnits;
 use lep_backend::app::{self, AppState};
 use lep_backend::{db, game_server, jobs, worlds};
 use lep_protocol::agent::{CreateWorld, JOB_CREATE_WORLD};
@@ -45,6 +47,7 @@ fn agent(address: &str, key: &str, folder: &Path) -> Agent {
             version: TEMPLATE.to_owned(),
             manifest,
         }),
+        units: Arc::new(FakeUnits::default()),
     }
 }
 
@@ -195,10 +198,15 @@ async fn the_agent_creates_the_world_the_backend_orders() {
 
     let state = jobs::state(&pool, &job).await.unwrap().unwrap();
     assert_eq!(state.ok, Some(true));
-    assert_eq!(state.message.as_deref(), Some("created on port 30000"));
+    assert_eq!(
+        state.message.as_deref(),
+        Some("created on port 30000, and it runs")
+    );
     let mirrored = worlds::find_by_name(&pool, "7b").await.unwrap().unwrap();
     assert_eq!(mirrored.port, Some(30000));
     assert_eq!(mirrored.template_version.as_deref(), Some(TEMPLATE));
+    // A new world runs at once, and the backend knows.
+    assert_eq!(mirrored.running, Some(true));
 
     // The world lies in its folder, and its bridge calls with a key the
     // backend takes for exactly this world.

@@ -10,4 +10,5 @@ pub mod jobs;
 pub mod report;
 pub mod service;
 pub mod template;
+pub mod units;
 pub mod worlds;
