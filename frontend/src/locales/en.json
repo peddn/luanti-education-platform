@@ -426,6 +426,20 @@
     "mail": {
       "smtp": "through the mail server",
       "terminal": "not set up, mails are written to the terminal of the backend"
+    },
+    "server": {
+      "title": "Game server",
+      "intro": "The worlds run on the game server. A small program there, the agent, reports to the backend every half minute.",
+      "none": "No agent is set up yet. The server admin does that.",
+      "state": "Connection",
+      "connected": "Connected",
+      "silent": "Out of reach",
+      "lastSeen": "Last report",
+      "never": "never",
+      "agentVersion": "Version of the agent",
+      "freeDisk": "Free disk space",
+      "gigabytes": "{amount} GB",
+      "unknown": "unknown"
     }
   },
   "confirm": {
