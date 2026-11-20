@@ -187,7 +187,7 @@ Das Skript trägt `lep_debug = true` in `.dev/minetest.conf` ein. Damit laden di
 | `/lep_chests` | listet alle Aufgabentruhen mit Position und Restzeit |
 | `/lep_chests spawn` | lässt sofort eine Aufgabentruhe in 30 bis 80 Blöcken Entfernung erscheinen und nennt Position und Richtung |
 | `/lep_chests age <minuten>` | macht die erzeugten Truhen älter, als wären so viele Minuten vergangen. Damit lässt sich das Verschwinden prüfen, ohne zu warten |
-| `/lep_report <aufgabe> [fail \| daily \| daily_low \| daily_high] [<niveau>]` | meldet eine Aufgabe des Testmoduls: gelöst als Niveauaufgabe, falsch, oder gelöst als Tagesaufgabe mit normalem, geringem oder hohem Aufwand. Niveau 2 und 4 sind Etappen. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
+| `/lep_report <aufgabe> [fail \| daily \| daily_low \| daily_high] [<niveau>]` | meldet eine Aufgabe des Testmoduls: gelöst als Niveauaufgabe, falsch, oder gelöst als Tagesaufgabe mit normalem, geringem oder hohem Aufwand. Niveau 2 ist eine Etappe, Niveau 4 schließt das Modul ab. Der Befehl meldet für das eigene Konto und braucht `lep_debug`. Aufgaben: `a1`, `a2` (Niveau 1), `b1`, `b2` (2), `c1` (3), `d1` (4) |
 
 ### Fenster im Spiel
 
