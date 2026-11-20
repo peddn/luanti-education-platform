@@ -13,6 +13,7 @@
 
 use std::collections::BTreeSet;
 use std::fs;
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -123,12 +124,12 @@ impl Systemctl {
     /// Runs `systemctl --user` with these arguments and returns what it
     /// printed.
     fn systemctl(&self, arguments: &[&str]) -> Result<String> {
-        let output = Command::new("systemctl")
-            .arg("--user")
-            .args(arguments)
-            .stdin(Stdio::null())
-            .output()
-            .context("cannot run systemctl")?;
+        let mut command = Command::new("systemctl");
+        command.arg("--user").args(arguments).stdin(Stdio::null());
+        if let Some(folder) = missing_runtime_dir() {
+            command.env("XDG_RUNTIME_DIR", folder);
+        }
+        let output = command.output().context("cannot run systemctl")?;
         if !output.status.success() {
             let said = String::from_utf8_lossy(&output.stderr);
             let said = said.lines().next().unwrap_or("no reason given").trim();
@@ -136,6 +137,19 @@ impl Systemctl {
         }
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     }
+}
+
+/// Where systemd keeps the way to the services of this user, if the
+/// agent was not told. As a service the agent is told. Started by hand
+/// for another user, as with `sudo -u lep lep-agent check`, it is not,
+/// and `systemctl --user` would not find the services.
+fn missing_runtime_dir() -> Option<PathBuf> {
+    if std::env::var_os("XDG_RUNTIME_DIR").is_some_and(|folder| !folder.is_empty()) {
+        return None;
+    }
+    let user = fs::metadata("/proc/self").ok()?.uid();
+    let folder = PathBuf::from(format!("/run/user/{user}"));
+    folder.is_dir().then_some(folder)
 }
 
 impl Units for Systemctl {
