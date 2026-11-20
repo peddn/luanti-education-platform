@@ -24,14 +24,28 @@ Backend und Agent haben getrennte Benutzer ohne Admin-Rechte. Keiner kann die Da
 
 ## 1. Werkzeuge zum Bauen
 
-Die Programme werden auf dem Server aus dem Repository gebaut.
+Die Programme und die Oberfläche werden auf dem Server aus dem Repository gebaut. Dafür braucht er Rust und Node 22.
 
 ```sh
 sudo apt update
-sudo apt install build-essential git curl ca-certificates nodejs npm
+sudo apt install build-essential git curl ca-certificates
+```
+
+Rust kommt über `rustup`:
+
+```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 . "$HOME/.cargo/env"
 ```
+
+Node 22 kommt aus der Paketquelle von NodeSource. Debian 13 selbst bringt nur Node 20 mit, und die Werkzeuge der Oberfläche verlangen Node 22:
+
+```sh
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+sudo apt install nodejs
+```
+
+`npm` ist in diesem Paket enthalten. Ist schon das Node aus Debian installiert, vorher `sudo apt remove nodejs npm` ausführen. Updates für Node kommen danach mit dem normalen `sudo apt upgrade`.
 
 Prüfen:
 
@@ -40,9 +54,7 @@ cargo --version
 node --version
 ```
 
-Debian 13 bringt Node 20.19 mit. Entwickelt und automatisch geprüft wird die Oberfläche mit Node 22, und einige ihrer Werkzeuge verlangen diese Version. Der Bau läuft mit Node 20.19 trotzdem durch, `npm` zeigt dabei viele Warnungen der Art `EBADENGINE Unsupported engine`. Sie betreffen nur die Werkzeuge zum Bauen und Testen, nicht das Ergebnis, das im Browser läuft. Gebaut ist richtig, wenn am Ende `Built into frontend/dist` steht.
-
-Das ist eine Übergangslösung: Sobald es fertige Programme zum Herunterladen gibt, braucht der Server weder Rust noch Node.
+Erwartet: bei Node eine Version, die mit `v22` beginnt.
 
 ## 2. Bauen
 
@@ -195,4 +207,3 @@ Erst das Backend, dann der Agent. Haben sich die Dienstdateien in `deploy/` geä
 - **HTTPS:** ein Webserver mit Zertifikat vor dem Backend. Dann lauscht das Backend nur auf `127.0.0.1`.
 - **Welten:** Luanti, die Vorlage und der Dienst `lep-world@<Kennung>.service`, mit den Ports in der Firewall.
 - **Sicherung** der Datenbank des Backends.
-- **Fertige Programme** zum Herunterladen, damit auf dem Server nichts gebaut werden muss.
