@@ -87,6 +87,7 @@ mod tests {
             version: "0.1.0".to_owned(),
             free_disk_bytes: 5_000_000_000,
             template: Some("bdbbf00c8a29".to_owned()),
+            worlds: Vec::new(),
         }
     }
 

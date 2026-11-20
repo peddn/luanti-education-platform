@@ -4,6 +4,44 @@
  */
 
 export interface paths {
+    "/api/agent/v1/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the jobs that wait for the agent. If there are none, the
+         *     request stays open for up to `wait` seconds and returns as soon as
+         *     one comes.
+         */
+        get: operations["fetch_jobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/v1/jobs/{id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Notes how a job for the agent went. */
+        post: operations["report_result"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agent/v1/report": {
         parameters: {
             query?: never;
@@ -810,6 +848,8 @@ export interface components {
             template?: string | null;
             /** @description Version of the agent, as in its package. */
             version: string;
+            /** @description The worlds the agent looks after. */
+            worlds?: components["schemas"]["WorldState"][];
         };
         /** @description Answer to a request that failed. */
         ApiError: {
@@ -860,6 +900,19 @@ export interface components {
              *     administration orders that.
              */
             teacher?: boolean;
+        };
+        /**
+         * @description Payload of the job that creates a world. For a world that exists
+         *     already, only the key of the bridge is written again.
+         */
+        CreateWorld: {
+            /** @description Key the bridge of the world calls the backend with. */
+            bridge_key: string;
+            /**
+             * @description Fixed identifier of the world. The folder of the world is named
+             *     after it.
+             */
+            world: string;
         };
         /** @description Request to lock or unlock choosing a display name. */
         DisplayLock: {
@@ -1714,6 +1767,18 @@ export interface components {
             /** @description Names of the mods that are loaded. */
             mods: string[];
         };
+        /** @description A world as the agent has it on the game server. */
+        WorldState: {
+            /** @description Fixed identifier of the world, as the backend gave it. */
+            id: string;
+            /**
+             * Format: int32
+             * @description Port players reach the world on.
+             */
+            port: number;
+            /** @description Version of the template the world uses. */
+            template: string;
+        };
         /** @description What closing the year would delete, and when it was closed last. */
         YearEnd: {
             groups: components["schemas"]["YearEndGroup"][];
@@ -1778,6 +1843,83 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    fetch_jobs: {
+        parameters: {
+            query?: {
+                /** @description Seconds to wait, at most 25 */
+                wait?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The waiting jobs, possibly none */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobList"];
+                };
+            };
+            /** @description Missing or wrong key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    report_result: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id of the job */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobResult"];
+            };
+        };
+        responses: {
+            /** @description Noted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Done"];
+                };
+            };
+            /** @description Missing or wrong key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The agent has no such job */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     report: {
         parameters: {
             query?: never;
