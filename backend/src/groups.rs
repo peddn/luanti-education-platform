@@ -6,8 +6,10 @@
 //! every request, not in the frontend.
 
 use anyhow::Result;
-use lep_protocol::agent::{CreateWorld, JOB_CREATE_WORLD};
-use lep_protocol::web::{Group, GroupChange, WorldSetup};
+use lep_protocol::agent::{
+    CreateWorld, WorldJob, JOB_CREATE_WORLD, JOB_RESTART_WORLD, JOB_START_WORLD, JOB_STOP_WORLD,
+};
+use lep_protocol::web::{Group, GroupChange, WorldSetup, WorldStep};
 use sqlx::{Row, SqlitePool};
 
 use crate::{game_server, jobs, teachers, worlds};
@@ -75,6 +77,9 @@ pub async fn visible_to(pool: &SqlitePool, account: &str) -> Result<Vec<Group>> 
     .bind(account)
     .fetch_all(pool)
     .await?;
+    // With the name of the game server the agent fixes the address of
+    // every world it runs.
+    let host = game_server::host(pool).await?;
     let mut groups = Vec::with_capacity(rows.len());
     for row in rows {
         let id: String = row.get("id");
@@ -83,7 +88,11 @@ pub async fn visible_to(pool: &SqlitePool, account: &str) -> Result<Vec<Group>> 
             .and_then(|port| u16::try_from(port).ok());
         let running: Option<bool> = row.get("running");
         let (world, refusal) = setup_of(pool, &id, port, running).await?;
+        let (steering, step_refusal) = steering_of(pool, &id).await?;
         groups.push(Group {
+            address_fixed: port.is_some() && host.is_some(),
+            steering,
+            step_refusal,
             teachers: teachers_of(pool, &id).await?,
             id,
             name: row.get("name"),
@@ -123,6 +132,77 @@ async fn setup_of(
             Some(_) => (WorldSetup::Pending, None),
         },
     )
+}
+
+fn kind_of(step: WorldStep) -> &'static str {
+    match step {
+        WorldStep::Start => JOB_START_WORLD,
+        WorldStep::Stop => JOB_STOP_WORLD,
+        WorldStep::Restart => JOB_RESTART_WORLD,
+    }
+}
+
+/// Looks at the newest job that starts or stops a world: what the agent
+/// has not answered yet, or why it refused.
+async fn steering_of(
+    pool: &SqlitePool,
+    world_id: &str,
+) -> Result<(Option<WorldStep>, Option<String>)> {
+    let row = sqlx::query(
+        "SELECT kind, finished_at, ok, message FROM jobs
+         WHERE recipient = 'agent' AND world_id = ?
+           AND kind IN ('start_world', 'stop_world', 'restart_world')
+         ORDER BY created_at DESC, rowid DESC LIMIT 1",
+    )
+    .bind(world_id)
+    .fetch_optional(pool)
+    .await?;
+    let Some(row) = row else {
+        return Ok((None, None));
+    };
+    let finished = row.get::<Option<i64>, _>("finished_at").is_some();
+    if !finished {
+        let kind: String = row.get("kind");
+        let step = [WorldStep::Start, WorldStep::Stop, WorldStep::Restart]
+            .into_iter()
+            .find(|step| kind_of(*step) == kind);
+        return Ok((step, None));
+    }
+    if row.get::<Option<bool>, _>("ok") == Some(false) {
+        let message: Option<String> = row.get("message");
+        return Ok((None, Some(message.unwrap_or_default())));
+    }
+    Ok((None, None))
+}
+
+/// Why the world of a group could not be started or stopped.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SteerError {
+    /// There is no such group.
+    NotFound,
+    /// The agent does not run this world: it was set up by hand, or it
+    /// does not exist yet.
+    NotRun,
+}
+
+/// Asks the agent to start or stop the world of a group. The caller has
+/// checked that the one who asks may: a teacher of the group or the
+/// school administration.
+pub async fn steer(pool: &SqlitePool, id: &str, step: WorldStep) -> Result<Result<(), SteerError>> {
+    let port: Option<Option<i64>> = sqlx::query_scalar("SELECT port FROM worlds WHERE id = ?")
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+    match port {
+        None => return Ok(Err(SteerError::NotFound)),
+        Some(None) => return Ok(Err(SteerError::NotRun)),
+        Some(Some(_)) => {}
+    }
+    let payload = serde_json::to_value(WorldJob {
+        world: id.to_owned(),
+    })?;
+    jobs::add_for_agent(pool, id, kind_of(step), &payload).await?;
+    Ok(Ok(()))
 }
 
 /// Why a group could not be created.
@@ -307,6 +387,18 @@ pub async fn change(
     }
 
     if let Some(address) = &change.address {
+        // An address that comes from the agent is not entered by hand.
+        let fixed: Option<i64> = sqlx::query_scalar(
+            "SELECT 1 FROM worlds, game_server
+             WHERE worlds.id = ? AND worlds.port IS NOT NULL
+               AND game_server.id = 1 AND game_server.host IS NOT NULL",
+        )
+        .bind(id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        if fixed.is_some() {
+            return Ok(Err(ChangeError::InvalidAddress));
+        }
         let address = address.trim();
         if address.chars().count() > MAX_ADDRESS || address.chars().any(char::is_control) {
             return Ok(Err(ChangeError::InvalidAddress));
@@ -422,7 +514,7 @@ mod tests {
             template: "bdbbf00c8a29".to_owned(),
             running: true,
         };
-        worlds::note_agent_state(&pool, std::slice::from_ref(&state))
+        worlds::note_agent_state(&pool, std::slice::from_ref(&state), None)
             .await
             .unwrap();
         let group = only_group(&pool).await;
@@ -430,8 +522,139 @@ mod tests {
         assert_eq!(group.port, Some(30000));
 
         state.running = false;
-        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        worlds::note_agent_state(&pool, &[state], None)
+            .await
+            .unwrap();
         assert_eq!(only_group(&pool).await.world, WorldSetup::Stopped);
+    }
+
+    #[tokio::test]
+    async fn the_world_of_a_group_is_started_and_stopped() {
+        let pool = school().await;
+        let id = create(&pool, "Klasse 7b").await.unwrap().unwrap();
+        let by_hand = worlds::find_by_name(&pool, "Erste").await.unwrap().unwrap();
+
+        // A world the agent does not run cannot be steered.
+        for world in [&id, &by_hand.id] {
+            assert_eq!(
+                steer(&pool, world, WorldStep::Stop).await.unwrap(),
+                Err(SteerError::NotRun)
+            );
+        }
+        assert_eq!(
+            steer(&pool, "no-such-group", WorldStep::Stop)
+                .await
+                .unwrap(),
+            Err(SteerError::NotFound)
+        );
+
+        let created = jobs::take_waiting_for_agent(&pool).await.unwrap();
+        let fine = lep_protocol::world::JobResult {
+            ok: true,
+            message: String::new(),
+        };
+        jobs::finish_for_agent(&pool, &created[0].id, &fine)
+            .await
+            .unwrap();
+        let state = lep_protocol::agent::WorldState {
+            id: id.clone(),
+            port: 30000,
+            template: "bdbbf00c8a29".to_owned(),
+            running: true,
+        };
+        worlds::note_agent_state(&pool, &[state], None)
+            .await
+            .unwrap();
+        assert_eq!(only_group(&pool).await.steering, None);
+
+        steer(&pool, &id, WorldStep::Stop).await.unwrap().unwrap();
+        assert_eq!(only_group(&pool).await.steering, Some(WorldStep::Stop));
+        let waiting = jobs::take_waiting_for_agent(&pool).await.unwrap();
+        assert_eq!(waiting.len(), 1);
+        assert_eq!(waiting[0].kind, JOB_STOP_WORLD);
+        assert_eq!(waiting[0].payload["world"], id);
+
+        jobs::finish_for_agent(&pool, &waiting[0].id, &fine)
+            .await
+            .unwrap();
+        let group = only_group(&pool).await;
+        assert_eq!(group.steering, None);
+        assert_eq!(group.step_refusal, None);
+
+        // A refusal is shown until the next attempt.
+        steer(&pool, &id, WorldStep::Start).await.unwrap().unwrap();
+        refuse(&pool, "the world was started, but ended at once").await;
+        let group = only_group(&pool).await;
+        assert_eq!(group.steering, None);
+        assert_eq!(
+            group.step_refusal.as_deref(),
+            Some("the world was started, but ended at once")
+        );
+        steer(&pool, &id, WorldStep::Restart)
+            .await
+            .unwrap()
+            .unwrap();
+        let group = only_group(&pool).await;
+        assert_eq!(group.steering, Some(WorldStep::Restart));
+        assert_eq!(group.step_refusal, None);
+    }
+
+    #[tokio::test]
+    async fn the_agent_fixes_the_address_of_its_worlds() {
+        let pool = school().await;
+        let id = create(&pool, "Klasse 7b").await.unwrap().unwrap();
+        let by_hand = worlds::find_by_name(&pool, "Erste").await.unwrap().unwrap();
+        let state = lep_protocol::agent::WorldState {
+            id: id.clone(),
+            port: 30000,
+            template: "bdbbf00c8a29".to_owned(),
+            running: true,
+        };
+
+        // Without a name of the game server the address is entered by
+        // hand, also for a world of the agent.
+        worlds::note_agent_state(&pool, std::slice::from_ref(&state), None)
+            .await
+            .unwrap();
+        assert!(!only_group(&pool).await.address_fixed);
+        change(&pool, &id, &address("192.0.2.10, Port 30000"))
+            .await
+            .unwrap()
+            .unwrap();
+
+        // The agent names the game server: its word counts from now on.
+        let report = lep_protocol::agent::AgentReport {
+            version: "0.1.0".to_owned(),
+            free_disk_bytes: 1,
+            template: None,
+            worlds: vec![state.clone()],
+            host: Some("spiel.schule.example".to_owned()),
+        };
+        game_server::note_report(&pool, &report).await.unwrap();
+        worlds::note_agent_state(&pool, &[state], report.host.as_deref())
+            .await
+            .unwrap();
+        let group = only_group(&pool).await;
+        assert!(group.address_fixed);
+        assert_eq!(
+            group.address.as_deref(),
+            Some("spiel.schule.example, Port 30000")
+        );
+        assert_eq!(
+            change(&pool, &id, &address("somewhere else"))
+                .await
+                .unwrap(),
+            Err(ChangeError::InvalidAddress)
+        );
+
+        // A world that was set up by hand keeps its address by hand.
+        let groups = visible_to(&pool, "leitung").await.unwrap();
+        let first = groups.iter().find(|group| group.id == by_hand.id).unwrap();
+        assert!(!first.address_fixed);
+        change(&pool, &by_hand.id, &address("192.0.2.10, Port 30005"))
+            .await
+            .unwrap()
+            .unwrap();
     }
 
     #[tokio::test]
@@ -536,7 +759,9 @@ mod tests {
             template: "bdbbf00c8a29".to_owned(),
             running: false,
         };
-        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        worlds::note_agent_state(&pool, &[state], None)
+            .await
+            .unwrap();
         refuse(&pool, "created on port 30001, but it could not be started").await;
         assert_eq!(
             discard(&pool, &running).await.unwrap(),

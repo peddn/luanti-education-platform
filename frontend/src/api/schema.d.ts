@@ -533,6 +533,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/world": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Starts or stops the world of a group, or starts it anew. The teachers
+         *     of the group and the school administration may do this. For everybody
+         *     else the group does not exist.
+         */
+        post: operations["steer_world"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/login": {
         parameters: {
             query?: never;
@@ -870,6 +891,11 @@ export interface components {
              */
             free_disk_bytes: number;
             /**
+             * @description Name under which players reach the game server, from the
+             *     settings of the agent. Missing if they name none.
+             */
+            host?: string | null;
+            /**
              * @description Version of the template for worlds the agent carries. Missing
              *     if it was built without one or could not unpack it.
              */
@@ -1092,6 +1118,11 @@ export interface components {
              *     access slips. Missing until somebody entered it.
              */
             address?: string | null;
+            /**
+             * @description True if the address comes from the agent. Then nobody enters
+             *     it by hand.
+             */
+            address_fixed?: boolean;
             /** @description Fixed identifier of the group and its world. */
             id: string;
             /**
@@ -1112,6 +1143,12 @@ export interface components {
              *     Only with `refused`.
              */
             refusal?: string | null;
+            steering?: components["schemas"]["WorldStep"] | null;
+            /**
+             * @description Why the agent refused the last thing it was asked to do with
+             *     the world, in its own words.
+             */
+            step_refusal?: string | null;
             /**
              * @description Account names of the teachers who are assigned to the group,
              *     sorted.
@@ -1811,6 +1848,10 @@ export interface components {
             /** @description Fixed identifier of the world. */
             world: string;
         };
+        /** @description Request to start or stop the world of a group. */
+        WorldOrder: {
+            step: components["schemas"]["WorldStep"];
+        };
         /**
          * @description How it stands with the world of a group on the game server.
          * @enum {string}
@@ -1837,6 +1878,11 @@ export interface components {
             /** @description Version of the template the world uses. */
             template: string;
         };
+        /**
+         * @description What can be done with a world that the agent runs.
+         * @enum {string}
+         */
+        WorldStep: "start" | "stop" | "restart";
         /** @description What closing the year would delete, and when it was closed last. */
         YearEnd: {
             groups: components["schemas"]["YearEndGroup"][];
@@ -3384,6 +3430,69 @@ export interface operations {
                 };
             };
             /** @description No free name turned up (no_names) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    steer_world: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldOrder"];
+            };
+        };
+        responses: {
+            /** @description The group, with what the agent was asked to do */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description The request cannot be read (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group for this teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The agent does not run this world (wrong_state) */
             409: {
                 headers: {
                     [name: string]: unknown;

@@ -144,9 +144,30 @@ pub async fn note_started(
 /// Notes what the agent reported about the worlds it runs. A world the
 /// backend does not know is ignored: the agent cannot make one up.
 /// Returns the ids of the worlds something changed for.
-pub async fn note_agent_state(pool: &SqlitePool, states: &[WorldState]) -> Result<Vec<String>> {
+///
+/// With the name of the game server every world also gets its address
+/// for the access slips, made from that name and its port.
+pub async fn note_agent_state(
+    pool: &SqlitePool,
+    states: &[WorldState],
+    host: Option<&str>,
+) -> Result<Vec<String>> {
     let mut changed = Vec::new();
     for state in states {
+        if let Some(host) = host {
+            let address = address(host, state.port);
+            let rows =
+                sqlx::query("UPDATE worlds SET address = ? WHERE id = ? AND address IS NOT ?")
+                    .bind(&address)
+                    .bind(&state.id)
+                    .bind(&address)
+                    .execute(pool)
+                    .await?
+                    .rows_affected();
+            if rows > 0 {
+                changed.push(state.id.clone());
+            }
+        }
         let rows = sqlx::query(
             "UPDATE worlds SET port = ?, template_version = ?, running = ?
              WHERE id = ?
@@ -162,11 +183,17 @@ pub async fn note_agent_state(pool: &SqlitePool, states: &[WorldState]) -> Resul
         .execute(pool)
         .await?
         .rows_affected();
-        if rows > 0 {
+        if rows > 0 && !changed.contains(&state.id) {
             changed.push(state.id.clone());
         }
     }
     Ok(changed)
+}
+
+/// Writes where players reach a world, as it is printed on the access
+/// slips.
+pub fn address(host: &str, port: u16) -> String {
+    format!("{host}, Port {port}")
 }
 
 #[cfg(test)]
@@ -194,7 +221,7 @@ mod tests {
                 running: false,
             },
         ];
-        let changed = note_agent_state(&pool, &states).await.unwrap();
+        let changed = note_agent_state(&pool, &states, None).await.unwrap();
         assert_eq!(changed, std::slice::from_ref(&world.id));
         let world = find_by_name(&pool, "7b").await.unwrap().unwrap();
         assert_eq!(world.port, Some(30007));
@@ -204,15 +231,53 @@ mod tests {
         assert_eq!(world.running, Some(true));
 
         // The same report again changes nothing.
-        assert!(note_agent_state(&pool, &states).await.unwrap().is_empty());
+        assert!(note_agent_state(&pool, &states, None)
+            .await
+            .unwrap()
+            .is_empty());
 
         // A world that stopped is a change.
         let stopped = WorldState {
             running: false,
             ..states[0].clone()
         };
-        let changed = note_agent_state(&pool, &[stopped]).await.unwrap();
+        let changed = note_agent_state(&pool, std::slice::from_ref(&stopped), None)
+            .await
+            .unwrap();
         assert_eq!(changed.len(), 1);
+
+        // With the name of the game server the world gets its address,
+        // and a new name changes it.
+        let address_of = |pool: SqlitePool, id: String| async move {
+            sqlx::query_scalar::<_, Option<String>>("SELECT address FROM worlds WHERE id = ?")
+                .bind(id)
+                .fetch_one(&pool)
+                .await
+                .unwrap()
+        };
+        assert_eq!(address_of(pool.clone(), world.id.clone()).await, None);
+        let host = Some("spiel.schule.example");
+        let changed = note_agent_state(&pool, std::slice::from_ref(&stopped), host)
+            .await
+            .unwrap();
+        assert_eq!(changed.len(), 1);
+        assert_eq!(
+            address_of(pool.clone(), world.id.clone()).await.as_deref(),
+            Some("spiel.schule.example, Port 30007")
+        );
+        assert!(
+            note_agent_state(&pool, std::slice::from_ref(&stopped), host)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        note_agent_state(&pool, &[stopped], Some("192.0.2.10"))
+            .await
+            .unwrap();
+        assert_eq!(
+            address_of(pool.clone(), world.id.clone()).await.as_deref(),
+            Some("192.0.2.10, Port 30007")
+        );
         let world = find_by_name(&pool, "7b").await.unwrap().unwrap();
         assert_eq!(world.running, Some(false));
     }

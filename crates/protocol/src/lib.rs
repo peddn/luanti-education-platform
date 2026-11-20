@@ -646,6 +646,10 @@ pub mod agent {
         /// The worlds the agent looks after.
         #[serde(default)]
         pub worlds: Vec<WorldState>,
+        /// Name under which players reach the game server, from the
+        /// settings of the agent. Missing if they name none.
+        #[serde(default)]
+        pub host: Option<String>,
     }
 
     /// A world as the agent has it on the game server.
@@ -762,6 +766,36 @@ pub mod web {
         /// Port players reach the world on, once the agent created it.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub port: Option<u16>,
+        /// True if the address comes from the agent. Then nobody enters
+        /// it by hand.
+        #[serde(default)]
+        pub address_fixed: bool,
+        /// What the agent was asked to do with the world and has not
+        /// answered yet.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub steering: Option<WorldStep>,
+        /// Why the agent refused the last thing it was asked to do with
+        /// the world, in its own words.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub step_refusal: Option<String>,
+    }
+
+    /// What can be done with a world that the agent runs.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum WorldStep {
+        /// Start the world, now and after every reboot.
+        Start,
+        /// Stop the world and keep it stopped. Whoever plays is cut off.
+        Stop,
+        /// Start the world anew if it runs.
+        Restart,
+    }
+
+    /// Request to start or stop the world of a group.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct WorldOrder {
+        pub step: WorldStep,
     }
 
     /// How it stands with the world of a group on the game server.
