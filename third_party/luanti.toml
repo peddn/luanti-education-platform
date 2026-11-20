@@ -1,0 +1,15 @@
+# The Luanti version the worlds of the Luanti Education Platform run on.
+#
+# It is not copied into this repository. scripts/luanti-build.sh fetches
+# the source at exactly the commit given here and builds the server from
+# it, so every game server runs the same version whatever its
+# distribution ships.
+#
+# To update Luanti: read the changelog, set version and commit of the new
+# release tag, build, and test the mods in the game.
+
+[luanti]
+repo = "https://github.com/luanti-org/luanti"
+version = "5.18.0"
+commit = "e8f12bf1b93245cfc479ea21787beb1ec472cce9"
+license = "LGPL-2.1-or-later (code), CC-BY-SA-3.0 and others (media)"

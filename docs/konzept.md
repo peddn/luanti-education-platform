@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 71 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 72 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -921,7 +921,7 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
   sudo useradd --system --shell /usr/bin/nologin --user-group --create-home --home-dir /var/lib/lep lep
   ```
 
-- **Luanti** kommt aus dem Paket des Systems. Der Agent installiert keine Software.
+- **Luanti** wird auf dem Spielserver aus dem Quelltext gebaut, nur der Server ohne Grafik und Ton, in der festen Version aus `third_party/luanti.toml`. Die Pakete der Distributionen hinken hinterher: Debian 13 liefert 5.10. So läuft auf jedem Spielserver dieselbe Version, mit der entwickelt und getestet wird. Den Bau stößt der Server-Admin an. Der Agent installiert keine Software.
 - **Ordner** unter `/var/lib/lep`:
 
   | Ordner | Inhalt |
@@ -1012,7 +1012,7 @@ Der Agent kennt nur eine Art, Welten zu führen: als Dienste von systemd. Eine z
 - **Sichern im Betrieb:** Eine Kopie der Karte, während die Welt läuft, kann unvollständig sein. Zu entscheiden ist, ob die Welt dafür kurz stoppt oder die Datenbank eine Sicherung im Betrieb erlaubt.
 - **Wann gesichert wird:** nach Zeitplan des Agenten oder auf Auftrag des Backends, und wie viele Sicherungen bleiben.
 - **Welt ohne ihren alten Stand:** Das Backend spiegelt, was eine Welt zuletzt gemeldet hat. Meldet sich unter einer bekannten Kennung eine frisch erzeugte Welt, etwa nach einem Verlust ohne Sicherung, weiß sie nichts von den alten Konten und meldet nichts über sie. Das Backend zeigt dann weiter Fortschritt, Trophäen und Wunschnamen, die es in der Welt nicht mehr gibt, und führt Konten als angelegt, mit denen sich niemand anmelden kann. Im Betrieb soll eine Welt aus ihrer Sicherung zurückkommen, dann stimmt beides wieder. Zu entscheiden ist, ob das Backend eine frische Welt erkennt und seine Kopie dann verwirft, oder ob der Agent das Neuerzeugen unter einer bekannten Kennung gar nicht zulässt. In der Testumgebung tritt der Fall auf, sobald man nur die Testwelt löscht.
-- **Andere Systeme als Debian:** Pfade wie `/usr/bin/nologin` und der Name des Luanti-Pakets unterscheiden sich. Die Einrichtung wird für Debian beschrieben.
+- **Andere Systeme als Debian:** Pfade wie `/usr/bin/nologin` und die Namen der Pakete zum Bauen unterscheiden sich. Die Einrichtung wird für Debian beschrieben.
 
 ### 11.4 Anmeldung der Lehrkräfte
 
