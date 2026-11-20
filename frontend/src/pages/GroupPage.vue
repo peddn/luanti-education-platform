@@ -146,6 +146,13 @@ async function save() {
       >
         {{ $t('groups.protocols') }}
       </RouterLink>
+      <RouterLink
+        :to="{ name: 'rewards', params: { id } }"
+        data-test="rewards"
+        class="ml-3 inline-block rounded border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+      >
+        {{ $t('groups.rewards') }}
+      </RouterLink>
 
       <div v-if="!mayChange" class="space-y-3 rounded border border-slate-200 bg-white p-5">
         <h2 class="font-semibold">{{ $t('groups.teachers') }}</h2>

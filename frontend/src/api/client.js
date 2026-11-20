@@ -16,6 +16,8 @@
 /** @typedef {Schemas['YearEnd']} YearEnd */
 /** @typedef {Schemas['Removal']} Removal */
 /** @typedef {Schemas['StaffAccount']} StaffAccount */
+/** @typedef {Schemas['GroupRewards']} GroupRewards */
+/** @typedef {Schemas['RewardTable']} RewardTable */
 
 /**
  * What narrows a protocol down.
@@ -161,7 +163,7 @@ export function createClient(options = {}) {
    * @param {string} path
    * @param {unknown} [content] sent as JSON; without it the request is a GET
    * @param {boolean} [quiet] true for a request that only asks whether somebody is logged in
-   * @param {'POST' | 'PATCH' | 'DELETE'} [method] how the request is sent, if not as GET or with content as POST
+   * @param {'POST' | 'PATCH' | 'PUT' | 'DELETE'} [method] how the request is sent, if not as GET or with content as POST
    * @returns {Promise<unknown>}
    */
   async function request(path, content, quiet, method) {
@@ -506,6 +508,30 @@ export function createClient(options = {}) {
      */
     protocolExportUrl(id, protocol, wanted = {}) {
       return protocolPath(id, protocol, '/export', wanted)
+    },
+
+    /**
+     * Returns the reward table of a group and the items to choose from.
+     *
+     * @param {string} id
+     * @returns {Promise<GroupRewards>}
+     */
+    async rewards(id) {
+      return /** @type {GroupRewards} */ (await request(`/api/web/v1/groups/${encodeURIComponent(id)}/rewards`))
+    },
+
+    /**
+     * Orders a new reward table for a group, or the default of its world
+     * if no table is given. The answer shows the table that counts with
+     * the change on its way: the world makes it.
+     *
+     * @param {string} id
+     * @param {RewardTable} [table]
+     * @returns {Promise<GroupRewards>}
+     */
+    async changeRewards(id, table) {
+      const path = `/api/web/v1/groups/${encodeURIComponent(id)}/rewards`
+      return /** @type {GroupRewards} */ (await request(path, table ? { table } : {}, false, 'PUT'))
     },
 
     /**
