@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 67 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 68 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -142,7 +142,7 @@ Die verbindliche Fassung steht in der `CLAUDE.md` im Wurzelverzeichnis, zusammen
    | + Brücke |   | + Brücke |   | + Brücke |
    +----------+   +----------+   +----------+
         Spielserver der Schule (oder Cloud)
-        später: ein Agent pro Maschine
+        später: ein Agent auf dem Spielserver
 ```
 
 In jeder Welt gibt es drei Orte: **Wildnis**, **Lobby** und **Lernräume**.
@@ -898,13 +898,13 @@ Die Brücke braucht einen Eintrag in `secure.http_mods`. Sie ist kein vertrauens
 
 ### 11.3 Agent (Schritt 7)
 
-Ein kleines Programm in Rust, einmal pro Spielserver. Es legt Welten an, hält sie am Laufen und räumt sie wieder weg. Mit Schülern, Fortschritt und Protokollen hat es nichts zu tun: Das ist Sache der Brücke. Brücke und Agent wissen nichts voneinander.
+Ein kleines Programm in Rust auf dem Spielserver. Es gibt genau einen Spielserver für alle Welten und damit genau einen Agenten. Er legt Welten an, hält sie am Laufen und räumt sie wieder weg. Mit Schülern, Fortschritt und Protokollen hat es nichts zu tun: Das ist Sache der Brücke. Brücke und Agent wissen nichts voneinander.
 
 Gebaut wird der Agent am Anfang von Schritt 7. Dieser Abschnitt legt fest, wie ein Spielserver aufgebaut ist und was der Agent darf, damit bis dahin nichts entsteht, was ihm im Weg steht.
 
 **Grundsätze**
 
-- Der Agent ruft das Backend an, nie umgekehrt: HTTPS und Long Polling wie die Brücke, mit einem eigenen Schlüssel pro Maschine. Der Spielserver braucht dafür keinen offenen Port.
+- Der Agent ruft das Backend an, nie umgekehrt: HTTPS und Long Polling wie die Brücke, mit einem eigenen Schlüssel. Der Spielserver braucht dafür keinen offenen Port.
 - Er kennt eine feste Liste von Aufträgen und führt keine beliebigen Befehle aus.
 - Er läuft unter einem eigenen Benutzer ohne Administratorrechte.
 - Zur Laufzeit spricht er nur mit dem Backend. Er lädt nichts aus dem Netz nach.
@@ -932,18 +932,19 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
   | `archive/<Kennung>/` | Welten, die aus dem Betrieb genommen sind |
 
   Ordner heißen nach der festen Kennung der Welt, nie nach dem Namen der Gruppe. Der Name kann sich ändern, und er käme sonst aus einer Eingabe im Browser in einen Pfad.
-- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel der Maschine, Bereich der Ports. Die Datei ist nur für `lep` lesbar.
+- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports. Die Datei ist nur für `lep` lesbar.
 - **Ports:** Der Agent vergibt jeder Welt einen Port aus einem festen Bereich und meldet ihn dem Backend. Die Firewall öffnet der Server-Admin einmal für den ganzen Bereich.
 
 **Dienste**
 
-- Jede Welt ist ein Dienst des Systems aus einer Vorlage: `lep-world@<Kennung>.service`, mit `User=lep`. systemd startet eine abgestürzte Welt neu, und die Welten laufen weiter, wenn der Agent selbst neu startet.
-- Der Agent ist selbst ein Dienst, `lep-agent.service`, ebenfalls als `lep`.
-- Eine Polkit-Regel erlaubt dem Benutzer `lep` genau drei Dinge: Dienste starten, stoppen und neu starten, deren Name mit `lep-world@` beginnt. Mehr darf er an systemd nicht.
-- Welche Welten laufen sollen, weiß der Agent. Nach einem Neustart der Maschine startet er sie. So muss er keine Dienste im System ein- oder austragen, wofür er weitergehende Rechte bräuchte.
-- Der Server-Admin sieht die Welten mit den gewohnten Befehlen: `systemctl status lep-world@<Kennung>`, `journalctl -u lep-world@<Kennung>`.
+- Welten und Agent sind Dienste des Benutzers `lep`, nicht des Systems. Sie laufen in dessen eigener Dienstverwaltung (`systemctl --user`). Der Benutzer `lep` darf damit nur seine eigenen Dienste steuern, und es braucht keine zusätzliche Regel, die ihm Rechte am System gibt.
+- Damit diese Dienste ohne Anmeldung laufen und beim Hochfahren der Maschine starten, schaltet der Server-Admin einmal das Weiterlaufen ein (Linger): `sudo loginctl enable-linger lep`.
+- Jede Welt ist ein Dienst aus einer Vorlage: `lep-world@<Kennung>.service`. systemd startet eine abgestürzte Welt neu, und die Welten laufen weiter, wenn der Agent selbst neu startet.
+- Der Agent ist selbst ein Dienst, `lep-agent.service`.
+- Welche Welten laufen sollen, weiß der Agent. Nach einem Neustart der Maschine startet er sie.
+- Der Server-Admin sieht die Welten mit den gewohnten Befehlen, als Benutzer `lep`: `systemctl --user status lep-world@<Kennung>`, `journalctl --user -u lep-world@<Kennung>`.
 
-Einmalig als root einzurichten sind also: der Benutzer, die Dienstvorlage, die Polkit-Regel, die Einstellungen und der Dienst des Agenten. Danach braucht der Betrieb keine Root-Rechte mehr.
+Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner Dienste und die Einstellungen. Die Dienstvorlage und der Dienst des Agenten liegen im Ordner des Benutzers `lep`. Danach braucht der Betrieb keine Root-Rechte mehr.
 
 **Vorlage einer Welt**
 
@@ -966,7 +967,7 @@ Einmalig als root einzurichten sind also: der Benutzer, die Dienstvorlage, die P
 | Endgültig löschen | Archiv und Sicherungen einer Welt entfernen. Diesen Auftrag schicken nur der Jahresabschluss und das Löschen auf Verlangen (Abschnitt 12) |
 | Logdatei leeren | Luantis eigene Logdatei einer Welt leeren, in der Chatnachrichten stehen (Abschnitt 12) |
 
-Ohne Auftrag meldet der Agent regelmäßig den Zustand: welche Welten laufen, auf welchem Port, mit welcher Version, und wie viel Platz auf der Platte frei ist. Die Web-Anwendung zeigt das bei der Gruppe.
+Ohne Auftrag meldet der Agent regelmäßig den Zustand: welche Welten laufen, auf welchem Port, mit welcher Version, und wie viel Platz auf der Platte frei ist. Die Web-Anwendung zeigt das bei der Gruppe, den Zustand des Spielservers selbst auf der Seite „Zustand“.
 
 Regeln für alle Aufträge:
 
@@ -985,13 +986,13 @@ Es gibt einen einzigen Zeitpunkt, zu dem Welten endgültig verschwinden: den Jah
 
 **Schlüssel**
 
-- Der Schlüssel der Maschine entsteht im Backend mit einem Befehl, wie heute der Schlüssel einer Welt. Der Server-Admin trägt ihn einmal in die Einstellungen des Agenten ein.
+- Der Schlüssel des Agenten entsteht im Backend mit einem Befehl, wie heute der Schlüssel einer Welt. Der Server-Admin trägt ihn einmal in die Einstellungen des Agenten ein. Es gibt immer nur einen: Ein neuer Schlüssel ersetzt den alten.
 - Der Schlüssel einer Welt entsteht weiter im Backend. Mit dem Agenten reicht das Backend ihn im Auftrag „Welt anlegen“ durch, und kein Mensch sieht ihn mehr.
-- Der Schlüssel der Maschine öffnet nur die Schnittstelle des Agenten, nicht die der Welten oder der Lehrkräfte.
+- Der Schlüssel des Agenten öffnet nur die Schnittstelle des Agenten, nicht die der Welten oder der Lehrkräfte.
 
 **Folgen für die Web-Anwendung**
 
-- Mit dem Agenten legt die Schulverwaltung Gruppen im Browser an (Abschnitt 5). Das Backend wählt eine Maschine, schickt den Auftrag und zeigt, wann die Welt läuft.
+- Mit dem Agenten legt die Schulverwaltung Gruppen im Browser an (Abschnitt 5). Das Backend schickt den Auftrag an den Agenten und zeigt, wann die Welt läuft.
 - Bis dahin legt der Server-Admin Gruppe und Welt von Hand an.
 
 **Testumgebung**
@@ -1004,7 +1005,6 @@ Der Agent muss sich ohne systemd und ohne Root-Rechte ausprobieren lassen. Dafü
 - **Sichern im Betrieb:** Eine Kopie der Karte, während die Welt läuft, kann unvollständig sein. Zu entscheiden ist, ob die Welt dafür kurz stoppt oder die Datenbank eine Sicherung im Betrieb erlaubt.
 - **Wann gesichert wird:** nach Zeitplan des Agenten oder auf Auftrag des Backends, und wie viele Sicherungen bleiben.
 - **Welt ohne ihren alten Stand:** Das Backend spiegelt, was eine Welt zuletzt gemeldet hat. Meldet sich unter einer bekannten Kennung eine frisch erzeugte Welt, etwa nach einem Verlust ohne Sicherung, weiß sie nichts von den alten Konten und meldet nichts über sie. Das Backend zeigt dann weiter Fortschritt, Trophäen und Wunschnamen, die es in der Welt nicht mehr gibt, und führt Konten als angelegt, mit denen sich niemand anmelden kann. Im Betrieb soll eine Welt aus ihrer Sicherung zurückkommen, dann stimmt beides wieder. Zu entscheiden ist, ob das Backend eine frische Welt erkennt und seine Kopie dann verwirft, oder ob der Agent das Neuerzeugen unter einer bekannten Kennung gar nicht zulässt. In der Testumgebung tritt der Fall auf, sobald man nur die Testwelt löscht.
-- **Mehrere Maschinen:** Nach welcher Regel das Backend die Maschine für eine neue Welt wählt.
 - **Andere Systeme als Debian:** Pfade wie `/usr/bin/nologin` und der Name des Luanti-Pakets unterscheiden sich. Die Einrichtung wird für Debian beschrieben.
 
 ### 11.4 Anmeldung der Lehrkräfte

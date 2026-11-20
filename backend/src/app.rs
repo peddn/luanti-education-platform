@@ -1,8 +1,9 @@
 //! The web server: its routes and what they share.
 //!
-//! There are two separate interfaces. `/api/web` is for the browser of a
-//! teacher, who logs in with a link from a mail.
-//! `/api/world` is for the worlds, which call with their key.
+//! There are three separate interfaces. `/api/web` is for the browser of
+//! a teacher, who logs in with a link from a mail. `/api/world` is for
+//! the worlds, which call with their key. `/api/agent` is for the agent
+//! on the game server, which has a key of its own.
 
 use axum::extract::State;
 use axum::routing::get;
@@ -20,7 +21,7 @@ use crate::changes::Changes;
 use crate::failure::Failure;
 use crate::jobs::Waiters;
 use crate::mail::Mailer;
-use crate::{db, web_api, world_api};
+use crate::{agent_api, db, web_api, world_api};
 
 /// What every request handler can reach.
 #[derive(Clone)]
@@ -71,6 +72,7 @@ impl AppState {
         world_api::send_events,
         world_api::fetch_jobs,
         world_api::report_result,
+        agent_api::report,
         web_api::confirm,
         web_api::request_login_link,
         web_api::log_in,
@@ -129,6 +131,8 @@ impl AppState {
         lep_protocol::web::LoginRequest,
         lep_protocol::web::Me,
         lep_protocol::web::Status,
+        lep_protocol::web::GameServer,
+        lep_protocol::agent::AgentReport,
         lep_protocol::web::Group,
         lep_protocol::web::Groups,
         lep_protocol::web::GroupChange,
@@ -216,6 +220,13 @@ impl utoipa::Modify for WorldKey {
             .components
             .get_or_insert_with(Default::default)
             .add_security_scheme(
+                "agent_key",
+                SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
+            );
+        openapi
+            .components
+            .get_or_insert_with(Default::default)
+            .add_security_scheme(
                 "session",
                 SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new(
                     crate::web_api::SESSION_COOKIE,
@@ -262,6 +273,7 @@ fn api(state: AppState) -> Router {
         .route("/openapi.json", get(openapi))
         .nest("/web", web)
         .nest("/world", world)
+        .nest("/agent", agent_api::router())
         // An unknown path of the interface is an error, not a page.
         .fallback(|| async { Failure::not_found("no such path") })
         .with_state(state)

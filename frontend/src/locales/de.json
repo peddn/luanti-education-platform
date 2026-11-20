@@ -426,6 +426,20 @@
     "mail": {
       "smtp": "über den Mailserver",
       "terminal": "nicht eingerichtet, Mails stehen im Terminal des Backends"
+    },
+    "server": {
+      "title": "Spielserver",
+      "intro": "Auf dem Spielserver laufen die Welten. Ein kleines Programm dort, der Agent, meldet sich alle halbe Minute beim Backend.",
+      "none": "Es ist noch kein Agent eingerichtet. Das macht der Server-Admin.",
+      "state": "Verbindung",
+      "connected": "Verbunden",
+      "silent": "Nicht erreichbar",
+      "lastSeen": "Zuletzt gemeldet",
+      "never": "noch nie",
+      "agentVersion": "Version des Agenten",
+      "freeDisk": "Freier Speicherplatz",
+      "gigabytes": "{amount} GB",
+      "unknown": "unbekannt"
     }
   },
   "confirm": {

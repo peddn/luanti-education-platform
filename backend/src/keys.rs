@@ -8,9 +8,17 @@ const KEY_BYTES: usize = 32;
 /// somewhere it should not be.
 const PREFIX: &str = "lepw_";
 
+/// Marks a text as the key of the agent.
+const AGENT_PREFIX: &str = "lepa_";
+
 /// Makes up a new key.
 pub fn generate() -> String {
     random(PREFIX)
+}
+
+/// Makes up a new key for the agent.
+pub fn generate_for_agent() -> String {
+    random(AGENT_PREFIX)
 }
 
 /// Makes up a long random text that starts with `prefix`. It is used for

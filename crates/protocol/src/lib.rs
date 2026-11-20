@@ -619,6 +619,29 @@ pub mod world {
     pub struct Done {}
 }
 
+/// Interface for the agent: what the program on the game server and the
+/// backend say to each other. The agent always calls, the backend only
+/// answers.
+pub mod agent {
+    use serde::{Deserialize, Serialize};
+    use utoipa::ToSchema;
+
+    /// How often the agent says how the game server is doing, in seconds.
+    pub const REPORT_SECONDS: u64 = 30;
+    /// After this many seconds without a report the game server counts
+    /// as out of reach.
+    pub const SILENT_AFTER_SECONDS: u64 = 3 * REPORT_SECONDS;
+
+    /// What the agent says about the game server without being asked.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct AgentReport {
+        /// Version of the agent, as in its package.
+        pub version: String,
+        /// Free space on the disk that holds the worlds, in bytes.
+        pub free_disk_bytes: u64,
+    }
+}
+
 /// Interface for the browser: what the frontend and the backend say to
 /// each other.
 pub mod web {
@@ -1223,6 +1246,24 @@ pub mod web {
         /// Version of the backend, as in its package.
         pub version: String,
         pub mail: MailTransport,
+        /// The game server, as its agent last described it. Missing as
+        /// long as no agent is set up.
+        pub game_server: Option<GameServer>,
+    }
+
+    /// The game server that runs the worlds, as its agent last described
+    /// it.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct GameServer {
+        /// True if the agent reported a short while ago.
+        pub connected: bool,
+        /// When the agent last reported, in seconds since 1970. Missing
+        /// if it never did.
+        pub last_seen_at: Option<i64>,
+        /// Version of the agent.
+        pub version: Option<String>,
+        /// Free space on the disk that holds the worlds, in bytes.
+        pub free_disk_bytes: Option<u64>,
     }
 
     /// Answer to a confirmed address.

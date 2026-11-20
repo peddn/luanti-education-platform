@@ -384,10 +384,48 @@ Die Welt meldet den Fall einmal deutlich im Terminal (`THE BACKEND DOES NOT KNOW
 | `scripts/backend-run.sh world state <name>` | zeigt, was das Backend von einer Welt weiß: Module, Fortschritt, Trophäen, Protokolle |
 | `scripts/backend-run.sh world sync <name>` | bittet die Welt, ihren ganzen Stand noch einmal zu senden |
 | `scripts/backend-run.sh mail test <adresse>` | schickt eine Probemail über den eingestellten Mailserver |
+| `scripts/backend-run.sh agent key` | gibt dem Agenten einen Schlüssel und zeigt ihn, nur dieses eine Mal. Ein älterer Schlüssel gilt nicht mehr |
+| `scripts/backend-run.sh agent show` | zeigt, was der Agent zuletzt über den Spielserver gemeldet hat |
 | `scripts/backend-run.sh teacher list` | listet die Lehrkräfte: Adresse, ob sie bestätigt ist, und in wie vielen Welten das Privileg gilt |
 | `scripts/update-openapi.sh` | schreibt `api/openapi.json` und die Typen der Oberfläche neu, nach Änderungen an der Schnittstelle |
 
 Die Befehle arbeiten direkt auf der Datenbank und brauchen keinen laufenden Server. Ein Ping, der so eingestellt wird, erreicht eine verbundene Welt innerhalb von 25 Sekunden.
+
+### Agent
+
+Der Agent ist ein eigenes Rust-Programm im Ordner `agent/`. Im Betrieb läuft er auf dem Spielserver (Konzept, Abschnitt 11.3). Bisher meldet er dem Backend alle 30 Sekunden seine Version und den freien Speicherplatz. Welten legt er noch nicht an.
+
+In der Testumgebung läuft er neben dem Backend, in einem dritten Terminal:
+
+```sh
+scripts/agent-run.sh
+```
+
+Beim ersten Start lässt das Skript das Backend einen Schlüssel erzeugen und schreibt die Einstellungen nach `.dev/agent.toml`. Die Datei ist nur für dich lesbar und wird nie eingecheckt. Der Ordner des Agenten ist `.dev/agent/`.
+
+| Befehl | Wirkung |
+|---|---|
+| `scripts/agent-run.sh` | startet den Agenten, Ende mit Strg+C |
+| `scripts/agent-run.sh check` | liest die Einstellungen, schickt eine einzelne Meldung und sagt, ob das Backend sie angenommen hat |
+| `scripts/agent-run.sh --new-key` | erzeugt vorher einen neuen Schlüssel, etwa nach dem Löschen der Datenbank des Backends |
+
+Was der Agent meldet, zeigt die Web-Anwendung auf der Seite „Zustand“ im Kasten „Spielserver“, und im Terminal `scripts/backend-run.sh agent show`. Nach 90 Sekunden ohne Meldung gilt der Spielserver als nicht erreichbar.
+
+Die Einstellungen sind eine kleine Datei:
+
+```toml
+backend = "https://lep.schule.example"
+key = "lepa_…"
+data_dir = "/var/lib/lep"
+```
+
+- `backend`: Adresse des Backends. Sie muss mit `https://` beginnen, weil der Schlüssel mit jeder Anfrage mitreist. Nur ein Backend auf derselben Maschine darf mit `http://` erreicht werden.
+- `key`: der Schlüssel aus `agent key`.
+- `data_dir`: Ordner für alles, was der Agent anfasst. Ohne Angabe `/var/lib/lep`.
+
+Der Agent liest die Datei aus `/etc/lep/agent.toml` oder von dem Pfad hinter `--config`. Ist das Backend nicht erreichbar oder lehnt es den Schlüssel ab, läuft der Agent weiter und versucht es alle 30 Sekunden erneut. Im Terminal steht nur, wenn sich etwas ändert.
+
+Löschst du die Datenbank des Backends (`.dev/backend/`), kennt es den Schlüssel nicht mehr. Der Agent meldet dann „the backend refuses the key“. `scripts/agent-run.sh --new-key` behebt das.
 
 ### Web-Zugang einer Lehrkraft
 

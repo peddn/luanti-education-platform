@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/agent/v1/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Takes in what the agent says about the game server. */
+        post: operations["report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -779,6 +796,16 @@ export interface components {
              */
             refused?: string[];
         };
+        /** @description What the agent says about the game server without being asked. */
+        AgentReport: {
+            /**
+             * Format: int64
+             * @description Free space on the disk that holds the worlds, in bytes.
+             */
+            free_disk_bytes: number;
+            /** @description Version of the agent, as in its package. */
+            version: string;
+        };
         /** @description Answer to a request that failed. */
         ApiError: {
             code: components["schemas"]["ErrorCode"];
@@ -943,6 +970,27 @@ export interface components {
         EventResult: {
             id: string;
             outcome: components["schemas"]["EventOutcome"];
+        };
+        /**
+         * @description The game server that runs the worlds, as its agent last described
+         *     it.
+         */
+        GameServer: {
+            /** @description True if the agent reported a short while ago. */
+            connected: boolean;
+            /**
+             * Format: int64
+             * @description Free space on the disk that holds the worlds, in bytes.
+             */
+            free_disk_bytes?: number | null;
+            /**
+             * Format: int64
+             * @description When the agent last reported, in seconds since 1970. Missing
+             *     if it never did.
+             */
+            last_seen_at?: number | null;
+            /** @description Version of the agent. */
+            version?: string | null;
         };
         /** @description A group. It is the home of one world, one to one. */
         Group: {
@@ -1507,6 +1555,7 @@ export interface components {
          *     logged in.
          */
         Status: {
+            game_server?: components["schemas"]["GameServer"] | null;
             mail: components["schemas"]["MailTransport"];
             status: components["schemas"]["HealthStatus"];
             /** @description Version of the backend, as in its package. */
@@ -1719,6 +1768,48 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentReport"];
+            };
+        };
+        responses: {
+            /** @description Noted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Done"];
+                };
+            };
+            /** @description The report cannot be understood */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or wrong key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     health: {
         parameters: {
             query?: never;
