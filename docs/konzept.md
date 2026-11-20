@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 66 · 19. November 2026 · Status: Schritte 1 bis 5 umgesetzt, Schritt 6 begonnen
+Fassung 67 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -1275,8 +1275,8 @@ Die Verzeichnisstruktur des Repositorys steht in der `README.md`.
 3. **Fortschritt, Belohnung, Trophäen.**
 4. **Rechnen und Aufgabentruhe.** Prüft, ob die Schnittstellen tragen.
 5. **Lehrerpult, Aufmerksamkeitsmodus, Chat.**
-6. **Backend und Brücke:** Konten, Gruppen, E-Mail-Anmeldung, Wunschnamen, Fortschritt, Protokolle, Jahresabschluss.
-7. **Agent und mehrere Welten:** zuerst der Agent, der Welten anlegt, startet und stoppt, dann Verteilung der Konten und Gruppenwechsel. Weitere Welten entstehen so von Anfang an über ihn. Dazu gehört, dass die Schulverwaltung Lehrerkonten anlegt: Bis dahin gibt es in einer geschlossenen Welt keinen Weg zu einem neuen Lehrerkonto außer über den Admin.
+6. **Backend und Brücke:** Konten, Gruppen, E-Mail-Anmeldung, Wunschnamen, Fortschritt, Protokolle, Jahresabschluss, Löschen auf Verlangen, Startniveau und Belohnungstabelle je Gruppe. Dazu, aus Schritt 7 vorgezogen: Die Schulverwaltung legt die Konten der Lehrkräfte an.
+7. **Agent und mehrere Welten:** zuerst der Agent, der Welten anlegt, startet und stoppt, dann Verteilung der Konten und Gruppenwechsel. Weitere Welten entstehen so von Anfang an über ihn. Die Konten der Lehrkräfte legt die Schulverwaltung schon an (Schritt 6). Offen ist, dass eine neu angelegte Welt die bestehenden Lehrkräfte bekommt.
 8. **Textfragen** mit GIFT-Import.
 9. **TZ-Modul.**
 10. **Logikrätsel.**
