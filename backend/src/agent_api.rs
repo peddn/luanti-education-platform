@@ -107,6 +107,7 @@ pub async fn report(
             id: world.id.clone(),
             port: world.port,
             template: world.template.to_ascii_lowercase(),
+            running: world.running,
         })
         .collect();
     let report = AgentReport {

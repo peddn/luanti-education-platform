@@ -2973,7 +2973,7 @@
       },
       "CreateWorld": {
         "type": "object",
-        "description": "Payload of the job that creates a world. For a world that exists\nalready, only the key of the bridge is written again.",
+        "description": "Payload of the job that creates a world and starts it. For a\nworld that exists already, only the key of the bridge is written\nagain.",
         "required": [
           "world",
           "bridge_key"
@@ -4828,6 +4828,19 @@
           }
         }
       },
+      "WorldJob": {
+        "type": "object",
+        "description": "Payload of a job that names nothing but a world.",
+        "required": [
+          "world"
+        ],
+        "properties": {
+          "world": {
+            "type": "string",
+            "description": "Fixed identifier of the world."
+          }
+        }
+      },
       "WorldStarted": {
         "type": "object",
         "description": "Payload of the event \"world_started\".",
@@ -4867,6 +4880,10 @@
             "format": "int32",
             "description": "Port players reach the world on.",
             "minimum": 0
+          },
+          "running": {
+            "type": "boolean",
+            "description": "True if the world runs."
           },
           "template": {
             "type": "string",

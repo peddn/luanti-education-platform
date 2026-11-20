@@ -231,7 +231,7 @@ async fn the_backend_mirrors_the_worlds_the_agent_reports() {
         "free_disk_bytes": 1,
         "template": "bdbbf00c8a29",
         "worlds": [
-            { "id": world.id, "port": 30004, "template": "BDBBF00C8A29" },
+            { "id": world.id, "port": 30004, "template": "BDBBF00C8A29", "running": true },
             { "id": "made-up", "port": 30005, "template": "bdbbf00c8a29" },
         ],
     });
@@ -242,6 +242,7 @@ async fn the_backend_mirrors_the_worlds_the_agent_reports() {
     assert_eq!(all.len(), 1);
     assert_eq!(all[0].port, Some(30004));
     assert_eq!(all[0].template_version.as_deref(), Some("bdbbf00c8a29"));
+    assert_eq!(all[0].running, Some(true));
 
     for worlds in [
         json!([{ "id": world.id, "port": 0, "template": "bdbbf00c8a29" }]),

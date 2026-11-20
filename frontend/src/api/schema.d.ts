@@ -902,8 +902,9 @@ export interface components {
             teacher?: boolean;
         };
         /**
-         * @description Payload of the job that creates a world. For a world that exists
-         *     already, only the key of the bridge is written again.
+         * @description Payload of the job that creates a world and starts it. For a
+         *     world that exists already, only the key of the bridge is written
+         *     again.
          */
         CreateWorld: {
             /** @description Key the bridge of the world calls the backend with. */
@@ -1760,6 +1761,11 @@ export interface components {
             /** @description The address that waits for its confirmation, shortened. */
             pending?: string | null;
         };
+        /** @description Payload of a job that names nothing but a world. */
+        WorldJob: {
+            /** @description Fixed identifier of the world. */
+            world: string;
+        };
         /** @description Payload of the event "world_started". */
         WorldStarted: {
             /** @description Version of the game engine, as it names itself. */
@@ -1776,6 +1782,8 @@ export interface components {
              * @description Port players reach the world on.
              */
             port: number;
+            /** @description True if the world runs. */
+            running?: boolean;
             /** @description Version of the template the world uses. */
             template: string;
         };
