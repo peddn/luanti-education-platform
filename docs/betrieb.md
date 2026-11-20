@@ -93,7 +93,7 @@ sudo install -m 640 -o root -g lep-backend deploy/backend.env.example /etc/lep/b
 sudo nano /etc/lep/backend.env
 ```
 
-Für einen Versuch im eigenen Netz ohne Zertifikat, mit der Adresse des Servers statt `192.0.2.10`:
+Die Datei enthält schon alle Zeilen. Für einen Versuch im eigenen Netz ohne Zertifikat änderst du nur diese beiden, mit der Adresse des Servers statt `192.0.2.10`:
 
 ```
 LEP_BIND=0.0.0.0:8080
