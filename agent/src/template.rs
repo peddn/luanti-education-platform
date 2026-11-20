@@ -49,6 +49,63 @@ pub fn embedded() -> Option<Template<'static>> {
     None
 }
 
+/// What a template says about itself in its `template.toml`, as far as
+/// the agent needs it.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+pub struct Manifest {
+    /// Names of the mods of this project.
+    pub lep_mods: Vec<String>,
+    /// The third-party mods.
+    #[serde(default)]
+    pub mods: Vec<ThirdPartyMod>,
+    /// Settings the mods need in every world.
+    #[serde(default)]
+    pub settings: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+pub struct ThirdPartyMod {
+    pub name: String,
+}
+
+impl Manifest {
+    /// Reads the manifest of an unpacked template. Names of mods and of
+    /// settings end up in the settings of worlds, so they must be plain.
+    pub fn read(folder: &Path) -> Result<Self> {
+        let text = fs::read_to_string(folder.join(MANIFEST))
+            .with_context(|| format!("cannot read {MANIFEST}"))?;
+        Self::parse(&text)
+    }
+
+    pub fn parse(text: &str) -> Result<Self> {
+        let manifest: Self =
+            toml::from_str(text).with_context(|| format!("{MANIFEST} is wrong"))?;
+        let plain = |name: &str, more: &str| {
+            !name.is_empty()
+                && name
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || more.contains(c))
+        };
+        if manifest.lep_mods.is_empty() || !manifest.mod_names().all(|name| plain(name, "")) {
+            bail!("{MANIFEST} names mods that cannot be used");
+        }
+        for (key, value) in &manifest.settings {
+            if !plain(key, ".") || value.chars().any(char::is_control) {
+                bail!("{MANIFEST} holds the setting {key}, which cannot be used");
+            }
+        }
+        Ok(manifest)
+    }
+
+    /// Names of all mods a world loads: ours first, then the others.
+    pub fn mod_names(&self) -> impl Iterator<Item = &str> {
+        self.lep_mods
+            .iter()
+            .map(String::as_str)
+            .chain(self.mods.iter().map(|entry| entry.name.as_str()))
+    }
+}
+
 /// What `ensure` found and did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
@@ -250,7 +307,10 @@ pub(crate) mod testing {
     }
 
     pub const SMALL: &[(&str, &str)] = &[
-        (MANIFEST, "[game]\nname = \"minetest_game\"\n"),
+        (
+            MANIFEST,
+            "lep_mods = [\"lep_core\"]\n[game]\nname = \"minetest_game\"\n",
+        ),
         ("games/minetest_game/game.conf", "title = Minetest Game\n"),
         ("mods/lep/lep_core/init.lua", "-- core\n"),
     ];
@@ -425,6 +485,31 @@ mod tests {
         };
         assert!(ensure(data.path(), template).is_err());
         assert!(!data.path().join(FOLDER).join("abc123").exists());
+    }
+
+    #[test]
+    fn reads_the_manifest() {
+        let manifest = Manifest::parse(
+            "lep_mods = [\"lep_core\"]\n[game]\nname = \"minetest_game\"\n\
+             [[mods]]\nname = \"awards\"\nrepo = \"x\"\n[settings]\nprotector_radius = \"8\"\n",
+        )
+        .unwrap();
+        assert_eq!(
+            manifest.mod_names().collect::<Vec<_>>(),
+            ["lep_core", "awards"]
+        );
+        assert_eq!(manifest.settings["protector_radius"], "8");
+
+        for wrong in [
+            "lep_mods = []\n",
+            "lep_mods = [\"lep core\"]\n",
+            "lep_mods = [\"a\"]\n[[mods]]\nname = \"x = 1\"\n",
+            "lep_mods = [\"a\"]\n[settings]\n\"a b\" = \"1\"\n",
+            "lep_mods = [\"a\"]\n[settings]\nkey = \"1\\nname = x\"\n",
+            "no manifest",
+        ] {
+            assert!(Manifest::parse(wrong).is_err(), "{wrong}");
+        }
     }
 
     #[test]

@@ -5,6 +5,7 @@
 use std::fmt;
 use std::fs;
 use std::net::IpAddr;
+use std::ops::RangeInclusive;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
@@ -17,6 +18,8 @@ pub const DEFAULT_PATH: &str = "/etc/lep/agent.toml";
 /// Folder that holds everything the agent touches, if nothing else is
 /// said.
 pub const DEFAULT_DATA_DIR: &str = "/var/lib/lep";
+/// Ports the worlds get, if nothing else is said.
+pub const DEFAULT_PORTS: RangeInclusive<u16> = 30000..=30099;
 /// Start of every key of an agent.
 const KEY_PREFIX: &str = "lepa_";
 
@@ -28,6 +31,8 @@ struct File {
     backend: String,
     key: String,
     data_dir: Option<PathBuf>,
+    admin: Option<String>,
+    ports: Option<String>,
 }
 
 /// The checked settings.
@@ -39,6 +44,11 @@ pub struct Config {
     pub key: String,
     /// Folder that holds everything the agent touches.
     pub data_dir: PathBuf,
+    /// Account name of the server admin, entered into every new world.
+    /// Without it the agent creates no worlds.
+    pub admin: Option<String>,
+    /// Ports the worlds get, first and last.
+    pub ports: RangeInclusive<u16>,
 }
 
 /// The key never gets into a log, not even by accident.
@@ -48,6 +58,8 @@ impl fmt::Debug for Config {
             .field("backend", &self.backend.as_str())
             .field("key", &"(hidden)")
             .field("data_dir", &self.data_dir)
+            .field("admin", &self.admin)
+            .field("ports", &self.ports)
             .finish()
     }
 }
@@ -88,12 +100,42 @@ impl Config {
         if !data_dir.is_absolute() {
             bail!("'data_dir' must be a full path that starts with /");
         }
+        let admin = file.admin.map(|name| name.trim().to_owned());
+        if admin.as_deref().is_some_and(|name| !is_account_name(name)) {
+            bail!("'admin' is no account name: 1 to 19 characters, only letters, digits, - and _");
+        }
+        let ports = match file.ports.as_deref() {
+            Some(text) => parse_ports(text)?,
+            None => DEFAULT_PORTS,
+        };
         Ok(Self {
             backend,
             key,
             data_dir,
+            admin,
+            ports,
         })
     }
+}
+
+/// Returns true if a text can be the name of an account in a world.
+pub fn is_account_name(name: &str) -> bool {
+    (1..=19).contains(&name.len())
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+}
+
+/// Reads a range of ports like `30000-30099`.
+fn parse_ports(text: &str) -> Result<RangeInclusive<u16>> {
+    let wrong = || anyhow::anyhow!("'ports' must be a range like 30000-30099, above 1023");
+    let (first, last) = text.split_once('-').ok_or_else(wrong)?;
+    let first: u16 = first.trim().parse().map_err(|_| wrong())?;
+    let last: u16 = last.trim().parse().map_err(|_| wrong())?;
+    if first < 1024 || last < first {
+        return Err(wrong());
+    }
+    Ok(first..=last)
 }
 
 /// Keeps a message of the parser only if it quotes nothing from the
@@ -166,6 +208,30 @@ mod tests {
         assert_eq!(config.backend.as_str(), "https://lep.schule.example/");
         assert_eq!(config.key, KEY);
         assert_eq!(config.data_dir, PathBuf::from("/srv/lep"));
+    }
+
+    #[test]
+    fn reads_admin_and_ports() {
+        let base = settings("https://lep.schule.example");
+        let config = Config::parse(&base).unwrap();
+        assert_eq!(config.admin, None);
+        assert_eq!(config.ports, DEFAULT_PORTS);
+
+        let config = Config::parse(&format!(
+            "{base}admin = \"peddn\"\nports = \"31000-31009\"\n"
+        ))
+        .unwrap();
+        assert_eq!(config.admin.as_deref(), Some("peddn"));
+        assert_eq!(config.ports, 31000..=31009);
+
+        for admin in ["", "with space", "a\\nname = x", "much_too_long_for_a_name"] {
+            let text = format!("{base}admin = \"{admin}\"\n");
+            assert!(Config::parse(&text).is_err(), "{admin}");
+        }
+        for ports in ["", "30000", "30010-30000", "80-90", "a-b", "30000-70000"] {
+            let text = format!("{base}ports = \"{ports}\"\n");
+            assert!(Config::parse(&text).is_err(), "{ports}");
+        }
     }
 
     #[test]

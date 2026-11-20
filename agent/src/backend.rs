@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use lep_protocol::agent::AgentReport;
+use lep_protocol::world::{Job, JobList, JobResult};
 use reqwest::{redirect, Client, StatusCode, Url};
 
 use crate::config::Config;
@@ -43,6 +44,7 @@ impl std::error::Error for CallError {}
 pub struct Backend {
     http: Client,
     report: Url,
+    jobs: Url,
     key: String,
 }
 
@@ -67,6 +69,10 @@ impl Backend {
                 .backend
                 .join("api/agent/v1/report")
                 .context("the address of the backend cannot be used")?,
+            jobs: config
+                .backend
+                .join("api/agent/v1/jobs")
+                .context("the address of the backend cannot be used")?,
             key: config.key.clone(),
         })
     }
@@ -78,6 +84,65 @@ impl Backend {
             .post(self.report.clone())
             .bearer_auth(&self.key)
             .json(report)
+            .send()
+            .await
+            .map_err(|err| CallError::Unreachable(reason(&err)))?;
+        match response.status() {
+            StatusCode::OK => Ok(()),
+            StatusCode::UNAUTHORIZED => Err(CallError::Refused),
+            other => Err(CallError::Failed(other.as_u16())),
+        }
+    }
+}
+
+impl Backend {
+    /// Asks for the jobs that wait for the agent. If there are none, the
+    /// backend keeps the request open for up to `wait` and answers as
+    /// soon as one comes.
+    pub async fn fetch_jobs(&self, wait: Duration) -> Result<Vec<Job>, CallError> {
+        let mut url = self.jobs.clone();
+        url.query_pairs_mut()
+            .append_pair("wait", &wait.as_secs().to_string());
+        let response = self
+            .http
+            .get(url)
+            // Longer than the backend waits, so its answer still arrives.
+            .timeout(wait + TIMEOUT)
+            .bearer_auth(&self.key)
+            .send()
+            .await
+            .map_err(|err| CallError::Unreachable(reason(&err)))?;
+        match response.status() {
+            StatusCode::OK => {}
+            StatusCode::UNAUTHORIZED => return Err(CallError::Refused),
+            other => return Err(CallError::Failed(other.as_u16())),
+        }
+        let list: JobList = response
+            .json()
+            .await
+            .map_err(|_| CallError::Unreachable("the answer cannot be read".to_owned()))?;
+        Ok(list.jobs)
+    }
+
+    /// Tells the backend how a job went.
+    pub async fn send_result(&self, job_id: &str, result: &JobResult) -> Result<(), CallError> {
+        // The id becomes part of the address, so it must be a plain name.
+        if job_id.is_empty()
+            || !job_id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-')
+        {
+            return Err(CallError::Unreachable(
+                "the id of the job cannot be used".to_owned(),
+            ));
+        }
+        let mut url = self.jobs.clone();
+        url.set_path(&format!("{}/{job_id}/result", self.jobs.path()));
+        let response = self
+            .http
+            .post(url)
+            .bearer_auth(&self.key)
+            .json(result)
             .send()
             .await
             .map_err(|err| CallError::Unreachable(reason(&err)))?;
