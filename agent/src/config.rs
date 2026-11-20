@@ -37,6 +37,7 @@ struct File {
     admin: Option<String>,
     ports: Option<String>,
     luanti: Option<PathBuf>,
+    host: Option<String>,
 }
 
 /// The checked settings.
@@ -55,6 +56,9 @@ pub struct Config {
     pub ports: RangeInclusive<u16>,
     /// The Luanti server the worlds run with.
     pub luanti: PathBuf,
+    /// Name under which players reach this machine. With the port of a
+    /// world it makes the address on the access slips.
+    pub host: Option<String>,
 }
 
 /// The key never gets into a log, not even by accident.
@@ -67,6 +71,7 @@ impl fmt::Debug for Config {
             .field("admin", &self.admin)
             .field("ports", &self.ports)
             .field("luanti", &self.luanti)
+            .field("host", &self.host)
             .finish()
     }
 }
@@ -119,6 +124,13 @@ impl Config {
         if !luanti.is_absolute() {
             bail!("'luanti' must be a full path that starts with /");
         }
+        let host = file.host.map(|host| host.trim().to_owned());
+        if host.as_deref().is_some_and(|host| !is_host(host)) {
+            bail!(
+                "'host' must be the name or address players reach this machine under, like \
+                 spiel.schule.example, without a port"
+            );
+        }
         Ok(Self {
             backend,
             key,
@@ -126,6 +138,7 @@ impl Config {
             admin,
             ports,
             luanti,
+            host,
         })
     }
 }
@@ -136,6 +149,14 @@ pub fn is_account_name(name: &str) -> bool {
         && name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+}
+
+/// Returns true if a text can be the name or address of a machine.
+fn is_host(text: &str) -> bool {
+    (1..=100).contains(&text.len())
+        && text
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || ".-:[]".contains(c))
 }
 
 /// Reads a range of ports like `30000-30099`.
@@ -235,6 +256,16 @@ mod tests {
             PathBuf::from("/opt/luanti/bin/luantiserver")
         );
         assert!(Config::parse(&format!("{base}luanti = \"luantiserver\"\n")).is_err());
+
+        assert_eq!(config.host, None);
+        for host in ["spiel.schule.example", "192.0.2.10", "[2001:db8::1]"] {
+            let text = format!("{base}host = \"{host}\"\n");
+            assert_eq!(Config::parse(&text).unwrap().host.as_deref(), Some(host));
+        }
+        for host in ["", "spiel schule", "spiel.schule.example, Port 1", "a/b"] {
+            let text = format!("{base}host = \"{host}\"\n");
+            assert!(Config::parse(&text).is_err(), "{host}");
+        }
 
         let config = Config::parse(&format!(
             "{base}admin = \"peddn\"\nports = \"31000-31009\"\n"

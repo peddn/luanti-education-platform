@@ -133,8 +133,13 @@ impl Contact {
 pub async fn report_once(agent: &Agent, backend: &Backend) -> Result<(), CallError> {
     // Without systemd no world runs, and the jobs say why.
     let running = agent.units.running().unwrap_or_default();
-    let report = report::build(&agent.config.data_dir, agent.template_version(), &running)
-        .map_err(|err| CallError::Unreachable(format!("nothing to report: {err:#}")))?;
+    let report = report::build(
+        &agent.config.data_dir,
+        agent.template_version(),
+        &running,
+        agent.config.host.as_deref(),
+    )
+    .map_err(|err| CallError::Unreachable(format!("nothing to report: {err:#}")))?;
     backend.send_report(&report).await
 }
 
