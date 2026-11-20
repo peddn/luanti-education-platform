@@ -40,7 +40,9 @@ cargo --version
 node --version
 ```
 
-Node muss mindestens Version 20.19 sein.
+Debian 13 bringt Node 20.19 mit. Entwickelt und automatisch geprüft wird die Oberfläche mit Node 22, und einige ihrer Werkzeuge verlangen diese Version. Der Bau läuft mit Node 20.19 trotzdem durch, `npm` zeigt dabei viele Warnungen der Art `EBADENGINE Unsupported engine`. Sie betreffen nur die Werkzeuge zum Bauen und Testen, nicht das Ergebnis, das im Browser läuft. Gebaut ist richtig, wenn am Ende `Built into frontend/dist` steht.
+
+Das ist eine Übergangslösung: Sobald es fertige Programme zum Herunterladen gibt, braucht der Server weder Rust noch Node.
 
 ## 2. Bauen
 
