@@ -438,6 +438,7 @@ data_dir = "/var/lib/lep"
 - `admin`: Kontoname des Server-Admins, den der Agent in jede neue Welt einträgt. Ohne Angabe legt er keine Welten an. `scripts/agent-run.sh` übernimmt beim ersten Start den Namen aus `.dev/minetest.conf`.
 - `ports`: Bereich der Ports für die Welten, ohne Angabe `30000-30099`.
 - `luanti`: Pfad des Luanti-Servers für die Welten, ohne Angabe `/usr/local/bin/luantiserver`.
+- `host`: Name oder Adresse des Spielservers für die Spieler, ohne Port. Daraus und aus dem Port bildet das Backend die Adresse jeder Welt des Agenten. Ohne Angabe wird die Adresse von Hand eingetragen.
 
 Der Agent liest die Datei aus `/etc/lep/agent.toml` oder von dem Pfad hinter `--config`. Ist das Backend nicht erreichbar oder lehnt es den Schlüssel ab, läuft der Agent weiter und versucht es alle 30 Sekunden erneut. Im Terminal steht nur, wenn sich etwas ändert.
 
@@ -473,7 +474,7 @@ Der Weg `/api/health` bleibt ohne Anmeldung erreichbar, für Prüfungen von auß
 
 ### Gruppen
 
-Eine Gruppe ist eine Welt, eins zu eins. Mit einem Agenten legt die Schulverwaltung sie auf der Seite „Gruppen“ an (`POST /api/web/v1/groups`), der Agent richtet die Welt ein. Die Seite zeigt den Zustand der Welt: von Hand eingerichtet, wird eingerichtet, läuft, gestoppt oder abgelehnt. Eine abgelehnte Gruppe lässt sich erneut einrichten (`POST /api/web/v1/groups/{id}/setup`) oder verwerfen (`DELETE /api/web/v1/groups/{id}`), beides nur durch die Schulverwaltung und nur, solange die Welt nie entstanden ist. Ohne Agenten legt der Server-Admin die Gruppe mit `scripts/backend-run.sh world add <name>` an, für die Testwelt erledigt das `scripts/dev-bridge.sh`.
+Eine Gruppe ist eine Welt, eins zu eins. Mit einem Agenten legt die Schulverwaltung sie auf der Seite „Gruppen“ an (`POST /api/web/v1/groups`), der Agent richtet die Welt ein. Die Seite zeigt den Zustand der Welt: von Hand eingerichtet, wird eingerichtet, läuft, gestoppt oder abgelehnt. Eine abgelehnte Gruppe lässt sich erneut einrichten (`POST /api/web/v1/groups/{id}/setup`) oder verwerfen (`DELETE /api/web/v1/groups/{id}`), beides nur durch die Schulverwaltung und nur, solange die Welt nie entstanden ist. Die Welt einer Gruppe lässt sich starten, stoppen und neu starten (`POST /api/web/v1/groups/{id}/world` mit `step`), durch die Lehrkräfte der Gruppe und die Schulverwaltung. Ohne Agenten legt der Server-Admin die Gruppe mit `scripts/backend-run.sh world add <name>` an, für die Testwelt erledigt das `scripts/dev-bridge.sh`.
 
 | Rolle | Privileg im Spiel | Sieht | Darf |
 |---|---|---|---|
