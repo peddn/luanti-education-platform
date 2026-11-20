@@ -286,6 +286,80 @@
             "session": []
           }
         ]
+      },
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Creates a group and asks the agent to set its world up. Only the\nschool administration may do this.",
+        "operationId": "create_group",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The new group, its world still pending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The name cannot be used (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another group has this name (name_taken), or there is no agent that could set the world up (no_game_server)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/web/v1/groups/{id}": {
@@ -329,6 +403,81 @@
           },
           "404": {
             "description": "No such group for this teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Removes a group whose world the agent refused. Such a world never\nexisted. Only the school administration may do this.",
+        "operationId": "discard_group",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The group is gone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The agent did not refuse this group (wrong_state)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1118,6 +1267,83 @@
           },
           "404": {
             "description": "No such group, or not one of the teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/web/v1/groups/{id}/setup": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Asks the agent again to set up the world of a group it refused. Only\nthe school administration may do this.",
+        "operationId": "retry_group",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The group, its world pending again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the school administration (forbidden)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The agent did not refuse this group (wrong_state)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3136,6 +3362,8 @@
           "invalid_request",
           "forbidden",
           "name_taken",
+          "no_game_server",
+          "wrong_state",
           "no_names",
           "account_taken",
           "invalid_token",
@@ -3278,7 +3506,8 @@
         "required": [
           "id",
           "name",
-          "teachers"
+          "teachers",
+          "world"
         ],
         "properties": {
           "address": {
@@ -3304,12 +3533,32 @@
             "type": "string",
             "description": "Name for people. It can be changed."
           },
+          "port": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Port players reach the world on, once the agent created it.",
+            "minimum": 0
+          },
+          "refusal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the agent refused to set the world up, in its own words.\nOnly with `refused`."
+          },
           "teachers": {
             "type": "array",
             "items": {
               "type": "string"
             },
             "description": "Account names of the teachers who are assigned to the group,\nsorted."
+          },
+          "world": {
+            "$ref": "#/components/schemas/WorldSetup",
+            "description": "How it stands with the world of the group on the game server."
           }
         }
       },
@@ -3709,6 +3958,19 @@
           "password": {
             "type": "string",
             "description": "The start password. The world stores only its hash."
+          }
+        }
+      },
+      "NewGroup": {
+        "type": "object",
+        "description": "Request to create a group. Its world is set up by the agent.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name for people, 1 to 60 characters."
           }
         }
       },
@@ -4840,6 +5102,17 @@
             "description": "Fixed identifier of the world."
           }
         }
+      },
+      "WorldSetup": {
+        "type": "string",
+        "description": "How it stands with the world of a group on the game server.",
+        "enum": [
+          "manual",
+          "pending",
+          "refused",
+          "running",
+          "stopped"
+        ]
       },
       "WorldStarted": {
         "type": "object",

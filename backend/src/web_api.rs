@@ -18,9 +18,9 @@ use futures_util::stream::{self, Stream};
 use lep_protocol::web::{
     AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
     DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
-    MailTransport, Me, ProgressChange, ProtocolPage, RemovalRequest, Removals, StaffCreate,
-    StaffList, StartLevelChange, Status, Students, TeacherList, YearEnd, YearEndRequest,
-    YEAR_END_CONFIRMATION,
+    MailTransport, Me, NewGroup, ProgressChange, ProtocolPage, RemovalRequest, Removals,
+    StaffCreate, StaffList, StartLevelChange, Status, Students, TeacherList, YearEnd,
+    YearEndRequest, YEAR_END_CONFIRMATION,
 };
 use lep_protocol::world::Done;
 use lep_protocol::{ApiError, ErrorCode, Health};
@@ -38,7 +38,8 @@ use crate::changes;
 use crate::display_names;
 use crate::failure::Failure;
 use crate::game_server;
-use crate::groups::{self, ChangeError};
+use crate::groups::{self, ChangeError, CreateError, RefusedError};
+use crate::jobs::AGENT_BELL;
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
 use crate::progress::{self, ChangeError as ChangeProgressError};
 use crate::protocols;
@@ -69,8 +70,12 @@ pub fn router(state: &AppState) -> Router<AppState> {
         .route("/v1/logout", post(log_out))
         .route("/v1/me", get(me))
         .route("/v1/status", get(status))
-        .route("/v1/groups", get(list_groups))
-        .route("/v1/groups/{id}", get(show_group).patch(change_group))
+        .route("/v1/groups", get(list_groups).post(create_group))
+        .route(
+            "/v1/groups/{id}",
+            get(show_group).patch(change_group).delete(discard_group),
+        )
+        .route("/v1/groups/{id}/setup", post(retry_group))
         .route("/v1/teachers", get(list_teachers))
         .route(
             "/v1/groups/{id}/students",
@@ -461,6 +466,127 @@ pub async fn change_group(
         .await?
         .map(Json)
         .ok_or_else(|| Failure::not_found("no such group"))
+}
+
+/// Creates a group and asks the agent to set its world up. Only the
+/// school administration may do this.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups",
+    request_body = NewGroup,
+    responses(
+        (status = 200, description = "The new group, its world still pending", body = Group),
+        (status = 400, description = "The name cannot be used (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+        (status = 409, description = "Another group has this name (name_taken), or there is no agent that could set the world up (no_game_server)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn create_group(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    request: Result<Json<NewGroup>, JsonRejection>,
+) -> Result<Json<Group>, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    let wanted = body(request)?;
+    let id = match groups::create(&state.db, &wanted.name).await? {
+        Ok(id) => id,
+        Err(CreateError::InvalidName) => {
+            return Err(Failure::invalid_request(
+                "a group name needs 1 to 60 characters",
+            ))
+        }
+        Err(CreateError::NameTaken) => {
+            return Err(Failure::new(
+                StatusCode::CONFLICT,
+                ErrorCode::NameTaken,
+                "another group has this name",
+            ))
+        }
+        Err(CreateError::NoGameServer) => {
+            return Err(Failure::new(
+                StatusCode::CONFLICT,
+                ErrorCode::NoGameServer,
+                "there is no agent that could set the world up",
+            ))
+        }
+    };
+    // The agent hears of its job at once, not at its next request.
+    state.waiters.wake(AGENT_BELL);
+    tracing::info!(account = %teacher.account, group = %id, "group created");
+    group_of(&state, &teacher.account, &id).await.map(Json)
+}
+
+/// Turns the reason a refused group could not be handled into an answer.
+fn refused_failure(why: RefusedError) -> Failure {
+    match why {
+        RefusedError::NotFound => Failure::not_found("no such group"),
+        RefusedError::NotRefused => Failure::new(
+            StatusCode::CONFLICT,
+            ErrorCode::WrongState,
+            "this only works for a group whose world the agent refused",
+        ),
+    }
+}
+
+/// Asks the agent again to set up the world of a group it refused. Only
+/// the school administration may do this.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/setup",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The group, its world pending again", body = Group),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+        (status = 404, description = "No such group (not_found)", body = ApiError),
+        (status = 409, description = "The agent did not refuse this group (wrong_state)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn retry_group(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Json<Group>, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    groups::retry(&state.db, &id)
+        .await?
+        .map_err(refused_failure)?;
+    state.waiters.wake(AGENT_BELL);
+    state.changes.tell(&id, &[ChangeTopic::Group]);
+    tracing::info!(account = %teacher.account, group = %id, "setup of the group ordered again");
+    group_of(&state, &teacher.account, &id).await.map(Json)
+}
+
+/// Removes a group whose world the agent refused. Such a world never
+/// existed. Only the school administration may do this.
+#[utoipa::path(
+    delete,
+    path = "/api/web/v1/groups/{id}",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    responses(
+        (status = 200, description = "The group is gone", body = Done),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 403, description = "Not the school administration (forbidden)", body = ApiError),
+        (status = 404, description = "No such group (not_found)", body = ApiError),
+        (status = 409, description = "The agent did not refuse this group (wrong_state)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn discard_group(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+) -> Result<Json<Done>, Failure> {
+    school_admin_only(&state, &teacher.account).await?;
+    groups::discard(&state.db, &id)
+        .await?
+        .map_err(refused_failure)?;
+    state.changes.tell(&id, &[ChangeTopic::Group]);
+    tracing::info!(account = %teacher.account, group = %id, "refused group discarded");
+    Ok(Json(Done {}))
 }
 
 /// Lists the accounts that can be assigned to groups. Only the school
