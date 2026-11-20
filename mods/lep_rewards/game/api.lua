@@ -65,9 +65,21 @@ function lep_rewards.get_table()
 	return config.table()
 end
 
+--- Returns the items a teacher may choose from, as a list of
+-- { name, title }. The title is the name of the item for people.
+function lep_rewards.get_choices()
+	local list = {}
+	for index, name in ipairs(config.choices()) do
+		local description = core.registered_items[name].short_description
+			or core.registered_items[name].description or name
+		list[index] = { name = name, title = description:match("^[^\n]*") }
+	end
+	return list
+end
+
 --- Sets the reward table of this world. It counts from the next reward
 -- on; what lies in a chest stays. The table is taken as a whole or not
--- at all.
+-- at all, and only with items of lep_rewards.get_choices.
 -- @return true  or  false, what is wrong: the name of an occasion or
 --   "daily_limit"
 function lep_rewards.set_table(candidate)

@@ -454,7 +454,7 @@ So lohnt es sich nicht, leichte Aufgaben endlos zu wiederholen, und das Üben lo
 **Anlässe**
 
 - Naturalien.
-- Fünf Anlässe, jeder mit einem Gegenstand und einer Anzahl. Die Tabelle gilt für die ganze Gruppe, also für die Welt. Die zuständige Lehrkraft füllt sie in der Web-Anwendung. Bis dahin gilt die Voreinstellung.
+- Fünf Anlässe, jeder mit einem Gegenstand und einer Anzahl. Die Tabelle gilt für die ganze Gruppe, also für die Welt. Die zuständige Lehrkraft füllt sie in der Web-Anwendung. Bis dahin gilt die Voreinstellung. Zur Wahl stehen die Gegenstände einer Liste, die der Admin für den Server festlegt. Die Welt prüft jede Tabelle und nimmt sie nur als Ganzes an.
 
 | Anlass | Voreinstellung |
 |---|---|

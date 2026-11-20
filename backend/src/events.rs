@@ -109,6 +109,12 @@ pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<Ev
             }
             None => false,
         },
+        lep_protocol::world::EVENT_REWARDS => {
+            match payload::<lep_protocol::world::Rewards>(event) {
+                Some(report) => crate::rewards::store(pool, world_id, event.time, &report).await?,
+                None => false,
+            }
+        }
         EVENT_ACCOUNT_USED => match payload::<AccountUsed>(event) {
             Some(used) => removals::note_used(pool, world_id, &used).await?,
             None => false,
@@ -159,6 +165,8 @@ fn topics_of(kind: &str) -> &'static [ChangeTopic] {
             ChangeTopic::Protocols,
         ],
         EVENT_TEACHERS | EVENT_WEB_ACCESS | EVENT_WORLD_STARTED => &[ChangeTopic::Group],
+        // The reward table is a setting of the group.
+        lep_protocol::world::EVENT_REWARDS => &[ChangeTopic::Group],
         EVENT_PROTOCOL => &[ChangeTopic::Protocols],
         _ => &[],
     }

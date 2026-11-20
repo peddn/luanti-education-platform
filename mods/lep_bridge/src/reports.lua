@@ -16,6 +16,7 @@ reports.EVENT_WEB_ACCESS = "web_access"
 reports.EVENT_ACCOUNTS_CREATED = "accounts_created"
 reports.EVENT_DISPLAY_NAME = "display_name"
 reports.EVENT_ACCOUNT_USED = "account_used"
+reports.EVENT_REWARDS = "rewards"
 reports.EVENT_ACCOUNT_REMOVED = "account_removed"
 reports.JOB_CREATE_ACCOUNTS = "create_accounts"
 reports.JOB_REMOVE_ACCOUNT = "remove_account"
@@ -23,6 +24,7 @@ reports.JOB_SET_PASSWORD = "set_password"
 reports.JOB_SET_LEVEL = "set_level"
 reports.JOB_SET_LOCKED = "set_locked"
 reports.JOB_SET_START_LEVEL = "set_start_level"
+reports.JOB_SET_REWARDS = "set_rewards"
 reports.JOB_REMOVE_DISPLAY_NAME = "remove_display_name"
 reports.JOB_SET_DISPLAY_LOCKED = "set_display_locked"
 reports.JOB_CLEAR_PROTOCOLS = "clear_protocols"
@@ -125,6 +127,49 @@ function reports.protocol(name, record)
 		end
 	end
 	return { protocol = name, account = account, fields = fields }
+end
+
+-- The occasions of the reward table, as lep_rewards names them.
+reports.REWARD_OCCASIONS = { "task", "daily", "level", "stage", "module" }
+
+local function reward_row(row)
+	if type(row) ~= "table" or type(row.name) ~= "string" then
+		return nil
+	end
+	return { name = row.name, count = whole(row.count) }
+end
+
+--- Reads a reward table that arrives from outside or leaves the world.
+-- @return Table with one { name, count } per occasion and daily_limit,
+--   or nil if something is missing. Whether items and numbers are
+--   allowed, lep_rewards decides.
+function reports.reward_table(source)
+	if type(source) ~= "table" or type(source.daily_limit) ~= "number" then
+		return nil
+	end
+	local result = { daily_limit = whole(source.daily_limit) }
+	for _, occasion in ipairs(reports.REWARD_OCCASIONS) do
+		result[occasion] = reward_row(source[occasion])
+		if not result[occasion] then
+			return nil
+		end
+	end
+	return result
+end
+
+--- Builds the payload of the event "rewards": the reward table of the
+-- world and the items a teacher may choose from.
+-- @param choices List of { name, title }.
+function reports.rewards(table_, choices)
+	local list = {}
+	for _, choice in ipairs(choices or {}) do
+		if type(choice) == "table" and type(choice.name) == "string" then
+			list[#list + 1] = { name = choice.name, title = tostring(choice.title or choice.name) }
+		end
+	end
+	-- An empty list is left out: an empty Lua table cannot say whether
+	-- it is a list.
+	return { table = reports.reward_table(table_), choices = #list > 0 and list or nil }
 end
 
 --- Builds the payload of the event "account_used": somebody has logged

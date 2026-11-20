@@ -16,6 +16,29 @@ function config.is_item(name)
 		and name ~= "air" and name ~= "ignore"
 end
 
+--- Returns the names of the items a teacher may choose from, as the
+-- admin listed them and as far as this world has them.
+function config.choices()
+	local setting = core.settings:get("lep_rewards_choices")
+	local list = {}
+	for _, name in ipairs(rewards.parse_choices(
+			setting ~= nil and setting ~= "" and setting or rewards.DEFAULT_CHOICES)) do
+		if config.is_item(name) then
+			list[#list + 1] = name
+		end
+	end
+	return list
+end
+
+local function is_choice(name)
+	for _, choice in ipairs(config.choices()) do
+		if choice == name then
+			return true
+		end
+	end
+	return false
+end
+
 -- The table is read when it is first needed: only then all mods are
 -- loaded and their items known.
 local current
@@ -38,7 +61,9 @@ end
 -- @return true  or  false, what is wrong: the name of an occasion or
 --   "daily_limit"
 function config.set(candidate)
-	local clean, why = rewards.check_table(candidate, config.is_item)
+	-- Only what the admin put on the list. A table that was stored
+	-- before the list changed keeps what it has.
+	local clean, why = rewards.check_table(candidate, is_choice)
 	if not clean then
 		return false, why
 	end

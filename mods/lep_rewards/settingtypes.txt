@@ -1,4 +1,6 @@
-# The rewards are no longer set here. Each world keeps its own table:
-# an item and a count for a solved task, a completed level, a completed
-# stage and a completed module, and the number of rewarded daily tasks
-# per day. Teachers change it in the web application.
+# The rewards themselves are not set here. Each world keeps its own
+# table, which teachers change in the web application.
+
+# The items a teacher may choose from, separated by commas. Items the
+# world does not have are left out.
+lep_rewards_choices (Items teachers may choose as rewards) string default:coal_lump,default:steel_ingot,default:copper_ingot,default:tin_ingot,default:bronze_ingot,default:gold_ingot,default:mese_crystal,default:diamond,default:apple,farming:bread,default:torch,default:book

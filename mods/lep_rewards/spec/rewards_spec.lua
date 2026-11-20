@@ -227,4 +227,19 @@ describe("lep_rewards daily allowance", function()
 		assert.are.same({ day = "", daily = 0 },
 			rewards.normalize_allowance({ day = 5, daily = "many" }))
 	end)
+	it("reads the list of items a teacher may choose from", function()
+		assert.are.same({ "default:diamond", "farming:bread" },
+			rewards.parse_choices(" default:diamond ,farming:bread, default:diamond,,bread, a:b c"))
+		assert.are.same({}, rewards.parse_choices(nil))
+		local default = rewards.parse_choices(rewards.DEFAULT_CHOICES)
+		assert.are.equal(12, #default)
+		-- What the default table pays can be chosen.
+		local chosen = {}
+		for _, name in ipairs(default) do
+			chosen[name] = true
+		end
+		for _, occasion in ipairs(rewards.OCCASIONS) do
+			assert.is_true(chosen[rewards.DEFAULT_TABLE[occasion].name], occasion)
+		end
+	end)
 end)

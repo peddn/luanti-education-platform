@@ -32,6 +32,27 @@ rewards.REASON_LEVEL = "level"
 rewards.REASON_STAGE = "stage"
 rewards.REASON_MODULE = "module"
 
+-- The items a teacher may choose from unless the admin sets another
+-- list. Items a world does not have are left out there.
+rewards.DEFAULT_CHOICES = "default:coal_lump,default:steel_ingot,default:copper_ingot,"
+	.. "default:tin_ingot,default:bronze_ingot,default:gold_ingot,default:mese_crystal,"
+	.. "default:diamond,default:apple,farming:bread,default:torch,default:book"
+
+--- Reads a list of item names like "default:diamond, farming:bread".
+-- @return List of names without duplicates, in the order given. What is
+--   no item name is left out.
+function rewards.parse_choices(text)
+	local list, seen = {}, {}
+	for part in tostring(text or ""):gmatch("[^,]+") do
+		local name = part:match("^%s*([%w_]+:[%w_]+)%s*$")
+		if name and not seen[name] then
+			seen[name] = true
+			list[#list + 1] = name
+		end
+	end
+	return list
+end
+
 -- Limits of what a table may hold.
 rewards.MAX_COUNT = 99
 rewards.MAX_DAILY_LIMIT = 20

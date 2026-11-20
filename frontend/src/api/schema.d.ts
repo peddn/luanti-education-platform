@@ -239,6 +239,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/v1/groups/{id}/rewards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the reward table of a group: what is paid for which
+         *     occasion, and the items that can be chosen.
+         */
+        get: operations["show_rewards"];
+        /**
+         * Orders a new reward table for a group, or the default of its world
+         *     if no table is given. The world checks it, takes it as a whole or
+         *     not at all, and reports the table it has then. It counts from the
+         *     next reward on.
+         */
+        put: operations["change_rewards"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/v1/groups/{id}/students": {
         parameters: {
             query?: never;
@@ -966,6 +992,24 @@ export interface components {
             modules: components["schemas"]["ProgressModule"][];
             students: components["schemas"]["StudentProgress"][];
         };
+        /** @description The reward table of a group, as its world reported it. */
+        GroupRewards: {
+            change?: components["schemas"]["ChangeState"] | null;
+            /** @description The items that can be chosen. */
+            choices: components["schemas"]["RewardChoice"][];
+            /**
+             * Format: int32
+             * @description The most that can be paid for one occasion, before the effort
+             *     multiplies it.
+             */
+            max_count: number;
+            /**
+             * Format: int32
+             * @description The highest number of rewarded daily tasks per day.
+             */
+            max_daily_limit: number;
+            table?: components["schemas"]["RewardTable"] | null;
+        };
         /** @description The groups a teacher may see. */
         Groups: {
             groups: components["schemas"]["Group"][];
@@ -1288,6 +1332,49 @@ export interface components {
             /** @description Account name of the teacher who ordered it. */
             by: string;
         };
+        /** @description An item a teacher may choose as a reward. */
+        RewardChoice: {
+            name: string;
+            /** @description Name for people, in the language of the world. */
+            title: string;
+        };
+        /**
+         * @description What is paid for one occasion: an item and how many. How hard a
+         *     task or a module was multiplies the count.
+         */
+        RewardRow: {
+            /** Format: int32 */
+            count: number;
+            /** @description Technical name of the item, like "default:diamond". */
+            name: string;
+        };
+        /** @description The reward table of a world, which is the one of a group. */
+        RewardTable: {
+            /** @description For a solved daily task. */
+            daily: components["schemas"]["RewardRow"];
+            /**
+             * Format: int32
+             * @description How many daily tasks are rewarded per student and day.
+             */
+            daily_limit: number;
+            /** @description For a completed level. */
+            level: components["schemas"]["RewardRow"];
+            /** @description For a completed module. */
+            module: components["schemas"]["RewardRow"];
+            /** @description For a completed stage. */
+            stage: components["schemas"]["RewardRow"];
+            /** @description For a solved level task that counts for the workload. */
+            task: components["schemas"]["RewardRow"];
+        };
+        /** @description Payload of the event "rewards". */
+        Rewards: {
+            choices?: components["schemas"]["RewardChoice"][];
+            table: components["schemas"]["RewardTable"];
+        };
+        /** @description Request to set the reward table of a group. */
+        RewardsChange: {
+            table?: components["schemas"]["RewardTable"] | null;
+        };
         /**
          * @description Payload of the job "set_display_locked". The world writes it into
          *     the protocol of the names, under the account of the teacher.
@@ -1348,6 +1435,17 @@ export interface components {
              *     refuses the admin and the school administration.
              */
             staff?: boolean;
+        };
+        /**
+         * @description Payload of the job "set_rewards". The world checks the table,
+         *     takes it as a whole or not at all, and writes the change into
+         *     the protocol of the desk. It answers with a fixed word: "set", or
+         *     the row that is wrong.
+         */
+        SetRewards: {
+            /** @description Account name of the teacher who ordered it. */
+            by: string;
+            table?: components["schemas"]["RewardTable"] | null;
         };
         /**
          * @description Payload of the job "set_start_level". The world writes the change
@@ -2170,6 +2268,101 @@ export interface operations {
                 };
             };
             /** @description No such group, not one of the teacher, or no such protocol (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    show_rewards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The reward table of the group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupRewards"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or not one of the teacher (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    change_rewards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the group */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RewardsChange"];
+            };
+        };
+        responses: {
+            /** @description The table that counts, with the change on its way */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupRewards"];
+                };
+            };
+            /** @description A count or the daily limit is out of range, an item cannot be chosen, or the world has not reported its table yet (invalid_request) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not logged in (unauthorized) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such group, or not one of the teacher (not_found) */
             404: {
                 headers: {
                     [name: string]: unknown;

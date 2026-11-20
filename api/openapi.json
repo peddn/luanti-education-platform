@@ -830,6 +830,138 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/rewards": {
+      "get": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Returns the reward table of a group: what is paid for which\noccasion, and the items that can be chosen.",
+        "operationId": "show_rewards",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reward table of the group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupRewards"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or not one of the teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Orders a new reward table for a group, or the default of its world\nif no table is given. The world checks it, takes it as a whole or\nnot at all, and reports the table it has then. It counts from the\nnext reward on.",
+        "operationId": "change_rewards",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardsChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The table that counts, with the change on its way",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupRewards"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A count or the daily limit is out of range, an item cannot be chosen, or the world has not reported its table yet (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group, or not one of the teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/groups/{id}/students": {
       "get": {
         "tags": [
@@ -2965,6 +3097,58 @@
           }
         }
       },
+      "GroupRewards": {
+        "type": "object",
+        "description": "The reward table of a group, as its world reported it.",
+        "required": [
+          "choices",
+          "max_count",
+          "max_daily_limit"
+        ],
+        "properties": {
+          "change": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeState",
+                "description": "Missing in the usual case: no change is on its way."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardChoice"
+            },
+            "description": "The items that can be chosen."
+          },
+          "max_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The most that can be paid for one occasion, before the effort\nmultiplies it.",
+            "minimum": 0
+          },
+          "max_daily_limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The highest number of rewarded daily tasks per day.",
+            "minimum": 0
+          },
+          "table": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RewardTable",
+                "description": "Missing as long as the world has not reported its table."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "Groups": {
         "type": "object",
         "description": "The groups a teacher may see.",
@@ -3618,6 +3802,117 @@
           }
         }
       },
+      "RewardChoice": {
+        "type": "object",
+        "description": "An item a teacher may choose as a reward.",
+        "required": [
+          "name",
+          "title"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "description": "Name for people, in the language of the world."
+          }
+        }
+      },
+      "RewardRow": {
+        "type": "object",
+        "description": "What is paid for one occasion: an item and how many. How hard a\ntask or a module was multiplies the count.",
+        "required": [
+          "name",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "Technical name of the item, like \"default:diamond\"."
+          }
+        }
+      },
+      "RewardTable": {
+        "type": "object",
+        "description": "The reward table of a world, which is the one of a group.",
+        "required": [
+          "task",
+          "daily",
+          "level",
+          "stage",
+          "module",
+          "daily_limit"
+        ],
+        "properties": {
+          "daily": {
+            "$ref": "#/components/schemas/RewardRow",
+            "description": "For a solved daily task."
+          },
+          "daily_limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many daily tasks are rewarded per student and day.",
+            "minimum": 0
+          },
+          "level": {
+            "$ref": "#/components/schemas/RewardRow",
+            "description": "For a completed level."
+          },
+          "module": {
+            "$ref": "#/components/schemas/RewardRow",
+            "description": "For a completed module."
+          },
+          "stage": {
+            "$ref": "#/components/schemas/RewardRow",
+            "description": "For a completed stage."
+          },
+          "task": {
+            "$ref": "#/components/schemas/RewardRow",
+            "description": "For a solved level task that counts for the workload."
+          }
+        }
+      },
+      "Rewards": {
+        "type": "object",
+        "description": "Payload of the event \"rewards\".",
+        "required": [
+          "table"
+        ],
+        "properties": {
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardChoice"
+            }
+          },
+          "table": {
+            "$ref": "#/components/schemas/RewardTable"
+          }
+        }
+      },
+      "RewardsChange": {
+        "type": "object",
+        "description": "Request to set the reward table of a group.",
+        "properties": {
+          "table": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RewardTable",
+                "description": "The new table. Missing to put the default of the world back."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "SetDisplayLocked": {
         "type": "object",
         "description": "Payload of the job \"set_display_locked\". The world writes it into\nthe protocol of the names, under the account of the teacher.",
@@ -3722,6 +4017,30 @@
           "staff": {
             "type": "boolean",
             "description": "True if the order is meant for a teacher. The world still\nrefuses the admin and the school administration."
+          }
+        }
+      },
+      "SetRewards": {
+        "type": "object",
+        "description": "Payload of the job \"set_rewards\". The world checks the table,\ntakes it as a whole or not at all, and writes the change into\nthe protocol of the desk. It answers with a fixed word: \"set\", or\nthe row that is wrong.",
+        "required": [
+          "by"
+        ],
+        "properties": {
+          "by": {
+            "type": "string",
+            "description": "Account name of the teacher who ordered it."
+          },
+          "table": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RewardTable",
+                "description": "The new table. Missing to put the default back."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

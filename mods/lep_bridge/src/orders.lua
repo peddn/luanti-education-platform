@@ -113,6 +113,25 @@ function orders.parse_remove_account(payload)
 	return order
 end
 
+--- Reads the payload of the job "set_rewards".
+-- @param read_table Function that reads a reward table, see
+--   reports.reward_table.
+-- @return Table with by and either table or reset = true, or nil if the
+--   payload cannot be read.
+function orders.parse_rewards(payload, read_table)
+	if type(payload) ~= "table" or not is_name(payload.by) then
+		return nil
+	end
+	if payload.table == nil then
+		return { by = payload.by, reset = true }
+	end
+	local wanted = read_table(payload.table)
+	if not wanted then
+		return nil
+	end
+	return { by = payload.by, table = wanted }
+end
+
 --- Returns the line for the protocol of the desk.
 function orders.describe(kind, order)
 	if kind == "set_level" then
