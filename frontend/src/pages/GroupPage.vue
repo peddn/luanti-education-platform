@@ -1,11 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 import { api, errorCode } from '@/api/client'
 import ErrorNote from '@/components/ErrorNote.vue'
 import LastSeen from '@/components/LastSeen.vue'
 import LiveNote from '@/components/LiveNote.vue'
+import WorldSetup from '@/components/WorldSetup.vue'
 import { useGroupChanges } from '@/composables/groupChanges'
 import { useAuthStore } from '@/stores/auth'
 
@@ -83,6 +84,37 @@ async function refresh() {
 
 const { live } = useGroupChanges(props.id, ['group'], refresh)
 
+const router = useRouter()
+const working = ref(false)
+const setupError = ref(/** @type {ErrorCode | null} */ (null))
+
+// Asks the game server again to set the world up.
+async function retry() {
+  setupError.value = null
+  working.value = true
+  try {
+    group.value = await api.retryGroup(props.id)
+  } catch (err) {
+    setupError.value = errorCode(err)
+  } finally {
+    working.value = false
+  }
+}
+
+// Removes the group whose world never came to be.
+async function discard() {
+  setupError.value = null
+  working.value = true
+  try {
+    await api.discardGroup(props.id)
+    await router.push({ name: 'groups' })
+  } catch (err) {
+    setupError.value = errorCode(err)
+  } finally {
+    working.value = false
+  }
+}
+
 async function save() {
   saved.value = false
   saveError.value = null
@@ -121,9 +153,48 @@ async function save() {
     <template v-else>
       <div>
         <h1 data-test="name" class="text-2xl font-bold">{{ group.name }}</h1>
-        <p class="mt-1 text-sm text-slate-600"><LastSeen :at="group.last_seen_at ?? undefined" /></p>
+        <p class="mt-1 flex flex-wrap gap-x-4 text-sm text-slate-600">
+          <WorldSetup :state="group.world" />
+          <span v-if="group.port" data-test="port">{{ $t('groups.port', { port: group.port }) }}</span>
+          <LastSeen :at="group.last_seen_at ?? undefined" />
+        </p>
       </div>
       <LiveNote :live="live" />
+
+      <div
+        v-if="group.world === 'refused'"
+        data-test="refused"
+        role="alert"
+        class="space-y-3 rounded border border-red-200 bg-red-50 p-5 text-red-900"
+      >
+        <h2 class="font-semibold">{{ $t('groups.refusedTitle') }}</h2>
+        <p class="text-sm">{{ $t('groups.refusedHint') }}</p>
+        <p data-test="refusal" class="rounded bg-white px-3 py-2 font-mono text-sm">{{ group.refusal }}</p>
+        <template v-if="mayChange">
+          <p class="text-sm">{{ $t('groups.discardHint') }}</p>
+          <ErrorNote v-if="setupError" :code="setupError" />
+          <div class="flex gap-3">
+            <button
+              type="button"
+              data-test="retry"
+              :disabled="working"
+              class="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+              @click="retry"
+            >
+              {{ working ? $t('groups.working') : $t('groups.retry') }}
+            </button>
+            <button
+              type="button"
+              data-test="discard"
+              :disabled="working"
+              class="rounded border border-red-700 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 disabled:opacity-60"
+              @click="discard"
+            >
+              {{ $t('groups.discard') }}
+            </button>
+          </div>
+        </template>
+      </div>
 
       <RouterLink
         :to="{ name: 'students', params: { id } }"

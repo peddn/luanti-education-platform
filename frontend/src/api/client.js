@@ -65,6 +65,8 @@ const BACKEND_CODES = [
   'invalid_request',
   'forbidden',
   'name_taken',
+  'no_game_server',
+  'wrong_state',
   'no_names',
   'account_taken',
   'invalid_token',
@@ -280,6 +282,40 @@ export function createClient(options = {}) {
     async changeGroup(id, change) {
       const path = `/api/web/v1/groups/${encodeURIComponent(id)}`
       return /** @type {Group} */ (await request(path, change, false, 'PATCH'))
+    },
+
+    /**
+     * Creates a group. The agent sets its world up. Only for the school
+     * administration.
+     *
+     * @param {string} name
+     * @returns {Promise<Group>} the new group, its world still pending
+     */
+    async createGroup(name) {
+      return /** @type {Group} */ (await request('/api/web/v1/groups', { name }))
+    },
+
+    /**
+     * Asks the agent again to set up the world of a group it refused.
+     * Only for the school administration.
+     *
+     * @param {string} id
+     * @returns {Promise<Group>} the group, its world pending again
+     */
+    async retryGroup(id) {
+      const path = `/api/web/v1/groups/${encodeURIComponent(id)}/setup`
+      return /** @type {Group} */ (await request(path, undefined, false, 'POST'))
+    },
+
+    /**
+     * Removes a group whose world the agent refused. Only for the school
+     * administration.
+     *
+     * @param {string} id
+     * @returns {Promise<void>}
+     */
+    async discardGroup(id) {
+      await request(`/api/web/v1/groups/${encodeURIComponent(id)}`, undefined, false, 'DELETE')
     },
 
     /**

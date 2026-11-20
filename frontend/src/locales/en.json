@@ -47,11 +47,11 @@
   },
   "groups": {
     "title": "Groups",
-    "introAdmin": "As school administration you see every group. You rename groups and assign teachers to them.",
+    "introAdmin": "As school administration you see every group. You create groups, rename them and assign teachers to them.",
     "introTeacher": "You see the groups the school administration assigned you to.",
     "loading": "Loading the groups …",
     "emptyTeacher": "You are not assigned to a group yet. The school administration does that.",
-    "emptyAdmin": "There is no group yet. The server admin creates groups together with their world.",
+    "emptyAdmin": "There is no group yet.",
     "name": "Name",
     "teachers": "Teachers",
     "noTeachers": "nobody assigned",
@@ -75,7 +75,27 @@
     "noAddress": "not entered yet",
     "addressHint": "How the children reach the world, for example “spiel.schule.example, port 30000”. The address is printed on the access slips.",
     "protocols": "Protocols",
-    "rewards": "Rewards"
+    "rewards": "Rewards",
+    "create": "New group",
+    "createHint": "The game server sets up a world of its own for the group and starts it. That takes a moment.",
+    "createName": "Name of the new group",
+    "createButton": "Create group",
+    "creating": "Creating …",
+    "state": "State",
+    "setup": {
+      "running": "running",
+      "stopped": "stopped",
+      "pending": "being set up …",
+      "refused": "refused",
+      "manual": "set up by hand"
+    },
+    "port": "port {port}",
+    "refusedTitle": "The game server did not set the world up",
+    "refusedHint": "The world does not exist. The reason in the words of the game server, for the server admin:",
+    "retry": "Try again",
+    "discard": "Discard group",
+    "discardHint": "Discarding removes the group again. That only works because its world never existed.",
+    "working": "One moment …"
   },
   "students": {
     "titleFor": "Student accounts of the group {group}",
@@ -471,6 +491,8 @@
     "account_taken": "This account name is taken at the school or was deleted.",
     "invalid_token": "This link no longer works. It is too old or was used already.",
     "address_taken": "This address already belongs to another account.",
+    "no_game_server": "There is no game server set up that could create a world. The server admin does that.",
+    "wrong_state": "That no longer works in this state of the group. Reload the page.",
     "internal": "The backend ran into an error.",
     "network": "The backend cannot be reached.",
     "unexpected": "The backend gave an unexpected answer."

@@ -47,11 +47,11 @@
   },
   "groups": {
     "title": "Gruppen",
-    "introAdmin": "Als Schulverwaltung siehst du alle Gruppen. Du benennst sie um und ordnest ihnen Lehrkräfte zu.",
+    "introAdmin": "Als Schulverwaltung siehst du alle Gruppen. Du legst Gruppen an, benennst sie um und ordnest ihnen Lehrkräfte zu.",
     "introTeacher": "Du siehst die Gruppen, denen dich die Schulverwaltung zugeordnet hat.",
     "loading": "Gruppen werden geladen …",
     "emptyTeacher": "Du bist noch keiner Gruppe zugeordnet. Das macht die Schulverwaltung.",
-    "emptyAdmin": "Es gibt noch keine Gruppe. Gruppen legt der Server-Admin zusammen mit ihrer Welt an.",
+    "emptyAdmin": "Es gibt noch keine Gruppe.",
     "name": "Name",
     "teachers": "Lehrkräfte",
     "noTeachers": "niemand zugeordnet",
@@ -75,7 +75,27 @@
     "noAddress": "noch nicht eingetragen",
     "addressHint": "So erreichen die Kinder die Welt, zum Beispiel „spiel.schule.example, Port 30000“. Die Adresse steht auf den Zugangszetteln.",
     "protocols": "Protokolle",
-    "rewards": "Belohnungen"
+    "rewards": "Belohnungen",
+    "create": "Neue Gruppe",
+    "createHint": "Der Spielserver richtet für die Gruppe eine eigene Welt ein und startet sie. Das dauert einen Augenblick.",
+    "createName": "Name der neuen Gruppe",
+    "createButton": "Gruppe anlegen",
+    "creating": "Wird angelegt …",
+    "state": "Zustand",
+    "setup": {
+      "running": "läuft",
+      "stopped": "gestoppt",
+      "pending": "wird eingerichtet …",
+      "refused": "abgelehnt",
+      "manual": "von Hand eingerichtet"
+    },
+    "port": "Port {port}",
+    "refusedTitle": "Der Spielserver hat die Welt nicht eingerichtet",
+    "refusedHint": "Die Welt gibt es nicht. Der Grund im Wortlaut des Spielservers, für den Server-Admin:",
+    "retry": "Erneut versuchen",
+    "discard": "Gruppe verwerfen",
+    "discardHint": "Verwerfen entfernt die Gruppe wieder. Das geht nur, weil ihre Welt nie entstanden ist.",
+    "working": "Einen Augenblick …"
   },
   "students": {
     "titleFor": "Schülerkonten der Gruppe {group}",
@@ -471,6 +491,8 @@
     "account_taken": "Dieser Kontoname ist an der Schule schon vergeben oder wurde gelöscht.",
     "invalid_token": "Dieser Link gilt nicht mehr. Er ist abgelaufen oder wurde schon benutzt.",
     "address_taken": "Diese Adresse gehört schon zu einem anderen Konto.",
+    "no_game_server": "Es ist kein Spielserver eingerichtet, der eine Welt anlegen könnte. Das macht der Server-Admin.",
+    "wrong_state": "Das geht in diesem Zustand der Gruppe nicht mehr. Lade die Seite neu.",
     "internal": "Im Backend ist ein Fehler aufgetreten.",
     "network": "Das Backend ist nicht erreichbar.",
     "unexpected": "Das Backend hat unerwartet geantwortet."
