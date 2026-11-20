@@ -2,23 +2,46 @@
 //! the game server is doing.
 
 use std::future::Future;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use lep_protocol::agent::REPORT_SECONDS;
+use tokio::sync::{watch, Notify};
 
 use crate::backend::{Backend, CallError};
 use crate::config::Config;
-use crate::report;
-use crate::template::{self, Outcome, Template};
+use crate::template::{self, Manifest, Outcome, Template};
+use crate::{jobs, report};
 
-/// Unpacks the template of this agent into its folder, if it has one,
-/// and returns its version. An agent without a usable template still
-/// runs and reports, so the returned text says what happened.
+/// The agent while it runs: its settings and its template.
+pub struct Agent {
+    pub config: Config,
+    /// The unpacked template. Without it the agent runs and reports, but
+    /// creates no worlds.
+    pub template: Option<Prepared>,
+}
+
+/// A template that lies unpacked in the folder of the agent.
+pub struct Prepared {
+    pub version: String,
+    pub manifest: Manifest,
+}
+
+impl Agent {
+    fn template_version(&self) -> Option<&str> {
+        self.template
+            .as_ref()
+            .map(|template| template.version.as_str())
+    }
+}
+
+/// Unpacks the template of this agent into its folder, if it has one.
+/// An agent without a usable template still runs and reports, so the
+/// returned text says what happened.
 pub fn prepare_template(
     config: &Config,
     template: Option<Template<'_>>,
-) -> (Option<String>, String) {
+) -> (Option<Prepared>, String) {
     let Some(template) = template else {
         return (
             None,
@@ -27,15 +50,22 @@ pub fn prepare_template(
                 .to_owned(),
         );
     };
-    match template::ensure(&config.data_dir, template) {
-        Ok((folder, outcome)) => {
+    let unpacked = template::ensure(&config.data_dir, template).and_then(|(folder, outcome)| {
+        let manifest = Manifest::read(&folder)?;
+        Ok((folder, outcome, manifest))
+    });
+    match unpacked {
+        Ok((folder, outcome, manifest)) => {
             let what = match outcome {
                 Outcome::Present => "is in",
                 Outcome::Unpacked => "unpacked into",
                 Outcome::Repaired => "was damaged and is unpacked again into",
             };
             (
-                Some(template.version.to_owned()),
+                Some(Prepared {
+                    version: template.version.to_owned(),
+                    manifest,
+                }),
                 format!("template {} {what} {}", template.version, folder.display()),
             )
         }
@@ -80,48 +110,127 @@ impl Contact {
 }
 
 /// Sends one report and returns how it went.
-pub async fn report_once(
-    config: &Config,
-    backend: &Backend,
-    template: Option<&str>,
-) -> Result<(), CallError> {
-    let report = report::build(&config.data_dir, template)
+pub async fn report_once(agent: &Agent, backend: &Backend) -> Result<(), CallError> {
+    let report = report::build(&agent.config.data_dir, agent.template_version())
         .map_err(|err| CallError::Unreachable(format!("nothing to report: {err:#}")))?;
     backend.send_report(&report).await
 }
 
-/// Runs until `stop` is done. A backend that is out of reach is no
-/// reason to end: the agent tries again.
-pub async fn run(
-    config: &Config,
-    backend: &Backend,
-    template: Option<&str>,
-    stop: impl Future<Output = ()>,
-) {
-    let pause = Duration::from_secs(REPORT_SECONDS);
-    run_every(config, backend, template, pause, stop).await;
+/// How long the agent waits between its steps.
+#[derive(Debug, Clone, Copy)]
+pub struct Timing {
+    /// Time between two reports.
+    pub report: Duration,
+    /// How long a request for jobs may stay open at the backend.
+    pub job_wait: Duration,
+    /// Pause after a request for jobs that failed.
+    pub retry: Duration,
 }
 
-/// Like `run`, with a chosen time between two reports.
-pub async fn run_every(
-    config: &Config,
+impl Default for Timing {
+    fn default() -> Self {
+        Self {
+            report: Duration::from_secs(REPORT_SECONDS),
+            job_wait: Duration::from_secs(25),
+            retry: Duration::from_secs(10),
+        }
+    }
+}
+
+/// Runs until `stop` is done: reports regularly and does the jobs the
+/// backend has. A backend that is out of reach is no reason to end: the
+/// agent tries again.
+pub async fn run(agent: &Agent, backend: &Backend, stop: impl Future<Output = ()>) {
+    run_with(agent, backend, Timing::default(), stop).await;
+}
+
+/// Like `run`, with chosen times.
+pub async fn run_with(
+    agent: &Agent,
     backend: &Backend,
-    template: Option<&str>,
-    pause: Duration,
+    timing: Timing,
     stop: impl Future<Output = ()>,
 ) {
+    let (stopping, stopped) = watch::channel(false);
+    // Rung after a job, so the backend hears at once what changed.
+    let report_now = Notify::new();
+    tokio::join!(
+        report_loop(agent, backend, timing, &report_now, stopped.clone()),
+        job_loop(agent, backend, timing, &report_now, stopped),
+        async {
+            stop.await;
+            let _ = stopping.send(true);
+        }
+    );
+}
+
+async fn until_stopped(stopped: &mut watch::Receiver<bool>) {
+    // An error means nobody can stop the agent any more, which only
+    // happens when it ends anyway.
+    let _ = stopped.wait_for(|stopped| *stopped).await;
+}
+
+async fn report_loop(
+    agent: &Agent,
+    backend: &Backend,
+    timing: Timing,
+    report_now: &Notify,
+    mut stopped: watch::Receiver<bool>,
+) {
     let mut contact = Contact::default();
-    tokio::pin!(stop);
     loop {
-        match contact.note(report_once(config, backend, template).await) {
+        match contact.note(report_once(agent, backend).await) {
             Some(News::Connected) => tracing::info!("connected to the backend"),
             Some(News::Back) => tracing::info!("the backend is back"),
-            Some(News::Lost(why)) => tracing::warn!("{why}. Trying again every {pause:?}"),
+            Some(News::Lost(why)) => {
+                tracing::warn!("{why}. Trying again every {:?}", timing.report)
+            }
             None => {}
         }
         tokio::select! {
-            () = &mut stop => return,
-            () = tokio::time::sleep(pause) => {}
+            () = until_stopped(&mut stopped) => return,
+            () = tokio::time::sleep(timing.report) => {}
+            () = report_now.notified() => {}
+        }
+    }
+}
+
+async fn job_loop(
+    agent: &Agent,
+    backend: &Backend,
+    timing: Timing,
+    report_now: &Notify,
+    mut stopped: watch::Receiver<bool>,
+) {
+    loop {
+        let asked = Instant::now();
+        let fetched = tokio::select! {
+            () = until_stopped(&mut stopped) => return,
+            fetched = backend.fetch_jobs(timing.job_wait) => fetched,
+        };
+        // Why the backend cannot be reached is said by the reports.
+        let jobs = fetched.unwrap_or_default();
+        for job in &jobs {
+            let result = jobs::handle(agent, job);
+            if result.ok {
+                tracing::info!("job {}: {}", job.kind, result.message);
+            } else {
+                tracing::warn!("job {} refused: {}", job.kind, result.message);
+            }
+            // If the result does not get through, the job comes again
+            // and is answered again.
+            let _ = backend.send_result(&job.id, &result).await;
+        }
+        if !jobs.is_empty() {
+            report_now.notify_one();
+        }
+        // An answer without jobs that came at once must not turn this
+        // into a busy loop, whatever the reason.
+        if jobs.is_empty() && asked.elapsed() < timing.retry.min(timing.job_wait) {
+            tokio::select! {
+                () = until_stopped(&mut stopped) => return,
+                () = tokio::time::sleep(timing.retry) => {}
+            }
         }
     }
 }
@@ -160,8 +269,8 @@ mod tests {
         ))
         .unwrap();
 
-        let (version, text) = prepare_template(&config, None);
-        assert_eq!(version, None);
+        let (prepared, text) = prepare_template(&config, None);
+        assert!(prepared.is_none());
         assert!(text.contains("without a template"));
 
         let (packed, archive) = pack(SMALL);
@@ -169,8 +278,10 @@ mod tests {
             version: &packed,
             archive: &archive,
         };
-        let (version, text) = prepare_template(&config, Some(template));
-        assert_eq!(version.as_deref(), Some(packed.as_str()));
+        let (prepared, text) = prepare_template(&config, Some(template));
+        let prepared = prepared.unwrap();
+        assert_eq!(prepared.version, packed);
+        assert_eq!(prepared.manifest.lep_mods, ["lep_core"]);
         assert!(text.contains("unpacked into"), "{text}");
         let (_, text) = prepare_template(&config, Some(template));
         assert!(text.contains("is in"), "{text}");
@@ -180,8 +291,8 @@ mod tests {
             archive: b"no archive",
         };
         std::fs::remove_dir_all(folder.path().join("templates")).unwrap();
-        let (version, text) = prepare_template(&config, Some(broken));
-        assert_eq!(version, None);
+        let (prepared, text) = prepare_template(&config, Some(broken));
+        assert!(prepared.is_none());
         assert!(text.contains("cannot be used"), "{text}");
     }
 

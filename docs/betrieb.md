@@ -2,7 +2,7 @@
 
 Diese Anleitung richtet Backend und Agent als Dienste auf einem Server mit **Debian 13** ein. Beide laufen auf derselben Maschine. Die Regeln dahinter stehen im [Konzept](konzept.md), Abschnitt 11.3.
 
-**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand und trägt die Vorlage für Welten in sich. Welten legt er noch nicht an, das folgt mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
+**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich und legt Welten auf Auftrag an. Starten kann er sie noch nicht, das folgt mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
 
 **Noch nicht für den echten Betrieb mit Schülerdaten:** Die Anleitung endet ohne HTTPS. Ohne HTTPS reisen Anmeldung und Startpasswörter ungeschützt durch das Netz. Für einen Versuch auf einer eigenen VM reicht das, für eine Schule nicht.
 
@@ -18,6 +18,7 @@ Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten 
 | Datenbank des Backends | `/var/lib/lep-backend/lep.sqlite` |
 | Ordner des Agenten, später mit den Welten | `/var/lib/lep/` |
 | Vorlage für Welten, vom Agenten ausgepackt | `/var/lib/lep/templates/<Version>/` |
+| Welten, vom Agenten angelegt | `/var/lib/lep/worlds/<Kennung>/` |
 | Dienst des Backends | `lep-backend.service`, ein Dienst des Systems, Benutzer `lep-backend` |
 | Dienst des Agenten | `lep-agent.service`, ein Dienst des Benutzers `lep` |
 
@@ -138,13 +139,18 @@ sudo install -m 600 -o lep -g lep deploy/agent.toml.example /etc/lep/agent.toml
 sudo nano /etc/lep/agent.toml
 ```
 
+In derselben Datei stehen zwei Angaben für die Welten:
+
+- `admin`: dein Kontoname als Server-Admin. Der Agent trägt ihn in jede neue Welt ein, damit sie einen ersten Zugang hat. Erlaubt sind 1 bis 19 Zeichen: Buchstaben, Ziffern, `-` und `_`. Ohne diese Angabe legt der Agent keine Welt an.
+- `ports`: der Bereich der Ports für die Welten, voreingestellt `30000-30099`.
+
 Die Datei gehört dem Benutzer `lep` und ist für niemanden sonst lesbar. Probe, ob der Agent das Backend erreicht:
 
 ```sh
 sudo -u lep lep-agent check
 ```
 
-Erwartet: `The backend took the report.`
+Erwartet: `The backend took the report.` Darüber stehen die Vorlage, der Admin und der Bereich der Ports.
 
 Die Dienste des Benutzers `lep` sollen ohne Anmeldung laufen und beim Hochfahren starten (Linger). Das wird einmal eingeschaltet:
 
@@ -182,6 +188,29 @@ Nach einem Neustart der Maschine (`sudo reboot`) müssen beide Befehle ohne weit
 
 Die Web-Anwendung zeigt den Spielserver auf der Seite „Zustand“. Anmelden kann sich dort aber erst eine Lehrkraft mit Web-Zugang, und die entsteht in einer Welt. Solange der Agent keine Welten anlegt, bleibt zur Prüfung der Befehl `agent show`.
 
+## 8. Eine Welt anlegen
+
+Eine Welt gehört zu einer Gruppe. Bis die Schulverwaltung Gruppen im Browser anlegt, löst der Server-Admin das mit einem Befehl aus:
+
+```sh
+sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend world create "Klasse 7b"
+```
+
+Das Backend merkt sich die Welt und stellt dem Agenten einen Auftrag hin. Der Agent holt ihn innerhalb einer halben Minute ab, legt den Ordner der Welt an, vergibt einen Port und trägt den Schlüssel ein, mit dem sich die Welt später beim Backend meldet. Diesen Schlüssel bekommt kein Mensch zu sehen.
+
+Wie es ging:
+
+```sh
+sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend world list
+sudo ls -la /var/lib/lep/worlds/
+```
+
+Erwartet: erst `waiting for the agent`, kurz darauf `port 30000, template …`, und ein Ordner mit der Kennung der Welt. Lehnt der Agent ab, steht der Grund in der Liste, etwa `the agent refused: the settings of the agent name no admin for the worlds`.
+
+Die Welt läuft damit noch nicht. Starten und Stoppen folgen mit dem nächsten Teil.
+
+`world add` gibt es weiter. Es legt eine Welt nur im Backend an und zeigt ihren Schlüssel, für eine Welt, die von Hand eingerichtet wird.
+
 ## Im Alltag
 
 | Zweck | Befehl |
@@ -216,5 +245,5 @@ Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die 
 ## Was noch fehlt
 
 - **HTTPS:** ein Webserver mit Zertifikat vor dem Backend. Dann lauscht das Backend nur auf `127.0.0.1`.
-- **Welten:** Luanti und der Dienst `lep-world@<Kennung>.service`, mit den Ports in der Firewall.
+- **Welten starten:** Luanti und der Dienst `lep-world@<Kennung>.service`, mit den Ports in der Firewall.
 - **Sicherung** der Datenbank des Backends.

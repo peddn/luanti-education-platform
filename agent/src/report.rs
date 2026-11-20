@@ -5,6 +5,8 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use lep_protocol::agent::AgentReport;
 
+use crate::worlds;
+
 /// Version of the agent, as in its package.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -14,6 +16,7 @@ pub fn build(data_dir: &Path, template: Option<&str>) -> Result<AgentReport> {
         version: VERSION.to_owned(),
         free_disk_bytes: free_disk_bytes(data_dir)?,
         template: template.map(str::to_owned),
+        worlds: worlds::states(data_dir)?,
     })
 }
 
@@ -37,6 +40,7 @@ mod tests {
         assert_eq!(report.version, VERSION);
         assert_eq!(report.template.as_deref(), Some("bdbbf00c8a29"));
         assert_eq!(build(folder.path(), None).unwrap().template, None);
+        assert!(report.worlds.is_empty());
         assert!(report.free_disk_bytes > 0);
     }
 

@@ -2,6 +2,7 @@
 //! noting what they say about themselves.
 
 use anyhow::{bail, Context, Result};
+use lep_protocol::agent::WorldState;
 use lep_protocol::world::WorldStarted;
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
@@ -17,6 +18,11 @@ pub struct World {
     pub last_seen_at: Option<i64>,
     pub started_at: Option<i64>,
     pub engine: Option<String>,
+    /// Port players reach the world on, as the agent reported it.
+    /// Missing for a world the agent does not run.
+    pub port: Option<u16>,
+    /// Version of the template the world uses, as the agent reported it.
+    pub template_version: Option<String>,
 }
 
 fn from_row(row: &sqlx::sqlite::SqliteRow) -> World {
@@ -27,6 +33,10 @@ fn from_row(row: &sqlx::sqlite::SqliteRow) -> World {
         last_seen_at: row.get("last_seen_at"),
         started_at: row.get("started_at"),
         engine: row.get("engine"),
+        port: row
+            .get::<Option<i64>, _>("port")
+            .and_then(|port| u16::try_from(port).ok()),
+        template_version: row.get("template_version"),
     }
 }
 
@@ -79,7 +89,7 @@ pub async fn rekey(pool: &SqlitePool, name: &str) -> Result<String> {
 /// Returns all worlds, sorted by name.
 pub async fn list(pool: &SqlitePool) -> Result<Vec<World>> {
     let rows = sqlx::query(
-        "SELECT id, name, created_at, last_seen_at, started_at, engine
+        "SELECT id, name, created_at, last_seen_at, started_at, engine, port, template_version
          FROM worlds ORDER BY name",
     )
     .fetch_all(pool)
@@ -89,7 +99,7 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<World>> {
 
 pub async fn find_by_name(pool: &SqlitePool, name: &str) -> Result<Option<World>> {
     let row = sqlx::query(
-        "SELECT id, name, created_at, last_seen_at, started_at, engine
+        "SELECT id, name, created_at, last_seen_at, started_at, engine, port, template_version
          FROM worlds WHERE name = ?",
     )
     .bind(name.trim())
@@ -102,7 +112,7 @@ pub async fn find_by_name(pool: &SqlitePool, name: &str) -> Result<Option<World>
 pub async fn find_by_key(pool: &SqlitePool, key: &str) -> Result<Option<World>> {
     let row = sqlx::query(
         "UPDATE worlds SET last_seen_at = ? WHERE key_hash = ?
-         RETURNING id, name, created_at, last_seen_at, started_at, engine",
+         RETURNING id, name, created_at, last_seen_at, started_at, engine, port, template_version",
     )
     .bind(clock::now())
     .bind(keys::hash(key))
@@ -128,10 +138,64 @@ pub async fn note_started(
     Ok(())
 }
 
+/// Notes what the agent reported about the worlds it runs. A world the
+/// backend does not know is ignored: the agent cannot make one up.
+/// Returns the ids of the worlds something changed for.
+pub async fn note_agent_state(pool: &SqlitePool, states: &[WorldState]) -> Result<Vec<String>> {
+    let mut changed = Vec::new();
+    for state in states {
+        let rows = sqlx::query(
+            "UPDATE worlds SET port = ?, template_version = ?
+             WHERE id = ? AND (port IS NOT ? OR template_version IS NOT ?)",
+        )
+        .bind(i64::from(state.port))
+        .bind(&state.template)
+        .bind(&state.id)
+        .bind(i64::from(state.port))
+        .bind(&state.template)
+        .execute(pool)
+        .await?
+        .rows_affected();
+        if rows > 0 {
+            changed.push(state.id.clone());
+        }
+    }
+    Ok(changed)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::db;
+
+    #[tokio::test]
+    async fn notes_what_the_agent_says_about_a_world() {
+        let pool = db::open_in_memory().await.unwrap();
+        let (world, _) = add(&pool, "7b").await.unwrap();
+        assert_eq!(world.port, None);
+
+        let states = [
+            WorldState {
+                id: world.id.clone(),
+                port: 30007,
+                template: "bdbbf00c8a29".to_owned(),
+            },
+            WorldState {
+                id: "unknown-world".to_owned(),
+                port: 30008,
+                template: "bdbbf00c8a29".to_owned(),
+            },
+        ];
+        let changed = note_agent_state(&pool, &states).await.unwrap();
+        assert_eq!(changed, std::slice::from_ref(&world.id));
+        let world = find_by_name(&pool, "7b").await.unwrap().unwrap();
+        assert_eq!(world.port, Some(30007));
+        assert_eq!(world.template_version.as_deref(), Some("bdbbf00c8a29"));
+        assert_eq!(list(&pool).await.unwrap().len(), 1);
+
+        // The same report again changes nothing.
+        assert!(note_agent_state(&pool, &states).await.unwrap().is_empty());
+    }
 
     #[tokio::test]
     async fn a_new_world_is_found_by_its_key_only() {

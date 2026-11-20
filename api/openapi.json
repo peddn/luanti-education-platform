@@ -10,6 +10,122 @@
     "version": "1"
   },
   "paths": {
+    "/api/agent/v1/jobs": {
+      "get": {
+        "tags": [
+          "agent_api"
+        ],
+        "summary": "Returns the jobs that wait for the agent. If there are none, the\nrequest stays open for up to `wait` seconds and returns as soon as\none comes.",
+        "operationId": "fetch_jobs",
+        "parameters": [
+          {
+            "name": "wait",
+            "in": "query",
+            "description": "Seconds to wait, at most 25",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The waiting jobs, possibly none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "agent_key": []
+          }
+        ]
+      }
+    },
+    "/api/agent/v1/jobs/{id}/result": {
+      "post": {
+        "tags": [
+          "agent_api"
+        ],
+        "summary": "Notes how a job for the agent went.",
+        "operationId": "report_result",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobResult"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Noted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The agent has no such job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "agent_key": []
+          }
+        ]
+      }
+    },
     "/api/agent/v1/report": {
       "post": {
         "tags": [
@@ -2746,6 +2862,13 @@
           "version": {
             "type": "string",
             "description": "Version of the agent, as in its package."
+          },
+          "worlds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorldState"
+            },
+            "description": "The worlds the agent looks after."
           }
         }
       },
@@ -2845,6 +2968,24 @@
           "teacher": {
             "type": "boolean",
             "description": "True if the accounts are for teachers: the world gives them\nthe privileges of the bundle for teachers. Only the school\nadministration orders that."
+          }
+        }
+      },
+      "CreateWorld": {
+        "type": "object",
+        "description": "Payload of the job that creates a world. For a world that exists\nalready, only the key of the bridge is written again.",
+        "required": [
+          "world",
+          "bridge_key"
+        ],
+        "properties": {
+          "bridge_key": {
+            "type": "string",
+            "description": "Key the bridge of the world calls the backend with."
+          },
+          "world": {
+            "type": "string",
+            "description": "Fixed identifier of the world. The folder of the world is named\nafter it."
           }
         }
       },
@@ -4705,6 +4846,31 @@
               "type": "string"
             },
             "description": "Names of the mods that are loaded."
+          }
+        }
+      },
+      "WorldState": {
+        "type": "object",
+        "description": "A world as the agent has it on the game server.",
+        "required": [
+          "id",
+          "port",
+          "template"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Fixed identifier of the world, as the backend gave it."
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Port players reach the world on.",
+            "minimum": 0
+          },
+          "template": {
+            "type": "string",
+            "description": "Version of the template the world uses."
           }
         }
       },

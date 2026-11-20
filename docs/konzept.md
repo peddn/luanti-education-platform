@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 70 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 71 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -926,13 +926,14 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
 
   | Ordner | Inhalt |
   |---|---|
-  | `worlds/<Kennung>/` | eine Welt: Karte, Spielerdaten, Einstellungen, Protokolle |
+  | `worlds/<Kennung>/` | eine Welt: Karte, Spielerdaten, Einstellungen, Protokolle. Darin `world/` für Luanti, `minetest.conf`, die Notiz des Agenten `lep-world.toml` mit Port und Version der Vorlage, und Verweise `games` und `mods` auf die Vorlage |
   | `templates/<Version>/` | Spiel und Mods einer Version, vom Agenten ausgepackt |
   | `backups/<Kennung>/` | Sicherungen einer Welt, mit Datum |
   | `archive/<Kennung>/` | Welten, die aus dem Betrieb genommen sind |
 
   Ordner heißen nach der festen Kennung der Welt, nie nach dem Namen der Gruppe. Der Name kann sich ändern, und er käme sonst aus einer Eingabe im Browser in einen Pfad.
-- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports. Die Datei ist nur für `lep` lesbar.
+- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports (ohne Angabe 30000 bis 30099) und der Kontoname des Server-Admins. Die Datei ist nur für `lep` lesbar.
+- **Server-Admin der Welten:** Der Agent trägt den Kontonamen aus seinen Einstellungen in jede neue Welt ein. So hat eine frische Welt einen ersten Zugang, bevor Lehrkräfte verteilt sind. Ohne diesen Namen legt der Agent keine Welt an.
 - **Ports:** Der Agent vergibt jeder Welt einen Port aus einem festen Bereich und meldet ihn dem Backend. Die Firewall öffnet der Server-Admin einmal für den ganzen Bereich.
 
 **Dienste**
@@ -959,6 +960,8 @@ Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner 
 
 **Aufträge**
 
+Aufträge an den Agenten laufen im Backend durch dieselbe Warteschlange wie Aufträge an die Welten, mit denselben Regeln: Die Anfrage bleibt bis zu 25 Sekunden offen, und ein Auftrag wird so lange ausgegeben, bis sein Ergebnis gemeldet ist. Jeder Auftrag nennt seinen Empfänger. Eine Welt bekommt mit ihrem Schlüssel nur ihre eigenen Aufträge, der Agent mit seinem nur die an den Agenten. Ein Auftrag, der einen Schlüssel trägt, vergisst ihn, sobald das Ergebnis da ist.
+
 | Auftrag | Was geschieht |
 |---|---|
 | Welt anlegen | Ordner anlegen, Einstellungen schreiben, Port vergeben, Schlüssel der Brücke eintragen |
@@ -970,11 +973,12 @@ Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner 
 | Endgültig löschen | Archiv und Sicherungen einer Welt entfernen. Diesen Auftrag schicken nur der Jahresabschluss und das Löschen auf Verlangen (Abschnitt 12) |
 | Logdatei leeren | Luantis eigene Logdatei einer Welt leeren, in der Chatnachrichten stehen (Abschnitt 12) |
 
-Ohne Auftrag meldet der Agent regelmäßig den Zustand: welche Welten laufen, auf welchem Port, mit welcher Version, und wie viel Platz auf der Platte frei ist. Die Web-Anwendung zeigt das bei der Gruppe, den Zustand des Spielservers selbst auf der Seite „Zustand“.
+Ohne Auftrag meldet der Agent regelmäßig den Zustand: welche Welten es gibt, welche laufen, auf welchem Port, mit welcher Version, und wie viel Platz auf der Platte frei ist. Nach jedem Auftrag meldet er sofort. Ereignisse wie die Brücke schickt der Agent nicht: Das Backend spiegelt, was in der letzten Meldung steht. Die Web-Anwendung zeigt das bei der Gruppe, den Zustand des Spielservers selbst auf der Seite „Zustand“.
 
 Regeln für alle Aufträge:
 
 - Ein Auftrag nennt die Kennung einer Welt und feste Werte, sonst nichts. Die Kennung muss die Form haben, die das Backend vergibt.
+- „Welt anlegen“ für eine Welt, die es schon gibt, legt nichts neu an: Port, Karte und Spielerdaten bleiben, nur der Schlüssel der Brücke wird neu eingetragen.
 - Pfade entstehen nur aus dieser Kennung unter `/var/lib/lep`. Der Agent baut nie eine Befehlszeile aus Werten eines Auftrags und ruft keine Shell auf.
 - Ein Auftrag, den der Agent nicht kennt, wird abgelehnt und gemeldet.
 

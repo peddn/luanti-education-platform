@@ -5,7 +5,8 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use lep_agent::backend::Backend;
 use lep_agent::config::{self, Config};
-use lep_agent::{service, template};
+use lep_agent::service::{self, Agent};
+use lep_agent::template;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -74,7 +75,13 @@ async fn run(path: &std::path::Path) -> Result<()> {
         Some(_) => tracing::info!("{said}"),
         None => tracing::warn!("{said}"),
     }
-    service::run(&config, &backend, template.as_deref(), shutdown()).await;
+    if config.admin.is_none() {
+        tracing::warn!(
+            "the settings name no 'admin' for the worlds, so the agent cannot create any"
+        );
+    }
+    let agent = Agent { config, template };
+    service::run(&agent, &backend, shutdown()).await;
     tracing::info!("stopped");
     Ok(())
 }
@@ -89,7 +96,19 @@ async fn check(path: &std::path::Path) -> Result<()> {
     }
     let (template, said) = service::prepare_template(&config, template::embedded());
     println!("Template: {said}");
-    service::report_once(&config, &backend, template.as_deref()).await?;
+    match &config.admin {
+        Some(admin) => println!("Admin:    {admin}"),
+        None => println!("Admin:    none set, so the agent cannot create worlds"),
+    }
+    println!(
+        "Ports:    {} to {}",
+        config.ports.start(),
+        config.ports.end()
+    );
+    let worlds = lep_agent::worlds::list(&config.data_dir)?;
+    println!("Worlds:   {}", worlds.len());
+    let agent = Agent { config, template };
+    service::report_once(&agent, &backend).await?;
     println!("The backend took the report.");
     Ok(())
 }

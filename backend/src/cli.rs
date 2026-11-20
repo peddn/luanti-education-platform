@@ -3,6 +3,7 @@
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
+use lep_protocol::agent::{CreateWorld, JOB_CREATE_WORLD};
 use lep_protocol::world::{JOB_PING, JOB_SYNC_STATE};
 use serde_json::json;
 use sqlx::SqlitePool;
@@ -170,8 +171,12 @@ pub async fn run_teacher(pool: &SqlitePool, command: TeacherCommand) -> Result<S
 
 #[derive(Debug, Subcommand)]
 pub enum WorldCommand {
-    /// Create a world and print its key. The key is shown only now.
+    /// Create a world that is set up by hand, and print its key. The
+    /// key is shown only now.
     Add { name: String },
+    /// Create a world and ask the agent to set it up on the game
+    /// server. Nobody gets to see its key.
+    Create { name: String },
     /// Give a world a new key and print it. The old key stops working.
     Rekey { name: String },
     /// List the worlds and when they were last heard of.
@@ -196,6 +201,22 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
                 world.name, world.id, key
             ))
         }
+        WorldCommand::Create { name } => {
+            if game_server::describe(pool).await?.is_none() {
+                bail!("there is no agent yet that could set the world up: lep-backend agent key");
+            }
+            let (world, key) = worlds::add(pool, &name).await?;
+            let payload = serde_json::to_value(CreateWorld {
+                world: world.id.clone(),
+                bridge_key: key,
+            })?;
+            jobs::add_for_agent(pool, &world.id, JOB_CREATE_WORLD, &payload).await?;
+            Ok(format!(
+                "World '{}' created.\nid: {}\nThe agent sets it up on the game server \
+                 within half a minute. How it went: lep-backend world list",
+                world.name, world.id
+            ))
+        }
         WorldCommand::Rekey { name } => {
             let key = worlds::rekey(pool, &name).await?;
             Ok(format!(
@@ -210,7 +231,7 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
                 return Ok("There are no worlds yet.".to_owned());
             }
             let now = crate::clock::now();
-            let lines: Vec<String> = list
+            let mut lines: Vec<String> = list
                 .iter()
                 .map(|world| {
                     let seen = match world.last_seen_at {
@@ -221,6 +242,26 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
                     format!("{}  {}  {}  {}", world.name, world.id, seen, engine)
                 })
                 .collect();
+            for (line, world) in lines.iter_mut().zip(&list) {
+                let on_server = match (
+                    world.port,
+                    jobs::last_for_agent(pool, &world.id, JOB_CREATE_WORLD).await?,
+                ) {
+                    (Some(port), _) => format!(
+                        "port {port}, template {}",
+                        world.template_version.as_deref().unwrap_or("unknown")
+                    ),
+                    (None, None) => "set up by hand".to_owned(),
+                    (None, Some(job)) if !job.finished => "waiting for the agent".to_owned(),
+                    (None, Some(job)) if job.ok == Some(false) => format!(
+                        "the agent refused: {}",
+                        job.message.as_deref().unwrap_or("no reason given")
+                    ),
+                    (None, Some(_)) => "set up, the agent has not reported it yet".to_owned(),
+                };
+                line.push_str("  ");
+                line.push_str(&on_server);
+            }
             Ok(lines.join("\n"))
         }
         WorldCommand::State { name } => {
@@ -285,6 +326,7 @@ mod tests {
             version: "0.1.0".to_owned(),
             free_disk_bytes: 3 * 1024 * 1024,
             template: Some("bdbbf00c8a29".to_owned()),
+            worlds: Vec::new(),
         };
         game_server::note_report(&pool, &report).await.unwrap();
         let shown = run_agent(&pool, AgentCommand::Show).await.unwrap();
@@ -292,6 +334,67 @@ mod tests {
         assert!(shown.contains("agent version: 0.1.0"));
         assert!(shown.contains("free disk space: 3 MiB"));
         assert!(shown.contains("template for worlds: bdbbf00c8a29"));
+    }
+
+    #[tokio::test]
+    async fn creates_a_world_through_the_agent() {
+        let pool = db::open_in_memory().await.unwrap();
+        let create = || WorldCommand::Create {
+            name: "7b".to_owned(),
+        };
+        // Without an agent nobody could set the world up.
+        assert!(run_world(&pool, create()).await.is_err());
+        assert!(worlds::list(&pool).await.unwrap().is_empty());
+
+        game_server::rekey(&pool).await.unwrap();
+        let created = run_world(&pool, create()).await.unwrap();
+        // The key of the world is shown to nobody.
+        assert!(!created.contains("lepw_"));
+        let world = worlds::find_by_name(&pool, "7b").await.unwrap().unwrap();
+
+        let waiting = jobs::take_waiting_for_agent(&pool).await.unwrap();
+        assert_eq!(waiting.len(), 1);
+        assert_eq!(waiting[0].kind, JOB_CREATE_WORLD);
+        let payload: CreateWorld = serde_json::from_value(waiting[0].payload.clone()).unwrap();
+        assert_eq!(payload.world, world.id);
+        // The key in the job is the one the world will call with.
+        let found = worlds::find_by_key(&pool, &payload.bridge_key)
+            .await
+            .unwrap();
+        assert_eq!(found.unwrap().id, world.id);
+        // The world itself gets no such job.
+        assert!(jobs::take_waiting(&pool, &world.id)
+            .await
+            .unwrap()
+            .is_empty());
+
+        let listed = run_world(&pool, WorldCommand::List).await.unwrap();
+        assert!(listed.contains("waiting for the agent"), "{listed}");
+
+        let refused = lep_protocol::world::JobResult {
+            ok: false,
+            message: "no port is free".to_owned(),
+        };
+        jobs::finish_for_agent(&pool, &waiting[0].id, &refused)
+            .await
+            .unwrap();
+        let listed = run_world(&pool, WorldCommand::List).await.unwrap();
+        assert!(
+            listed.contains("the agent refused: no port is free"),
+            "{listed}"
+        );
+
+        let state = lep_protocol::agent::WorldState {
+            id: world.id.clone(),
+            port: 30000,
+            template: "bdbbf00c8a29".to_owned(),
+        };
+        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        let listed = run_world(&pool, WorldCommand::List).await.unwrap();
+        assert!(
+            listed.contains("port 30000, template bdbbf00c8a29"),
+            "{listed}"
+        );
     }
 
     #[tokio::test]
@@ -314,6 +417,7 @@ mod tests {
 
         let listed = run_world(&pool, WorldCommand::List).await.unwrap();
         assert!(listed.contains("7b") && listed.contains("never seen"));
+        assert!(listed.contains("set up by hand"));
 
         let pinged = run_world(
             &pool,

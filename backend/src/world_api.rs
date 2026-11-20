@@ -91,7 +91,7 @@ pub async fn send_events(
 #[derive(Debug, Deserialize)]
 pub struct JobsQuery {
     /// Seconds to wait for a job if none is there.
-    wait: Option<u64>,
+    pub(crate) wait: Option<u64>,
 }
 
 /// Returns the jobs that wait for a world. If there are none, the request
@@ -136,7 +136,7 @@ pub async fn fetch_jobs(
 
 /// Returns how long a request for jobs stays open: what the world asks
 /// for, but never longer than the limit.
-fn wait_duration(asked: Option<u64>) -> Duration {
+pub(crate) fn wait_duration(asked: Option<u64>) -> Duration {
     Duration::from_secs(asked.unwrap_or(0).min(MAX_WAIT_SECONDS))
 }
 

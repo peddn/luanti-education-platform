@@ -643,6 +643,35 @@ pub mod agent {
         /// if it was built without one or could not unpack it.
         #[serde(default)]
         pub template: Option<String>,
+        /// The worlds the agent looks after.
+        #[serde(default)]
+        pub worlds: Vec<WorldState>,
+    }
+
+    /// A world as the agent has it on the game server.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct WorldState {
+        /// Fixed identifier of the world, as the backend gave it.
+        pub id: String,
+        /// Port players reach the world on.
+        pub port: u16,
+        /// Version of the template the world uses.
+        pub template: String,
+    }
+
+    /// Kind of the job that creates a world. Its payload is a
+    /// `CreateWorld`.
+    pub const JOB_CREATE_WORLD: &str = "create_world";
+
+    /// Payload of the job that creates a world. For a world that exists
+    /// already, only the key of the bridge is written again.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct CreateWorld {
+        /// Fixed identifier of the world. The folder of the world is named
+        /// after it.
+        pub world: String,
+        /// Key the bridge of the world calls the backend with.
+        pub bridge_key: String,
     }
 }
 
