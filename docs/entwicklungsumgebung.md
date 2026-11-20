@@ -284,6 +284,7 @@ Ein Mod, der etwas über Spieler speichert, meldet mit `lep_core.register_on_for
 - Die Skripte setzen `LUANTI_USER_PATH` und zusätzlich das ältere `MINETEST_USER_PATH`. Neuere Luanti-Versionen geben für das ältere eine Warnung aus, die sich ignorieren lässt.
 - Die Verknüpfung des Modpacks ist mit Luanti 5.17 und 5.18 geprüft.
 - Spieler sehen einander nur bis 160 Blöcke Entfernung. `lep_places` setzt dafür `player_transfer_distance = 10`, solange in `.dev/minetest.conf` kein eigener Wert steht. Ohne die Grenze stünden die Namensschilder aus Lobby und Lernräumen am Himmel über der Wildnis.
+- Minetest Game steht mit festem Commit in `third_party/game.toml`. `scripts/dev-setup.sh` lädt genau diese Version nach `.dev/games/`.
 - Fremde Mods stehen in `third_party/mods.toml`, jeder mit festem Commit. `scripts/dev-setup.sh` lädt sie nach `.dev/third_party/` und schaltet sie in der Testwelt ein. Dafür braucht das Skript Netzzugang. Ändert sich ein Commit in der Liste, holt der nächste Lauf die neue Version. Einstellungen eines fremden Mods stehen ebenfalls in der Liste (`settings.<name> = <wert>`). Das Skript schreibt sie in `.dev/minetest.conf` und ersetzt dort einen vorhandenen Wert.
 
 ## 6. Backend und Oberfläche
@@ -393,7 +394,7 @@ Die Befehle arbeiten direkt auf der Datenbank und brauchen keinen laufenden Serv
 
 ### Agent
 
-Der Agent ist ein eigenes Rust-Programm im Ordner `agent/`. Im Betrieb läuft er auf dem Spielserver (Konzept, Abschnitt 11.3). Bisher meldet er dem Backend alle 30 Sekunden seine Version und den freien Speicherplatz. Welten legt er noch nicht an.
+Der Agent ist ein eigenes Rust-Programm im Ordner `agent/`. Im Betrieb läuft er auf dem Spielserver (Konzept, Abschnitt 11.3). Bisher meldet er dem Backend alle 30 Sekunden seine Version, den freien Speicherplatz und die Version seiner Vorlage für Welten. Welten legt er noch nicht an.
 
 In der Testumgebung läuft er neben dem Backend, in einem dritten Terminal:
 
@@ -408,6 +409,16 @@ Beim ersten Start lässt das Skript das Backend einen Schlüssel erzeugen und sc
 | `scripts/agent-run.sh` | startet den Agenten, Ende mit Strg+C |
 | `scripts/agent-run.sh check` | liest die Einstellungen, schickt eine einzelne Meldung und sagt, ob das Backend sie angenommen hat |
 | `scripts/agent-run.sh --new-key` | erzeugt vorher einen neuen Schlüssel, etwa nach dem Löschen der Datenbank des Backends |
+
+Der Agent trägt die Vorlage für Welten in sich: Minetest Game, die eigenen und die fremden Mods. In der Testumgebung baut sie ein eigenes Skript:
+
+```sh
+scripts/template-build.sh
+```
+
+Es lädt Spiel und fremde Mods in den festen Versionen aus `third_party/game.toml` und `third_party/mods.toml` und legt das Archiv nach `target/lep-template/`. `scripts/agent-run.sh` bettet es beim nächsten Start ein, und der Agent packt es nach `.dev/agent/templates/<Version>/` aus. Die Version ist der Anfang einer Prüfsumme über den Inhalt: Ändert sich ein Mod, entsteht nach erneutem `scripts/template-build.sh` eine neue Version neben der alten. Ohne das Skript läuft der Agent ohne Vorlage und sagt das beim Start.
+
+Ein einfaches `cargo build` oder `cargo test` bettet keine Vorlage ein und braucht kein Netz. Für einen Server baut `scripts/agent-build.sh` Vorlage und Agent in einem Schritt.
 
 Was der Agent meldet, zeigt die Web-Anwendung auf der Seite „Zustand“ im Kasten „Spielserver“, und im Terminal `scripts/backend-run.sh agent show`. Nach 90 Sekunden ohne Meldung gilt der Spielserver als nicht erreichbar.
 

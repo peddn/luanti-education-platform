@@ -8,7 +8,7 @@ Dieses Projekt verwendet mehrere Lizenzen, je nach Teil des Repositorys. Die vol
 | `mods/` (Code) | GNU Lesser General Public License, Version 3 oder später | [`LGPL-3.0-or-later.txt`](LICENSES/LGPL-3.0-or-later.txt) |
 | Texturen, Klänge, Modelle und Texte, auch innerhalb von `mods/` | Creative Commons Namensnennung, Weitergabe unter gleichen Bedingungen 4.0 | [`CC-BY-SA-4.0.txt`](LICENSES/CC-BY-SA-4.0.txt) |
 | `docs/` und übrige Dokumentation | Creative Commons Namensnennung, Weitergabe unter gleichen Bedingungen 4.0 | [`CC-BY-SA-4.0.txt`](LICENSES/CC-BY-SA-4.0.txt) |
-| `scripts/`, `deploy/`, `world-template/`, Konfiguration | GNU Lesser General Public License, Version 3 oder später | [`LGPL-3.0-or-later.txt`](LICENSES/LGPL-3.0-or-later.txt) |
+| `scripts/`, `deploy/`, `third_party/`, Konfiguration | GNU Lesser General Public License, Version 3 oder später | [`LGPL-3.0-or-later.txt`](LICENSES/LGPL-3.0-or-later.txt) |
 
 Die LGPL 3 ergänzt die GNU General Public License, Version 3. Deren Text liegt deshalb ebenfalls bei: [`GPL-3.0-or-later.txt`](LICENSES/GPL-3.0-or-later.txt).
 
