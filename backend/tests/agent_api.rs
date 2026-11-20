@@ -57,6 +57,25 @@ async fn the_agent_reports_with_its_key() {
     assert!(server.connected);
     assert_eq!(server.version.as_deref(), Some("0.1.0"));
     assert_eq!(server.free_disk_bytes, Some(12_000_000_000));
+    // An agent of the first version says nothing about a template.
+    assert_eq!(server.template, None);
+
+    let with_template = json!({
+        "version": "0.1.0",
+        "free_disk_bytes": 1,
+        "template": "BDBBF00C8A29",
+    });
+    let (status, _) = call(
+        &state,
+        Method::POST,
+        REPORT,
+        Some(&key),
+        Some(with_template),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let server = game_server::describe(&pool).await.unwrap().unwrap();
+    assert_eq!(server.template.as_deref(), Some("bdbbf00c8a29"));
 }
 
 #[tokio::test]
@@ -120,6 +139,9 @@ async fn a_report_that_cannot_be_read_is_refused() {
         json!({ "version": "", "free_disk_bytes": 1 }),
         json!({ "version": "x".repeat(41), "free_disk_bytes": 1 }),
         json!({ "version": "0.1\n0", "free_disk_bytes": 1 }),
+        json!({ "version": "0.1.0", "free_disk_bytes": 1, "template": "" }),
+        json!({ "version": "0.1.0", "free_disk_bytes": 1, "template": "../x" }),
+        json!({ "version": "0.1.0", "free_disk_bytes": 1, "template": "a".repeat(65) }),
     ] {
         let (status, json) = call(&state, Method::POST, REPORT, Some(&key), Some(body)).await;
         assert_eq!(status, StatusCode::BAD_REQUEST);

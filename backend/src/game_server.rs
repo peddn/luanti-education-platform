@@ -38,11 +38,14 @@ pub async fn note_report(pool: &SqlitePool, report: &AgentReport) -> Result<()> 
     // The database counts in signed numbers. No disk is that large.
     let free = i64::try_from(report.free_disk_bytes).unwrap_or(i64::MAX);
     sqlx::query(
-        "UPDATE game_server SET last_seen_at = ?, version = ?, free_disk_bytes = ? WHERE id = 1",
+        "UPDATE game_server
+         SET last_seen_at = ?, version = ?, free_disk_bytes = ?, template_version = ?
+         WHERE id = 1",
     )
     .bind(clock::now())
     .bind(&report.version)
     .bind(free)
+    .bind(&report.template)
     .execute(pool)
     .await?;
     Ok(())
@@ -55,10 +58,12 @@ pub async fn describe(pool: &SqlitePool) -> Result<Option<GameServer>> {
 }
 
 async fn describe_at(pool: &SqlitePool, now: i64) -> Result<Option<GameServer>> {
-    let row =
-        sqlx::query("SELECT last_seen_at, version, free_disk_bytes FROM game_server WHERE id = 1")
-            .fetch_optional(pool)
-            .await?;
+    let row = sqlx::query(
+        "SELECT last_seen_at, version, free_disk_bytes, template_version
+         FROM game_server WHERE id = 1",
+    )
+    .fetch_optional(pool)
+    .await?;
     Ok(row.map(|row| {
         let last_seen_at: Option<i64> = row.get("last_seen_at");
         let free: Option<i64> = row.get("free_disk_bytes");
@@ -67,6 +72,7 @@ async fn describe_at(pool: &SqlitePool, now: i64) -> Result<Option<GameServer>> 
             last_seen_at,
             version: row.get("version"),
             free_disk_bytes: free.map(|bytes| bytes.max(0) as u64),
+            template: row.get("template_version"),
         }
     }))
 }
@@ -80,6 +86,7 @@ mod tests {
         AgentReport {
             version: "0.1.0".to_owned(),
             free_disk_bytes: 5_000_000_000,
+            template: Some("bdbbf00c8a29".to_owned()),
         }
     }
 
@@ -136,6 +143,15 @@ mod tests {
         let fresh = describe_at(&pool, now).await.unwrap().unwrap();
         assert!(fresh.connected);
         assert_eq!(fresh.free_disk_bytes, Some(5_000_000_000));
+        assert_eq!(fresh.template.as_deref(), Some("bdbbf00c8a29"));
+
+        // An agent without a template says so, and the old one is gone.
+        let bare = AgentReport {
+            template: None,
+            ..report()
+        };
+        note_report(&pool, &bare).await.unwrap();
+        assert_eq!(describe(&pool).await.unwrap().unwrap().template, None);
 
         let later = describe_at(&pool, now + SILENT_AFTER_SECONDS as i64 + 5)
             .await

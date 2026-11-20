@@ -78,7 +78,8 @@ pub async fn run_agent(pool: &SqlitePool, command: AgentCommand) -> Result<Strin
                 return Ok("The agent has a key, but never reported.".to_owned());
             };
             Ok(format!(
-                "Game server: {}\nlast seen {} s ago\nagent version: {}\nfree disk space: {} MiB",
+                "Game server: {}\nlast seen {} s ago\nagent version: {}\nfree disk space: {} MiB\n\
+                 template for worlds: {}",
                 if server.connected {
                     "connected"
                 } else {
@@ -87,6 +88,7 @@ pub async fn run_agent(pool: &SqlitePool, command: AgentCommand) -> Result<Strin
                 (crate::clock::now() - seen).max(0),
                 server.version.as_deref().unwrap_or("unknown"),
                 server.free_disk_bytes.unwrap_or(0) / (1024 * 1024),
+                server.template.as_deref().unwrap_or("none"),
             ))
         }
     }
@@ -282,12 +284,14 @@ mod tests {
         let report = lep_protocol::agent::AgentReport {
             version: "0.1.0".to_owned(),
             free_disk_bytes: 3 * 1024 * 1024,
+            template: Some("bdbbf00c8a29".to_owned()),
         };
         game_server::note_report(&pool, &report).await.unwrap();
         let shown = run_agent(&pool, AgentCommand::Show).await.unwrap();
         assert!(shown.contains("connected"));
         assert!(shown.contains("agent version: 0.1.0"));
         assert!(shown.contains("free disk space: 3 MiB"));
+        assert!(shown.contains("template for worlds: bdbbf00c8a29"));
     }
 
     #[tokio::test]

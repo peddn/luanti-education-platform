@@ -639,6 +639,10 @@ pub mod agent {
         pub version: String,
         /// Free space on the disk that holds the worlds, in bytes.
         pub free_disk_bytes: u64,
+        /// Version of the template for worlds the agent carries. Missing
+        /// if it was built without one or could not unpack it.
+        #[serde(default)]
+        pub template: Option<String>,
     }
 }
 
@@ -1264,6 +1268,9 @@ pub mod web {
         pub version: Option<String>,
         /// Free space on the disk that holds the worlds, in bytes.
         pub free_disk_bytes: Option<u64>,
+        /// Version of the template for worlds the agent carries. Missing
+        /// if it has none: then it cannot create worlds.
+        pub template: Option<String>,
     }
 
     /// Answer to a confirmed address.
