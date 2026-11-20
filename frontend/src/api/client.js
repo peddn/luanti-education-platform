@@ -319,6 +319,19 @@ export function createClient(options = {}) {
     },
 
     /**
+     * Starts or stops the world of a group, or starts it anew. For the
+     * teachers of the group and the school administration.
+     *
+     * @param {string} id
+     * @param {'start' | 'stop' | 'restart'} step
+     * @returns {Promise<Group>} the group, with what the agent was asked
+     */
+    async steerWorld(id, step) {
+      const path = `/api/web/v1/groups/${encodeURIComponent(id)}/world`
+      return /** @type {Group} */ (await request(path, { step }))
+    },
+
+    /**
      * Returns the accounts of the students of a group.
      *
      * @param {string} id identifier of the group

@@ -95,7 +95,19 @@
     "retry": "Try again",
     "discard": "Discard group",
     "discardHint": "Discarding removes the group again. That only works because its world never existed.",
-    "working": "One moment …"
+    "working": "One moment …",
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "starting": "starting …",
+    "stopping": "stopping …",
+    "restarting": "restarting …",
+    "stopQuestion": "Really stop? Whoever is playing gets cut off. The world stays stopped until somebody starts it.",
+    "stopYes": "Yes, stop",
+    "stopNo": "Cancel",
+    "stepRefusedTitle": "The game server did not do that",
+    "stepRefusedHint": "The reason in the words of the game server, for the server admin:",
+    "addressFixed": "The address comes from the game server and is printed on the access slips."
   },
   "students": {
     "titleFor": "Student accounts of the group {group}",
