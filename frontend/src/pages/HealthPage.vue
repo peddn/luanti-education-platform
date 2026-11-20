@@ -93,6 +93,10 @@ onMounted(() => store.load())
               : $t('health.server.gigabytes', { amount: gigabytes(server.free_disk_bytes) })
           }}
         </dd>
+        <dt class="text-slate-500">{{ $t('health.server.template') }}</dt>
+        <dd data-test="server-template" :class="server.template ? 'font-mono' : 'text-amber-700'">
+          {{ server.template ?? $t('health.server.noTemplate') }}
+        </dd>
       </dl>
       <p v-else data-test="server-none" class="max-w-xl rounded border border-slate-200 bg-white p-5 text-slate-600">
         {{ $t('health.server.none') }}

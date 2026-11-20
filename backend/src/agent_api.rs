@@ -16,6 +16,8 @@ use crate::game_server;
 
 /// Longest version text an agent may send.
 const MAX_VERSION_LENGTH: usize = 40;
+/// Longest version of a template an agent may send: a whole checksum.
+const MAX_TEMPLATE_LENGTH: usize = 64;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/v1/report", post(report))
@@ -69,9 +71,20 @@ pub async fn report(
     {
         return Err(Failure::invalid_request("the version cannot be read"));
     }
+    let template = report.template.as_deref().map(str::trim);
+    if template.is_some_and(|template| {
+        template.is_empty()
+            || template.len() > MAX_TEMPLATE_LENGTH
+            || !template.chars().all(|c| c.is_ascii_hexdigit())
+    }) {
+        return Err(Failure::invalid_request(
+            "the version of the template cannot be read",
+        ));
+    }
     let report = AgentReport {
         version: version.to_owned(),
         free_disk_bytes: report.free_disk_bytes,
+        template: template.map(str::to_ascii_lowercase),
     };
     game_server::note_report(&state.db, &report).await?;
     Ok(Json(Done {}))

@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use lep_agent::backend::Backend;
 use lep_agent::config::{self, Config};
-use lep_agent::service;
+use lep_agent::{service, template};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -69,7 +69,12 @@ async fn run(path: &std::path::Path) -> Result<()> {
         "agent {} started",
         lep_agent::report::VERSION
     );
-    service::run(&config, &backend, shutdown()).await;
+    let (template, said) = service::prepare_template(&config, template::embedded());
+    match &template {
+        Some(_) => tracing::info!("{said}"),
+        None => tracing::warn!("{said}"),
+    }
+    service::run(&config, &backend, template.as_deref(), shutdown()).await;
     tracing::info!("stopped");
     Ok(())
 }
@@ -82,7 +87,9 @@ async fn check(path: &std::path::Path) -> Result<()> {
     if config::is_open_to_others(path) {
         println!("Warning:  other users can read the settings, and they hold the key.");
     }
-    service::report_once(&config, &backend).await?;
+    let (template, said) = service::prepare_template(&config, template::embedded());
+    println!("Template: {said}");
+    service::report_once(&config, &backend, template.as_deref()).await?;
     println!("The backend took the report.");
     Ok(())
 }

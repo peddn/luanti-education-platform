@@ -2736,6 +2736,13 @@
             "description": "Free space on the disk that holds the worlds, in bytes.",
             "minimum": 0
           },
+          "template": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Version of the template for worlds the agent carries. Missing\nif it was built without one or could not unpack it."
+          },
           "version": {
             "type": "string",
             "description": "Version of the agent, as in its package."
@@ -3107,6 +3114,13 @@
             ],
             "format": "int64",
             "description": "When the agent last reported, in seconds since 1970. Missing\nif it never did."
+          },
+          "template": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Version of the template for worlds the agent carries. Missing\nif it has none: then it cannot create worlds."
           },
           "version": {
             "type": [

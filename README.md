@@ -4,7 +4,7 @@ Eine Lernplattform auf Basis von [Luanti](https://www.luanti.org/) für Schulen.
 
 Geplante Lernmodule: Rechnen, Textfragen, Technisches Zeichnen, Logikrätsel.
 
-**Status:** In Entwicklung. Die Mods für Orte, Lobby, Lernräume, Fortschritt, Belohnungen, Rechnen und das Lehrerpult laufen. Backend und Web-Anwendung laufen für eine Welt: Konten, Gruppen, Fortschritt, Protokolle, Belohnungen und Jahresabschluss. Der Agent für den Spielserver ist begonnen: Er meldet dem Backend seinen Zustand, Welten anlegen und verwalten kann er noch nicht.
+**Status:** In Entwicklung. Die Mods für Orte, Lobby, Lernräume, Fortschritt, Belohnungen, Rechnen und das Lehrerpult laufen. Backend und Web-Anwendung laufen für eine Welt: Konten, Gruppen, Fortschritt, Protokolle, Belohnungen und Jahresabschluss. Der Agent für den Spielserver ist begonnen: Er meldet dem Backend seinen Zustand und trägt die Vorlage für Welten in sich, Welten anlegen und verwalten kann er noch nicht.
 
 Dieses Projekt ist unabhängig und gehört nicht zum Luanti-Projekt. Es wird von dessen Entwicklern weder betrieben noch unterstützt.
 
@@ -48,7 +48,7 @@ luanti-education-platform/
 │   ├── lep_tz/                  Technisches Zeichnen
 │   └── lep_logic/               Logikrätsel
 │
-├── third_party/                 fremde Mods als Liste mit festen Versionen
+├── third_party/                 Spiel und fremde Mods als Listen mit festen Versionen
 │
 ├── Cargo.toml                   Rust-Arbeitsbereich
 ├── crates/protocol/             gemeinsame Typen der Schnittstelle
@@ -57,7 +57,6 @@ luanti-education-platform/
 ├── frontend/                    Oberfläche (Vue, Pinia, Router, Tailwind, JavaScript)
 ├── api/                         erzeugte OpenAPI-Beschreibung
 │
-├── world-template/              Vorlage für eine neue Welt
 ├── deploy/                      Dienste und Vorlagen der Einstellungen für den Server
 ├── scripts/                     Hilfsskripte
 └── .github/workflows/           automatische Prüfungen

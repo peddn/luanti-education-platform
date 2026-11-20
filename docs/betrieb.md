@@ -2,7 +2,7 @@
 
 Diese Anleitung richtet Backend und Agent als Dienste auf einem Server mit **Debian 13** ein. Beide laufen auf derselben Maschine. Die Regeln dahinter stehen im [Konzept](konzept.md), Abschnitt 11.3.
 
-**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand. Welten legt der Agent noch nicht an, das folgt mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
+**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand und trägt die Vorlage für Welten in sich. Welten legt er noch nicht an, das folgt mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
 
 **Noch nicht für den echten Betrieb mit Schülerdaten:** Die Anleitung endet ohne HTTPS. Ohne HTTPS reisen Anmeldung und Startpasswörter ungeschützt durch das Netz. Für einen Versuch auf einer eigenen VM reicht das, für eine Schule nicht.
 
@@ -17,6 +17,7 @@ Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten 
 | Einstellungen | `/etc/lep/backend.env`, `/etc/lep/agent.toml` |
 | Datenbank des Backends | `/var/lib/lep-backend/lep.sqlite` |
 | Ordner des Agenten, später mit den Welten | `/var/lib/lep/` |
+| Vorlage für Welten, vom Agenten ausgepackt | `/var/lib/lep/templates/<Version>/` |
 | Dienst des Backends | `lep-backend.service`, ein Dienst des Systems, Benutzer `lep-backend` |
 | Dienst des Agenten | `lep-agent.service`, ein Dienst des Benutzers `lep` |
 
@@ -61,11 +62,14 @@ Erwartet: bei Node eine Version, die mit `v22` beginnt.
 ```sh
 git clone https://github.com/peddn/luanti-education-platform.git
 cd luanti-education-platform
-cargo build --release --package lep-backend --package lep-agent
+cargo build --release --package lep-backend
+scripts/agent-build.sh
 scripts/frontend-run.sh build
 ```
 
 Der erste Bau dauert einige Minuten.
+
+`scripts/agent-build.sh` baut den Agenten mit der Vorlage für Welten. Dafür lädt es Minetest Game und die fremden Mods in den festen Versionen aus `third_party/`, packt sie mit den eigenen Mods und den Lizenztexten zusammen und bettet das Archiv in das Programm ein. Am Ende steht `Built target/release/lep-agent with the template inside.` Der laufende Agent braucht danach keinen Zugriff auf fremde Quellen.
 
 ## 3. Programme und Oberfläche ablegen
 
@@ -166,7 +170,13 @@ sudo systemctl --user -M lep@ is-active lep-agent
 sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend agent show
 ```
 
-Erwartet: `active` und `Game server: connected` mit Version und freiem Speicherplatz.
+Erwartet: `active` und `Game server: connected` mit Version, freiem Speicherplatz und der Version der Vorlage in der Zeile `template for worlds`. Die Vorlage liegt ausgepackt unter `/var/lib/lep/templates/`:
+
+```sh
+sudo ls /var/lib/lep/templates/
+```
+
+Steht in der Zeile `none`, wurde der Agent ohne Vorlage gebaut, also mit `cargo build` statt mit `scripts/agent-build.sh`.
 
 Nach einem Neustart der Maschine (`sudo reboot`) müssen beide Befehle ohne weiteres Zutun dasselbe zeigen.
 
@@ -191,7 +201,8 @@ Stürzt ein Programm ab, startet systemd es neu. Ist das Backend nicht erreichba
 ```sh
 cd luanti-education-platform
 git pull
-cargo build --release --package lep-backend --package lep-agent
+cargo build --release --package lep-backend
+scripts/agent-build.sh
 scripts/frontend-run.sh build
 sudo install -m 755 target/release/lep-backend target/release/lep-agent /usr/local/bin/
 sudo rm -rf /usr/local/share/lep/frontend
@@ -200,10 +211,10 @@ sudo systemctl restart lep-backend
 sudo systemctl --user -M lep@ restart lep-agent
 ```
 
-Erst das Backend, dann der Agent. Haben sich die Dienstdateien in `deploy/` geändert, werden sie wie in Abschnitt 5 und 6 neu abgelegt, gefolgt von `daemon-reload`.
+Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die Vorlage eine neue Version, und der Agent packt sie beim Start neben die alte. Haben sich die Dienstdateien in `deploy/` geändert, werden sie wie in Abschnitt 5 und 6 neu abgelegt, gefolgt von `daemon-reload`.
 
 ## Was noch fehlt
 
 - **HTTPS:** ein Webserver mit Zertifikat vor dem Backend. Dann lauscht das Backend nur auf `127.0.0.1`.
-- **Welten:** Luanti, die Vorlage und der Dienst `lep-world@<Kennung>.service`, mit den Ports in der Firewall.
+- **Welten:** Luanti und der Dienst `lep-world@<Kennung>.service`, mit den Ports in der Firewall.
 - **Sicherung** der Datenbank des Backends.

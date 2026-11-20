@@ -9,6 +9,9 @@
 # agent only gets through once it does: scripts/backend-run.sh
 #
 #   scripts/agent-run.sh --new-key    make a new key first
+#
+# The agent carries the template for worlds if scripts/template-build.sh
+# was run before. Without it the agent runs, but has no template.
 # The folder .dev is never checked in.
 set -euo pipefail
 
@@ -44,6 +47,12 @@ if [ ! -f "$settings" ]; then
 		echo "data_dir = \"$repo/.dev/agent\""
 	} >"$settings"
 	echo "The settings with a new key are in .dev/agent.toml."
+fi
+
+if [ -f "$repo/target/lep-template/template.tar.gz" ]; then
+	export LEP_TEMPLATE="$repo/target/lep-template/template.tar.gz"
+else
+	echo "No template built. For an agent with a template run scripts/template-build.sh first."
 fi
 
 exec cargo run --quiet --package lep-agent -- --config "$settings" "$@"

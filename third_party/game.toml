@@ -1,0 +1,12 @@
+# The game the worlds of the Luanti Education Platform run on.
+#
+# It is not copied into this repository. scripts/dev-setup.sh and
+# scripts/template-build.sh fetch it at exactly the commit given here.
+#
+# To update the game: check its changes, set the new commit, run
+# scripts/dev-setup.sh and test in the game.
+
+[minetest_game]
+repo = "https://github.com/luanti-org/minetest_game"
+commit = "9e895af6e9feb98332fa1a778001442f5669bc20"
+license = "LGPL-2.1-or-later (code), CC-BY-SA-3.0 and others (media), see LICENSE.txt and the mods"

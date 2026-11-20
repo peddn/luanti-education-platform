@@ -8,3 +8,4 @@ pub mod backend;
 pub mod config;
 pub mod report;
 pub mod service;
+pub mod template;

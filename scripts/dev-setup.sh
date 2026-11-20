@@ -10,58 +10,26 @@ set -euo pipefail
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 dev="$repo/.dev"
 world="$dev/worlds/dev"
-game_repo="https://github.com/luanti-org/minetest_game"
 
 mkdir -p "$dev/games" "$dev/mods" "$dev/third_party" "$world"
 
-if [ ! -d "$dev/games/minetest_game" ]; then
-	echo "Fetching Minetest Game ..."
-	git clone --depth 1 "$game_repo" "$dev/games/minetest_game"
-fi
+# Game and third-party mods are fetched at the commits pinned in
+# third_party/game.toml and third_party/mods.toml.
+# shellcheck source=scripts/lib/third-party.sh
+. "$repo/scripts/lib/third-party.sh"
+read_third_party "$repo"
+
+fetch_pinned "$dev/games/minetest_game" "$game_repo" "$game_commit"
 
 # The LEP modpack is linked, so changes in mods/ apply without copying.
 ln -sfn "$repo/mods" "$dev/mods/lep"
 
-# Third-party mods are fetched at the commit pinned in third_party/mods.toml.
-# The file is read line by line: "[name]", then repo = "..." and
-# commit = "..." in any order. "settings.<key> = <value>" lines are
-# collected and written into minetest.conf further down.
-third_party_mods=()
-third_party_settings=()
-fetch_third_party() {
-	local name="$1" url="$2" commit="$3"
-	local target="$dev/third_party/$name"
-	if [ -z "$url" ] || [ -z "$commit" ]; then
-		echo "third_party/mods.toml: [$name] needs repo and commit" >&2
-		exit 1
-	fi
-	if [ "$(git -C "$target" rev-parse HEAD 2>/dev/null || true)" != "$commit" ]; then
-		echo "Fetching $name at ${commit:0:10} ..."
-		rm -rf "$target"
-		git init --quiet "$target"
-		git -C "$target" fetch --quiet --depth 1 "$url" "$commit"
-		git -C "$target" -c advice.detachedHead=false checkout --quiet FETCH_HEAD
-	fi
-	ln -sfn "$target" "$dev/mods/$name"
-	third_party_mods+=("$name")
-}
-
-tp_name="" tp_repo="" tp_commit=""
-while IFS= read -r line || [ -n "$line" ]; do
-	if [[ "$line" =~ ^\[([A-Za-z0-9_]+)\]$ ]]; then
-		[ -z "$tp_name" ] || fetch_third_party "$tp_name" "$tp_repo" "$tp_commit"
-		tp_name="${BASH_REMATCH[1]}" tp_repo="" tp_commit=""
-	elif [[ "$line" =~ ^repo[[:space:]]*=[[:space:]]*\"(.+)\"$ ]]; then
-		tp_repo="${BASH_REMATCH[1]}"
-	elif [[ "$line" =~ ^commit[[:space:]]*=[[:space:]]*\"([0-9a-f]{40})\"$ ]]; then
-		tp_commit="${BASH_REMATCH[1]}"
-	elif [[ "$line" =~ ^settings\.([A-Za-z0-9_.]+)[[:space:]]*=[[:space:]]*(.+)$ ]]; then
-		tp_value="${BASH_REMATCH[2]}"
-		tp_value="${tp_value%\"}"
-		third_party_settings+=("${BASH_REMATCH[1]} = ${tp_value#\"}")
-	fi
-done < "$repo/third_party/mods.toml"
-[ -z "$tp_name" ] || fetch_third_party "$tp_name" "$tp_repo" "$tp_commit"
+third_party_mods=("${tp_names[@]}")
+third_party_settings=("${tp_settings[@]}")
+for i in "${!tp_names[@]}"; do
+	fetch_pinned "$dev/third_party/${tp_names[$i]}" "${tp_repos[$i]}" "${tp_commits[$i]}"
+	ln -sfn "$dev/third_party/${tp_names[$i]}" "$dev/mods/${tp_names[$i]}"
+done
 
 # Enable every LEP mod and every third-party mod in the test world.
 {

@@ -38,8 +38,10 @@ Zweignamen: `<bereich>/<kurze-beschreibung>`, zum Beispiel `setup/project-skelet
 Für die Anleitung in Schritt 4 gilt:
 
 - Zweige mit `git switch` wechseln, nicht mit `git checkout`.
-- Immer den Start als Server angeben (`scripts/dev-run.sh --server`). Der Nutzer verbindet sich mit einem Luanti-Client auf `127.0.0.1`, Port `30000`.
-- Der Nutzer testet unter Arch Linux mit dem dortigen Luanti-Paket. Es kann eine Version hinter der Zielversion liegen.
+- Der Nutzer testet auf einer VM mit Debian 13, eingerichtet nach [`docs/betrieb.md`](docs/betrieb.md). Die Anleitung nennt die Schritte, um die VM auf den Stand zu bringen (Zweig wechseln, bauen, Programme ablegen, Dienste neu starten), und die Prüfung dort.
+- Der Luanti-Client des Nutzers läuft unter Arch Linux und verbindet sich mit der Adresse der VM. Er kann eine Version hinter der Zielversion liegen.
+- Solange der Agent auf der VM keine Welten anlegt, gibt es dort keine Welt. Was nur im Spiel prüfbar ist, wird bis dahin als nicht vom Nutzer getestet benannt.
+- Die Skripte der Testumgebung (`scripts/dev-setup.sh`, `scripts/dev-run.sh`) nutzt Claude weiter zum Bauen und Prüfen. Anleitungen für den Nutzer beziehen sich nicht darauf.
 - Auf dem Server gelten Privilegien wie im echten Betrieb. Dazusagen, welche Schritte der Admin ausführt und welche ein Spieler ohne Admin-Rechte.
 
 ### Commits

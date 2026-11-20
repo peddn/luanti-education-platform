@@ -1,9 +1,10 @@
 # Third-party mods of the Luanti Education Platform.
 #
-# They are not copied into this repository. scripts/dev-setup.sh fetches
-# each one at exactly the commit given here and enables it in the test
-# world. The section name is the mod name. Lines starting with "settings."
-# are written into the configuration of the test world.
+# They are not copied into this repository. scripts/dev-setup.sh and
+# scripts/template-build.sh fetch each one at exactly the commit given
+# here. The test world and the template of the agent enable all of them.
+# The section name is the mod name. Lines starting with "settings." are
+# written into the configuration of a world.
 #
 # To update a mod: check its changes and licence, set the new commit, run
 # scripts/dev-setup.sh and test in the game.

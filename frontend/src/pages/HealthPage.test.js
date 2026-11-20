@@ -47,7 +47,13 @@ describe('health page', () => {
           status: 'ok',
           version: '0.1.0',
           mail: 'smtp',
-          game_server: { connected: true, last_seen_at: seen, version: '0.2.0', free_disk_bytes: 12_340_000_000 },
+          game_server: {
+            connected: true,
+            last_seen_at: seen,
+            version: '0.2.0',
+            free_disk_bytes: 12_340_000_000,
+            template: 'bdbbf00c8a29',
+          },
         }),
       ),
     )
@@ -57,6 +63,7 @@ describe('health page', () => {
     expect(page.get('[data-test=server-seen]').text()).toContain('2026')
     expect(page.get('[data-test=server-version]').text()).toBe('0.2.0')
     expect(page.get('[data-test=server-disk]').text()).toBe('12,3 GB')
+    expect(page.get('[data-test=server-template]').text()).toBe('bdbbf00c8a29')
     expect(page.find('[data-test=server-none]').exists()).toBe(false)
   })
 
@@ -67,7 +74,7 @@ describe('health page', () => {
           status: 'ok',
           version: '0.1.0',
           mail: 'smtp',
-          game_server: { connected: false, last_seen_at: null, version: null, free_disk_bytes: null },
+          game_server: { connected: false, last_seen_at: null, version: null, free_disk_bytes: null, template: null },
         }),
       ),
     )
@@ -77,6 +84,7 @@ describe('health page', () => {
     expect(page.get('[data-test=server-seen]').text()).toBe('never')
     expect(page.get('[data-test=server-version]').text()).toBe('unknown')
     expect(page.get('[data-test=server-disk]').text()).toBe('unknown')
+    expect(page.get('[data-test=server-template]').text()).toContain('cannot create worlds')
   })
 
   it('shows the same in English', async () => {

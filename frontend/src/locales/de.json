@@ -439,6 +439,8 @@
       "agentVersion": "Version des Agenten",
       "freeDisk": "Freier Speicherplatz",
       "gigabytes": "{amount} GB",
+      "template": "Vorlage für Welten",
+      "noTemplate": "keine – der Agent kann keine Welten anlegen",
       "unknown": "unbekannt"
     }
   },

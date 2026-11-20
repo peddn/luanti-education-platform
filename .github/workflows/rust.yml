@@ -27,3 +27,10 @@ jobs:
 
       - name: Tests
         run: cargo test
+
+      # The agent again, this time with the template for worlds inside.
+      # Fetches game and mods at the pinned commits.
+      - name: Template for worlds
+        run: |
+          scripts/template-build.sh
+          LEP_TEMPLATE="$PWD/target/lep-template/template.tar.gz" cargo test --package lep-agent

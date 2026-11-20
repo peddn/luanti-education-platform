@@ -803,6 +803,11 @@ export interface components {
              * @description Free space on the disk that holds the worlds, in bytes.
              */
             free_disk_bytes: number;
+            /**
+             * @description Version of the template for worlds the agent carries. Missing
+             *     if it was built without one or could not unpack it.
+             */
+            template?: string | null;
             /** @description Version of the agent, as in its package. */
             version: string;
         };
@@ -989,6 +994,11 @@ export interface components {
              *     if it never did.
              */
             last_seen_at?: number | null;
+            /**
+             * @description Version of the template for worlds the agent carries. Missing
+             *     if it has none: then it cannot create worlds.
+             */
+            template?: string | null;
             /** @description Version of the agent. */
             version?: string | null;
         };

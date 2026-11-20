@@ -9,10 +9,11 @@ use lep_protocol::agent::AgentReport;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Describes the game server as it is now.
-pub fn build(data_dir: &Path) -> Result<AgentReport> {
+pub fn build(data_dir: &Path, template: Option<&str>) -> Result<AgentReport> {
     Ok(AgentReport {
         version: VERSION.to_owned(),
         free_disk_bytes: free_disk_bytes(data_dir)?,
+        template: template.map(str::to_owned),
     })
 }
 
@@ -32,14 +33,16 @@ mod tests {
     #[test]
     fn describes_the_game_server() {
         let folder = tempfile::tempdir().unwrap();
-        let report = build(folder.path()).unwrap();
+        let report = build(folder.path(), Some("bdbbf00c8a29")).unwrap();
         assert_eq!(report.version, VERSION);
+        assert_eq!(report.template.as_deref(), Some("bdbbf00c8a29"));
+        assert_eq!(build(folder.path(), None).unwrap().template, None);
         assert!(report.free_disk_bytes > 0);
     }
 
     #[test]
     fn a_missing_folder_is_an_error() {
         let folder = tempfile::tempdir().unwrap();
-        assert!(build(&folder.path().join("missing")).is_err());
+        assert!(build(&folder.path().join("missing"), None).is_err());
     }
 }

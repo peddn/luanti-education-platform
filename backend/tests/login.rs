@@ -214,6 +214,7 @@ async fn a_teacher_logs_in_with_a_link_and_out_again() {
     let report = lep_protocol::agent::AgentReport {
         version: "0.1.0".to_owned(),
         free_disk_bytes: 7,
+        template: Some("bdbbf00c8a29".to_owned()),
     };
     lep_backend::game_server::note_report(&setup.state.db, &report)
         .await
@@ -229,6 +230,7 @@ async fn a_teacher_logs_in_with_a_link_and_out_again() {
     assert_eq!(json["game_server"]["connected"], true);
     assert_eq!(json["game_server"]["version"], "0.1.0");
     assert_eq!(json["game_server"]["free_disk_bytes"], 7);
+    assert_eq!(json["game_server"]["template"], "bdbbf00c8a29");
     let (status, json, _) = setup
         .call(Method::GET, "/api/web/v1/status", None, &[])
         .await;
