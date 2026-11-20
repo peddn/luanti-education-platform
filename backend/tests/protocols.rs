@@ -199,7 +199,7 @@ async fn a_teacher_reads_and_narrows_down_the_protocols_of_the_group() {
             ("chat", 1700000000, "klugeEule", json!({ "kind": "chat", "text": "hallo" })),
             ("chat", 1700000100, "frohesReh", json!({ "kind": "chat", "text": "selber hallo" })),
             ("chat", 1700000200, "klugeEule", json!({ "kind": "action", "text": "winkt" })),
-            ("rewards", 1700000300, "klugeEule", json!({ "size": "small", "reason": "task",
+            ("rewards", 1700000300, "klugeEule", json!({ "effort": "low", "reason": "task",
                 "module": "lep_math:math", "level": "1", "task": "add", "items": "default:apple 1" })),
         ])
         .await;
@@ -261,7 +261,7 @@ async fn a_teacher_reads_and_narrows_down_the_protocols_of_the_group() {
         )
         .await;
     assert_eq!(rewards["entries"][0]["fields"]["items"], "default:apple 1");
-    assert_eq!(rewards["columns"][0], "size");
+    assert_eq!(rewards["columns"][0], "effort");
 
     let (status, json) = setup
         .web(

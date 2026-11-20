@@ -12,16 +12,16 @@ core.register_chatcommand("lep_rewards", {
 	description = S("Show what the rewards contain and how many daily tasks are left today"),
 	func = function(name)
 		local remaining, limit = lep_rewards.get_remaining(name)
-		local function items(size)
-			return lep_rewards.describe_items(lep_rewards.get_reward(size))
+		local function items(occasion)
+			return lep_rewards.describe_items(lep_rewards.get_reward(occasion))
 		end
 		local lines = {
-			S("Small reward: @1", items(lep_rewards.SMALL)),
-			"  " .. S("for a level task that counts for your level, or an easy daily task"),
-			S("Medium reward: @1", items(lep_rewards.MEDIUM)),
-			"  " .. S("for a daily task or a completed level"),
-			S("Large reward: @1", items(lep_rewards.LARGE)),
-			"  " .. S("for a hard daily task or a completed stage"),
+			S("For a solved task: @1", items(lep_rewards.TASK)),
+			S("For a daily task: @1", items(lep_rewards.DAILY)),
+			S("For a completed level: @1", items(lep_rewards.LEVEL)),
+			S("For a completed stage: @1", items(lep_rewards.STAGE)),
+			S("For a completed module: @1", items(lep_rewards.MODULE)),
+			S("Harder tasks and modules earn twice or three times as much."),
 			S("Daily tasks left today: @1 of @2", remaining, limit),
 		}
 		return true, table.concat(lines, "\n")
@@ -33,6 +33,7 @@ local REASONS = {
 	daily = S("daily task"),
 	level = S("level completed"),
 	stage = S("stage completed"),
+	module = S("module completed"),
 }
 
 core.register_chatcommand("lep_rewards_log", {

@@ -1,6 +1,7 @@
 # textdomain: lep_trophies
 New trophy: @1. You can put it on a pedestal in your room.=Neue Trophäe: @1. Du kannst sie in deinem Raum auf einen Sockel stellen.
 @1: stage @2=@1: Etappe @2
+@1: completed=@1: abgeschlossen
 Completed all levels of @1.=Alle Niveaus von @1 abgeschlossen.
 Completed level @1 of @2.=Niveau @1 von @2 abgeschlossen.
 @1: @2 tasks=@1: @2 Aufgaben

@@ -36,7 +36,7 @@ const names = computed(() =>
 )
 const PERIODS = ['all', 'today', 'week', 'month']
 // Columns whose values are fixed words that have a translation.
-const WORDS = ['kind', 'size', 'reason', 'action']
+const WORDS = ['kind', 'effort', 'reason', 'action']
 
 const group = ref(/** @type {Group | null} */ (null))
 const accounts = ref(/** @type {string[]} */ ([]))

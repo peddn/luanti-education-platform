@@ -71,17 +71,29 @@ describe("lep_progress modules", function()
 		end)
 	end)
 
-	it("marks stages, and always the last level", function()
+	it("marks stages, but never the last level: it ends the module", function()
 		local module = new_module({
 			{ tasks = { { id = "a" } } },
 			{ stage = true, tasks = { { id = "b" } } },
 			{ tasks = { { id = "c" } } },
-			{ tasks = { { id = "d" } } },
+			{ stage = true, tasks = { { id = "d" } } },
 		})
-		assert.are.same({ false, true, false, true }, {
+		assert.are.same({ false, true, false, false }, {
 			module.levels[1].stage, module.levels[2].stage,
 			module.levels[3].stage, module.levels[4].stage,
 		})
+	end)
+
+	it("knows how hard a module is, low unless it says so", function()
+		local module, modules = new_module()
+		assert.are.equal(progress.EFFORT_LOW, module.effort)
+		modules:register("test:quiz", { effort = progress.EFFORT_HIGH,
+			levels = { { tasks = { { id = "q" } } } } })
+		assert.are.equal(progress.EFFORT_HIGH, modules:get("test:quiz").effort)
+		assert.has_error(function()
+			modules:register("test:odd", { effort = "huge",
+				levels = { { tasks = { { id = "q" } } } } })
+		end)
 	end)
 
 	it("lists modules in the order they were registered", function()
@@ -188,7 +200,8 @@ describe("lep_progress record", function()
 		local events
 		state, events = solve(module, state, 3, "div")
 		assert.are.same({ progress.LEVEL_COMPLETED, progress.MODULE_COMPLETED }, names(events))
-		assert.is_true(events[1].stage)
+		-- The last level is no stage: it ends the module.
+		assert.is_false(events[1].stage)
 		assert.are.equal(3, state.level)
 		assert.is_true(progress.is_module_completed(module, state))
 

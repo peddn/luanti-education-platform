@@ -256,7 +256,7 @@
       "recipient": "To",
       "text": "Text",
       "pos": "Place",
-      "size": "Size",
+      "effort": "Effort",
       "reason": "Reason",
       "module": "Module",
       "level": "Level",
@@ -277,16 +277,17 @@
         "private": "private",
         "action": "action (/me)"
       },
-      "size": {
-        "small": "small",
-        "medium": "medium",
-        "large": "large"
+      "effort": {
+        "low": "low",
+        "normal": "normal, twice",
+        "high": "high, three times"
       },
       "reason": {
         "task": "task",
         "daily": "daily task",
         "level": "level completed",
-        "stage": "milestone"
+        "stage": "milestone",
+        "module": "module completed"
       },
       "action": {
         "chosen": "chosen",

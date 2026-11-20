@@ -256,7 +256,7 @@
       "recipient": "An",
       "text": "Text",
       "pos": "Ort",
-      "size": "Größe",
+      "effort": "Aufwand",
       "reason": "Anlass",
       "module": "Modul",
       "level": "Niveau",
@@ -277,16 +277,17 @@
         "private": "privat",
         "action": "Handlung (/me)"
       },
-      "size": {
-        "small": "klein",
-        "medium": "mittel",
-        "large": "groß"
+      "effort": {
+        "low": "gering",
+        "normal": "normal, doppelt",
+        "high": "hoch, dreifach"
       },
       "reason": {
         "task": "Aufgabe",
         "daily": "Tagesaufgabe",
         "level": "Niveau abgeschlossen",
-        "stage": "Meilenstein"
+        "stage": "Meilenstein",
+        "module": "Modul abgeschlossen"
       },
       "action": {
         "chosen": "gewählt",

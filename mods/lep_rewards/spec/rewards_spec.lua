@@ -22,8 +22,11 @@ describe("lep_rewards rules", function()
 		return r
 	end
 
-	it("pays the small reward for a level task that counts", function()
-		assert.are.same({ rewards.SMALL, rewards.REASON_TASK }, { rewards.for_result(result()) })
+	it("pays for a level task that counts, as hard as its module is", function()
+		assert.are.same({ rewards.TASK, rewards.REASON_TASK, "normal" },
+			{ rewards.for_result(result()) })
+		assert.are.same({ rewards.TASK, rewards.REASON_TASK, "low" },
+			{ rewards.for_result(result({ effort = false })) })
 	end)
 
 	it("pays nothing for a level task that no longer counts", function()
@@ -37,15 +40,13 @@ describe("lep_rewards rules", function()
 		assert.is_nil(rewards.for_result(daily({ solved = false })))
 	end)
 
-	it("pays the medium reward for a daily task", function()
-		assert.are.same({ rewards.MEDIUM, rewards.REASON_DAILY }, { rewards.for_result(daily()) })
-	end)
-
-	it("sizes the reward of a daily task by its effort", function()
-		assert.are.equal(rewards.SMALL, (rewards.for_result(daily({ effort = "low" }))))
-		assert.are.equal(rewards.MEDIUM, (rewards.for_result(daily({ effort = "normal" }))))
-		assert.are.equal(rewards.LARGE, (rewards.for_result(daily({ effort = "high" }))))
-		assert.are.equal(rewards.MEDIUM, (rewards.for_result(daily({ effort = "unknown" }))))
+	it("pays a daily task by the effort it names, normal without one", function()
+		-- A daily task has a row of its own in the table.
+		assert.are.same({ rewards.DAILY, rewards.REASON_DAILY, "normal" },
+			{ rewards.for_result(daily()) })
+		assert.are.equal("low", select(3, rewards.for_result(daily({ effort = "low" }))))
+		assert.are.equal("high", select(3, rewards.for_result(daily({ effort = "high" }))))
+		assert.are.equal("normal", select(3, rewards.for_result(daily({ effort = "unknown" }))))
 	end)
 
 	it("pays daily tasks on the own level and above, not below", function()
@@ -53,9 +54,12 @@ describe("lep_rewards rules", function()
 		assert.is_nil(rewards.for_result(daily({ level = 1 })))
 	end)
 
-	it("pays the large reward only at the end of a stage", function()
-		assert.are.same({ rewards.LARGE, rewards.REASON_STAGE }, { rewards.for_level(true) })
-		assert.are.same({ rewards.MEDIUM, rewards.REASON_LEVEL }, { rewards.for_level(false) })
+	it("pays exactly one reward for a completed level, the highest that fits", function()
+		assert.are.same({ rewards.LEVEL, rewards.REASON_LEVEL }, { rewards.for_level(false, false) })
+		assert.are.same({ rewards.STAGE, rewards.REASON_STAGE }, { rewards.for_level(true, false) })
+		assert.are.same({ rewards.MODULE, rewards.REASON_MODULE }, { rewards.for_level(false, true) })
+		-- The last level ends the module, whatever else it is.
+		assert.are.same({ rewards.MODULE, rewards.REASON_MODULE }, { rewards.for_level(true, true) })
 	end)
 end)
 
@@ -79,27 +83,93 @@ describe("lep_rewards destination", function()
 	end)
 end)
 
-describe("lep_rewards items", function()
-	it("reads a list of items", function()
-		assert.are.same({
-			{ name = "default:steel_ingot", count = 1 },
-			{ name = "default:coal_lump", count = 3 },
-			{ name = "farming:bread", count = 1 },
-		}, rewards.parse_items("default:steel_ingot 1,default:coal_lump 3 ,  farming:bread"))
+describe("lep_rewards table", function()
+	local known = { ["default:steel_ingot"] = true, ["default:gold_ingot"] = true,
+		["default:diamond"] = true, ["default:coal_lump"] = true }
+	local function is_item(name)
+		return known[name] == true
+	end
+
+	it("has a default with one item per occasion", function()
+		local default = rewards.default_table()
+		assert.are.same(default, rewards.check_table(default, is_item))
+		assert.are.equal(3, default.module.count)
+		-- A copy: changing it leaves the default alone.
+		default.task.count = 50
+		assert.are.equal(1, rewards.default_table().task.count)
 	end)
 
-	it("reads the defaults", function()
-		for _, size in ipairs(rewards.SIZES) do
-			assert.is_truthy(rewards.parse_items(rewards.DEFAULT_ITEMS[size]))
-		end
+	it("multiplies the count by the effort", function()
+		local default = rewards.default_table()
+		assert.are.same({ { name = "default:steel_ingot", count = 1 } },
+			rewards.items(default, rewards.TASK, "low"))
+		assert.are.same({ { name = "default:steel_ingot", count = 2 } },
+			rewards.items(default, rewards.TASK, "normal"))
+		assert.are.same({ { name = "default:diamond", count = 9 } },
+			rewards.items(default, rewards.MODULE, "high"))
+		assert.are.same({ { name = "default:gold_ingot", count = 2 } },
+			rewards.items(default, rewards.DAILY, "normal"))
+		-- Without an effort it is paid once.
+		assert.are.equal(1, rewards.items(default, rewards.LEVEL)[1].count)
+		assert.is_nil(rewards.items(default, "nothing", "low"))
 	end)
 
-	it("rejects what it cannot read", function()
-		for _, text in ipairs({ "", " , ", "steel 1", "default:steel_ingot x",
-				"default:steel_ingot 0", "default:steel_ingot 1 2", "a:b; c:d" }) do
-			assert.is_nil(rewards.parse_items(text), text)
+	it("takes a table only as a whole", function()
+		local function with(change)
+			local candidate = rewards.default_table()
+			change(candidate)
+			return rewards.check_table(candidate, is_item)
 		end
-		assert.is_nil(rewards.parse_items(nil))
+		assert.are.equal(20, with(function(t) t.daily_limit = 20 end).daily_limit)
+		assert.are.equal(0, with(function(t) t.daily_limit = 0 end).daily_limit)
+		assert.are.equal("default:coal_lump",
+			with(function(t) t.task = { name = "default:coal_lump", count = 99 } end).task.name)
+
+		local bad = {
+			{ "task", function(t) t.task.name = "default:nothing" end },
+			{ "task", function(t) t.task.name = "steel" end },
+			{ "level", function(t) t.level.count = 0 end },
+			{ "level", function(t) t.level.count = 100 end },
+			{ "stage", function(t) t.stage.count = 1.5 end },
+			{ "module", function(t) t.module = nil end },
+			{ "daily", function(t) t.daily = nil end },
+			{ "daily_limit", function(t) t.daily_limit = 21 end },
+			{ "daily_limit", function(t) t.daily_limit = -1 end },
+			{ "daily_limit", function(t) t.daily_limit = nil end },
+		}
+		for index, case in ipairs(bad) do
+			local clean, why = with(case[2])
+			assert.is_nil(clean, "case " .. index)
+			assert.are.equal(case[1], why, "case " .. index)
+		end
+		assert.are.same({ nil, "table" }, { rewards.check_table("nonsense", is_item) })
+	end)
+
+	it("drops what it does not know, so nothing else gets into storage", function()
+		local candidate = rewards.default_table()
+		candidate.extra = "x"
+		candidate.task.extra = "y"
+		local clean = rewards.check_table(candidate, is_item)
+		assert.is_nil(clean.extra)
+		assert.is_nil(clean.task.extra)
+	end)
+
+	it("repairs a stored table row by row", function()
+		assert.are.same(rewards.default_table(), rewards.normalize_table(nil, is_item))
+		local stored = {
+			task = { name = "default:coal_lump", count = 4 },
+			level = { name = "default:gone", count = 2 },
+			stage = { name = "default:diamond", count = 500 },
+			daily_limit = 8,
+		}
+		local repaired = rewards.normalize_table(stored, is_item)
+		assert.are.same({ name = "default:coal_lump", count = 4 }, repaired.task)
+		assert.are.same(rewards.DEFAULT_TABLE.level, repaired.level)
+		assert.are.same(rewards.DEFAULT_TABLE.stage, repaired.stage)
+		assert.are.same(rewards.DEFAULT_TABLE.module, repaired.module)
+		-- A table from before daily tasks had a row of their own.
+		assert.are.same(rewards.DEFAULT_TABLE.daily, repaired.daily)
+		assert.are.equal(8, repaired.daily_limit)
 	end)
 end)
 

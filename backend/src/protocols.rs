@@ -31,7 +31,7 @@ pub fn columns(protocol: &str) -> Option<&'static [&'static str]> {
     Some(match protocol {
         "chat" => &["kind", "recipient", "text"],
         "signs" => &["pos", "text"],
-        "rewards" => &["size", "reason", "module", "level", "task", "items"],
+        "rewards" => &["effort", "reason", "module", "level", "task", "items"],
         "desk" => &["action", "targets"],
         "names" => &["action", "name", "by"],
         EXPORTS => &["protocol", "filter_account", "filter_since", "entries"],
