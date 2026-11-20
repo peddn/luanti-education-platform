@@ -37,6 +37,7 @@ use crate::app::AppState;
 use crate::changes;
 use crate::display_names;
 use crate::failure::Failure;
+use crate::game_server;
 use crate::groups::{self, ChangeError};
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
 use crate::progress::{self, ChangeError as ChangeProgressError};
@@ -333,9 +334,12 @@ pub async fn me(
     ),
     security(("session" = []))
 )]
-pub async fn status(State(state): State<AppState>, _teacher: Teacher) -> Json<Status> {
+pub async fn status(
+    State(state): State<AppState>,
+    _teacher: Teacher,
+) -> Result<Json<Status>, Failure> {
     // Who got this far was found in the database.
-    Json(Status {
+    Ok(Json(Status {
         status: Health::new(true).status,
         version: env!("CARGO_PKG_VERSION").to_owned(),
         mail: if state.mailer.is_smtp() {
@@ -343,7 +347,8 @@ pub async fn status(State(state): State<AppState>, _teacher: Teacher) -> Json<St
         } else {
             MailTransport::Terminal
         },
-    })
+        game_server: game_server::describe(&state.db).await?,
+    }))
 }
 
 /// Lets only the school administration pass.

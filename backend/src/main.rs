@@ -29,6 +29,14 @@ async fn main() -> Result<()> {
             println!("{}", output?);
             Ok(())
         }
+        Command::Agent { command } => {
+            let config = Config::from_env()?;
+            let pool = db::open(&config.database).await?;
+            let output = cli::run_agent(&pool, command).await;
+            pool.close().await;
+            println!("{}", output?);
+            Ok(())
+        }
         Command::World { command } => {
             let config = Config::from_env()?;
             let pool = db::open(&config.database).await?;

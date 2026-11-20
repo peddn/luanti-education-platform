@@ -10,6 +10,62 @@
     "version": "1"
   },
   "paths": {
+    "/api/agent/v1/report": {
+      "post": {
+        "tags": [
+          "agent_api"
+        ],
+        "summary": "Takes in what the agent says about the game server.",
+        "operationId": "report",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Noted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The report cannot be understood",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "agent_key": []
+          }
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [],
@@ -2666,6 +2722,26 @@
           }
         }
       },
+      "AgentReport": {
+        "type": "object",
+        "description": "What the agent says about the game server without being asked.",
+        "required": [
+          "version",
+          "free_disk_bytes"
+        ],
+        "properties": {
+          "free_disk_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Free space on the disk that holds the worlds, in bytes.",
+            "minimum": 0
+          },
+          "version": {
+            "type": "string",
+            "description": "Version of the agent, as in its package."
+          }
+        }
+      },
       "ApiError": {
         "type": "object",
         "description": "Answer to a request that failed.",
@@ -3001,6 +3077,43 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/EventOutcome"
+          }
+        }
+      },
+      "GameServer": {
+        "type": "object",
+        "description": "The game server that runs the worlds, as its agent last described\nit.",
+        "required": [
+          "connected"
+        ],
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "True if the agent reported a short while ago."
+          },
+          "free_disk_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Free space on the disk that holds the worlds, in bytes.",
+            "minimum": 0
+          },
+          "last_seen_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "When the agent last reported, in seconds since 1970. Missing\nif it never did."
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Version of the agent."
           }
         }
       },
@@ -4205,6 +4318,17 @@
           "mail"
         ],
         "properties": {
+          "game_server": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GameServer",
+                "description": "The game server, as its agent last described it. Missing as\nlong as no agent is set up."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "mail": {
             "$ref": "#/components/schemas/MailTransport"
           },
@@ -4684,6 +4808,10 @@
       }
     },
     "securitySchemes": {
+      "agent_key": {
+        "type": "http",
+        "scheme": "bearer"
+      },
       "session": {
         "type": "apiKey",
         "in": "cookie",

@@ -9,7 +9,7 @@ use sqlx::SqlitePool;
 
 use crate::config::Config;
 use crate::mail::{self, Mailer};
-use crate::{app, jobs, state, teachers, worlds};
+use crate::{app, game_server, jobs, state, teachers, worlds};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -41,8 +41,55 @@ pub enum Command {
         #[command(subcommand)]
         command: TeacherCommand,
     },
+    /// Look after the agent on the game server.
+    Agent {
+        #[command(subcommand)]
+        command: AgentCommand,
+    },
     /// Print the description of the interface, as in api/openapi.json.
     Openapi,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum AgentCommand {
+    /// Give the agent a key and print it. The key is shown only now. A
+    /// key that existed before stops working.
+    Key,
+    /// Show what the agent last said about the game server.
+    Show,
+}
+
+/// Runs a command about the agent and returns what to print.
+pub async fn run_agent(pool: &SqlitePool, command: AgentCommand) -> Result<String> {
+    match command {
+        AgentCommand::Key => {
+            let key = game_server::rekey(pool).await?;
+            Ok(format!(
+                "New key for the agent:\nkey: {key}\nThe key is shown only now. It belongs \
+                 into the settings of the agent, not into the repository. An older key \
+                 no longer works."
+            ))
+        }
+        AgentCommand::Show => {
+            let Some(server) = game_server::describe(pool).await? else {
+                return Ok("There is no key for the agent yet.".to_owned());
+            };
+            let Some(seen) = server.last_seen_at else {
+                return Ok("The agent has a key, but never reported.".to_owned());
+            };
+            Ok(format!(
+                "Game server: {}\nlast seen {} s ago\nagent version: {}\nfree disk space: {} MiB",
+                if server.connected {
+                    "connected"
+                } else {
+                    "out of reach"
+                },
+                (crate::clock::now() - seen).max(0),
+                server.version.as_deref().unwrap_or("unknown"),
+                server.free_disk_bytes.unwrap_or(0) / (1024 * 1024),
+            ))
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -220,6 +267,28 @@ pub fn openapi() -> String {
 mod tests {
     use super::*;
     use crate::db;
+
+    #[tokio::test]
+    async fn gives_the_agent_a_key_and_shows_the_game_server() {
+        let pool = db::open_in_memory().await.unwrap();
+        let nothing = run_agent(&pool, AgentCommand::Show).await.unwrap();
+        assert!(nothing.contains("no key"));
+
+        let made = run_agent(&pool, AgentCommand::Key).await.unwrap();
+        assert!(made.contains("key: lepa_"));
+        let silent = run_agent(&pool, AgentCommand::Show).await.unwrap();
+        assert!(silent.contains("never reported"));
+
+        let report = lep_protocol::agent::AgentReport {
+            version: "0.1.0".to_owned(),
+            free_disk_bytes: 3 * 1024 * 1024,
+        };
+        game_server::note_report(&pool, &report).await.unwrap();
+        let shown = run_agent(&pool, AgentCommand::Show).await.unwrap();
+        assert!(shown.contains("connected"));
+        assert!(shown.contains("agent version: 0.1.0"));
+        assert!(shown.contains("free disk space: 3 MiB"));
+    }
 
     #[tokio::test]
     async fn adds_lists_and_pings_worlds() {

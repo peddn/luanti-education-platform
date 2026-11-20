@@ -1,5 +1,6 @@
 //! Web application of the Luanti Education Platform.
 
+pub mod agent_api;
 pub mod app;
 pub mod changes;
 pub mod cli;
@@ -9,6 +10,7 @@ pub mod db;
 pub mod display_names;
 pub mod events;
 pub mod failure;
+pub mod game_server;
 pub mod groups;
 pub mod jobs;
 pub mod keys;
