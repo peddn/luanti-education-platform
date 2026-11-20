@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Runs a command of the LEP backend on a server, as the user of the
+# backend and with the settings of its service:
+#   lep-admin world list
+#   lep-admin agent show
+#   lep-admin --help
+# Goes to /usr/local/bin/lep-admin, see docs/betrieb.md. Whoever calls
+# it must be allowed to use sudo.
+set -euo pipefail
+
+user="lep-backend"
+settings="/etc/lep/backend.env"
+program="/usr/local/bin/lep-backend"
+
+if [ "$(id -un)" != "$user" ]; then
+	exec sudo -u "$user" -- "$0" "$@"
+fi
+
+case "${1:-}" in
+"")
+	exec "$program" --help
+	;;
+serve)
+	echo "lep-admin: the backend runs as a service: sudo systemctl restart lep-backend" >&2
+	exit 1
+	;;
+esac
+
+# The same places as in lep-backend.service. What the settings file
+# names wins, as it does for the service.
+export LEP_DATABASE="/var/lib/lep-backend/lep.sqlite"
+export LEP_FRONTEND="/usr/local/share/lep/frontend"
+
+# The file is read line by line as NAME=value and never run as a script:
+# values like "LEP <lep@schule.example>" would mean something else to a
+# shell.
+if [ -r "$settings" ]; then
+	while IFS= read -r line || [ -n "$line" ]; do
+		case "$line" in
+		"" | "#"*) continue ;;
+		esac
+		name="${line%%=*}"
+		if [[ ! "$name" =~ ^[A-Z_][A-Z0-9_]*$ ]] || [ "$name" = "$line" ]; then
+			echo "lep-admin: $settings: cannot read the line that starts with '${name:0:20}'" >&2
+			exit 1
+		fi
+		export "$name=${line#*=}"
+	done <"$settings"
+else
+	echo "lep-admin: cannot read $settings" >&2
+	exit 1
+fi
+
+# Somewhere the user of the backend may be: the caller's folder is
+# often closed to it.
+cd /
+exec "$program" "$@"

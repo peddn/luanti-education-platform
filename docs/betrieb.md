@@ -13,6 +13,7 @@ Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten 
 | Was | Wo |
 |---|---|
 | Programme | `/usr/local/bin/lep-backend`, `/usr/local/bin/lep-agent` |
+| Befehle des Backends für den Server-Admin | `/usr/local/bin/lep-admin` |
 | Luanti-Server | `/usr/local/bin/luantiserver`, dazu `/usr/local/share/luanti/` |
 | Oberfläche | `/usr/local/share/lep/frontend/` |
 | Einstellungen | `/etc/lep/backend.env`, `/etc/lep/agent.toml` |
@@ -90,7 +91,7 @@ Das Skript holt den Quelltext in der festen Version aus `third_party/luanti.toml
 ## 3. Programme und Oberfläche ablegen
 
 ```sh
-sudo install -m 755 target/release/lep-backend target/release/lep-agent /usr/local/bin/
+sudo install -m 755 target/release/lep-backend target/release/lep-agent deploy/lep-admin /usr/local/bin/
 sudo mkdir -p /usr/local/share/lep
 sudo rm -rf /usr/local/share/lep/frontend
 sudo cp -r frontend/dist /usr/local/share/lep/frontend
@@ -150,10 +151,12 @@ Erwartet: `active` und `{"status":"ok"}`.
 
 ## 6. Agent einrichten
 
+Die Befehle des Backends ruft der Server-Admin über `lep-admin` auf, zum Beispiel `lep-admin world list`. Das kleine Skript führt sie als Benutzer des Backends aus, mit denselben Einstellungen wie der Dienst, und fragt dafür nach dem Passwort für `sudo`. `lep-admin --help` zeigt alle Befehle.
+
 Schlüssel erzeugen. Er wird nur dieses eine Mal gezeigt:
 
 ```sh
-sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend agent key
+lep-admin agent key
 ```
 
 Einstellungen anlegen und den Schlüssel bei `key` eintragen:
@@ -198,7 +201,7 @@ sudo systemctl --user -M lep@ enable --now lep-agent
 
 ```sh
 sudo systemctl --user -M lep@ is-active lep-agent
-sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend agent show
+lep-admin agent show
 ```
 
 Erwartet: `active` und `Game server: connected` mit Version, freiem Speicherplatz und der Version der Vorlage in der Zeile `template for worlds`. Die Vorlage liegt ausgepackt unter `/var/lib/lep/templates/`:
@@ -218,7 +221,7 @@ Die Web-Anwendung zeigt den Spielserver auf der Seite „Zustand“. Anmelden ka
 Eine Welt gehört zu einer Gruppe. Bis die Schulverwaltung Gruppen im Browser anlegt, löst der Server-Admin das mit einem Befehl aus:
 
 ```sh
-sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend world create "Klasse 7b"
+lep-admin world create "Klasse 7b"
 ```
 
 Das Backend merkt sich die Welt und stellt dem Agenten einen Auftrag hin. Der Agent holt ihn innerhalb einer halben Minute ab, legt den Ordner der Welt an, vergibt einen Port, trägt den Schlüssel ein, mit dem sich die Welt beim Backend meldet, und startet die Welt. Diesen Schlüssel bekommt kein Mensch zu sehen.
@@ -226,7 +229,7 @@ Das Backend merkt sich die Welt und stellt dem Agenten einen Auftrag hin. Der Ag
 Wie es ging:
 
 ```sh
-sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend world list
+lep-admin world list
 sudo ls -la /var/lib/lep/worlds/
 ```
 
@@ -237,9 +240,9 @@ Mit einem Luanti-Client erreichst du die Welt unter der Adresse des Servers und 
 ## 9. Welten starten und stoppen
 
 ```sh
-sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend world stop "Klasse 7b"
-sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend world start "Klasse 7b"
-sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend world restart "Klasse 7b"
+lep-admin world stop "Klasse 7b"
+lep-admin world start "Klasse 7b"
+lep-admin world restart "Klasse 7b"
 ```
 
 | Befehl | Wirkung |
@@ -267,7 +270,7 @@ Welche Welten laufen sollen, merkt sich systemd. Stürzt eine Welt ab, startet s
 | Zustand einer Welt | `sudo systemctl --user -M lep@ status 'lep-world@<Kennung>'` |
 | Fehler einer Welt beim Start | `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service` |
 | Logdatei einer Welt | `/var/lib/lep/worlds/<Kennung>/debug.txt` |
-| Befehle des Backends | `sudo -u lep-backend env LEP_DATABASE=/var/lib/lep-backend/lep.sqlite lep-backend <befehl>` |
+| Befehle des Backends | `lep-admin <befehl>` |
 
 Die Kennung einer Welt zeigt `world list` in der zweiten Spalte. Im Journal einer Welt stehen nur Fehler. Was im Spiel geschieht, auch Chatnachrichten, steht allein in ihrer Logdatei.
 
@@ -281,7 +284,7 @@ git pull
 cargo build --release --package lep-backend
 scripts/agent-build.sh
 scripts/frontend-run.sh build
-sudo install -m 755 target/release/lep-backend target/release/lep-agent /usr/local/bin/
+sudo install -m 755 target/release/lep-backend target/release/lep-agent deploy/lep-admin /usr/local/bin/
 sudo rm -rf /usr/local/share/lep/frontend
 sudo cp -r frontend/dist /usr/local/share/lep/frontend
 sudo systemctl restart lep-backend
