@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 72 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 73 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -932,7 +932,7 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
   | `archive/<Kennung>/` | Welten, die aus dem Betrieb genommen sind |
 
   Ordner heißen nach der festen Kennung der Welt, nie nach dem Namen der Gruppe. Der Name kann sich ändern, und er käme sonst aus einer Eingabe im Browser in einen Pfad.
-- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports (ohne Angabe 30000 bis 30099) und der Kontoname des Server-Admins. Die Datei ist nur für `lep` lesbar.
+- **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports (ohne Angabe 30000 bis 30099), der Kontoname des Server-Admins und der Pfad des Luanti-Servers (ohne Angabe `/usr/local/bin/luantiserver`). Die Datei ist nur für `lep` lesbar.
 - **Server-Admin der Welten:** Der Agent trägt den Kontonamen aus seinen Einstellungen in jede neue Welt ein. So hat eine frische Welt einen ersten Zugang, bevor Lehrkräfte verteilt sind. Ohne diesen Namen legt der Agent keine Welt an.
 - **Ports:** Der Agent vergibt jeder Welt einen Port aus einem festen Bereich und meldet ihn dem Backend. Die Firewall öffnet der Server-Admin einmal für den ganzen Bereich.
 
@@ -941,11 +941,13 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
 - Welten und Agent sind Dienste des Benutzers `lep`, nicht des Systems. Sie laufen in dessen eigener Dienstverwaltung (`systemctl --user`). Der Benutzer `lep` darf damit nur seine eigenen Dienste steuern, und es braucht keine zusätzliche Regel, die ihm Rechte am System gibt.
 - Damit diese Dienste ohne Anmeldung laufen und beim Hochfahren der Maschine starten, schaltet der Server-Admin einmal das Weiterlaufen ein (Linger): `sudo loginctl enable-linger lep`.
 - Jede Welt ist ein Dienst aus einer Vorlage: `lep-world@<Kennung>.service`. systemd startet eine abgestürzte Welt neu, und die Welten laufen weiter, wenn der Agent selbst neu startet.
+- Die Dienstvorlage schreibt der Agent bei jedem Start selbst in den Ordner des Benutzers `lep`. Sie enthält Pfade aus seinen Einstellungen und kann so nicht von ihnen abweichen.
 - Der Agent ist selbst ein Dienst, `lep-agent.service`.
-- Welche Welten laufen sollen, weiß der Agent. Nach einem Neustart der Maschine startet er sie.
+- Welche Welten laufen sollen, merkt sich systemd, nicht der Agent. „Starten“ schaltet den Dienst der Welt ein und startet ihn, „Stoppen“ schaltet ihn aus und stoppt ihn. Nach einem Neustart der Maschine bringt systemd die eingeschalteten Welten von selbst hoch, auch wenn der Agent nicht läuft.
+- Luanti schreibt in das Protokoll des Dienstes nur Fehler. Was im Spiel geschieht, auch Chatnachrichten, steht allein in der Logdatei im Ordner der Welt (Abschnitt 12).
 - Der Server-Admin sieht die Dienste des Benutzers `lep` mit den gewohnten Befehlen: `sudo systemctl --user -M lep@ status lep-world@<Kennung>` und `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service`.
 
-Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner Dienste und die Einstellungen. Die Dienstvorlage und der Dienst des Agenten liegen im Ordner des Benutzers `lep`. Danach braucht der Betrieb keine Root-Rechte mehr.
+Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner Dienste und die Einstellungen. Die Dienstvorlage der Welten und der Dienst des Agenten liegen im Ordner des Benutzers `lep`. Danach braucht der Betrieb keine Root-Rechte mehr.
 
 **Vorlage einer Welt**
 
@@ -964,8 +966,8 @@ Aufträge an den Agenten laufen im Backend durch dieselbe Warteschlange wie Auft
 
 | Auftrag | Was geschieht |
 |---|---|
-| Welt anlegen | Ordner anlegen, Einstellungen schreiben, Port vergeben, Schlüssel der Brücke eintragen |
-| Starten, Stoppen, Neustarten | den Dienst der Welt steuern |
+| Welt anlegen | Ordner anlegen, Einstellungen schreiben, Port vergeben, Schlüssel der Brücke eintragen, dann starten |
+| Starten, Stoppen, Neustarten | den Dienst der Welt steuern. Neustarten wirkt nur auf eine Welt, die läuft |
 | Welt aktualisieren | stoppen, auf die Vorlage des installierten Agenten umstellen, starten. Karte und Spielerdaten bleiben |
 | Sichern | Kopie des Weltordners mit Datum nach `backups/` |
 | Archivieren | stoppen, sichern, nach `archive/` verschieben |
@@ -979,7 +981,7 @@ Regeln für alle Aufträge:
 
 - Ein Auftrag nennt die Kennung einer Welt und feste Werte, sonst nichts. Die Kennung muss die Form haben, die das Backend vergibt.
 - „Welt anlegen“ für eine Welt, die es schon gibt, legt nichts neu an: Port, Karte und Spielerdaten bleiben, nur der Schlüssel der Brücke wird neu eingetragen.
-- Pfade entstehen nur aus dieser Kennung unter `/var/lib/lep`. Der Agent baut nie eine Befehlszeile aus Werten eines Auftrags und ruft keine Shell auf.
+- Pfade entstehen nur aus dieser Kennung unter `/var/lib/lep`. Der Agent baut nie eine Befehlszeile aus Werten eines Auftrags und ruft keine Shell auf. Das einzige Programm, das er startet, ist `systemctl --user` mit festen Argumenten und dem Namen des Dienstes aus der geprüften Kennung.
 - Ein Auftrag, den der Agent nicht kennt, wird abgelehnt und gemeldet.
 
 **Archivieren und Jahresabschluss**
