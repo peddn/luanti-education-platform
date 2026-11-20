@@ -13,6 +13,7 @@ Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten 
 | Was | Wo |
 |---|---|
 | Programme | `/usr/local/bin/lep-backend`, `/usr/local/bin/lep-agent` |
+| Luanti-Server | `/usr/local/bin/luantiserver`, dazu `/usr/local/share/luanti/` |
 | Oberfläche | `/usr/local/share/lep/frontend/` |
 | Einstellungen | `/etc/lep/backend.env`, `/etc/lep/agent.toml` |
 | Datenbank des Backends | `/var/lib/lep-backend/lep.sqlite` |
@@ -26,12 +27,15 @@ Backend und Agent haben getrennte Benutzer ohne Admin-Rechte. Keiner kann die Da
 
 ## 1. Werkzeuge zum Bauen
 
-Die Programme und die Oberfläche werden auf dem Server aus dem Repository gebaut. Dafür braucht er Rust und Node 22.
+Die Programme, die Oberfläche und der Luanti-Server werden auf dem Server gebaut. Dafür braucht er Rust, Node 22 und die Pakete zum Bauen von Luanti.
 
 ```sh
 sudo apt update
 sudo apt install build-essential git curl ca-certificates
+sudo apt install cmake libsqlite3-dev libluajit-5.1-dev libcurl4-openssl-dev zlib1g-dev libzstd-dev libgmp-dev libjsoncpp-dev
 ```
+
+Die zweite Zeile ist für Luanti.
 
 Rust kommt über `rustup`:
 
@@ -72,6 +76,16 @@ Der erste Bau dauert einige Minuten.
 
 `scripts/agent-build.sh` baut den Agenten mit der Vorlage für Welten. Dafür lädt es Minetest Game und die fremden Mods in den festen Versionen aus `third_party/`, packt sie mit den eigenen Mods und den Lizenztexten zusammen und bettet das Archiv in das Programm ein. Am Ende steht `Built target/release/lep-agent with the template inside.` Der laufende Agent braucht danach keinen Zugriff auf fremde Quellen.
 
+### Luanti
+
+Debian 13 liefert Luanti 5.10. Die Welten brauchen die Version, mit der entwickelt wird, zurzeit 5.18. Deshalb wird der Server selbst gebaut, ohne Grafik und Ton:
+
+```sh
+scripts/luanti-build.sh
+```
+
+Das Skript holt den Quelltext in der festen Version aus `third_party/luanti.toml` und baut einige Minuten lang. Am Ende steht `Built: Luanti 5.18.0 (Linux)`. Schlägt es fehl, zeigt es die letzten Zeilen der Ausgabe, meist fehlt dann eines der Pakete aus Abschnitt 1.
+
 ## 3. Programme und Oberfläche ablegen
 
 ```sh
@@ -79,7 +93,16 @@ sudo install -m 755 target/release/lep-backend target/release/lep-agent /usr/loc
 sudo mkdir -p /usr/local/share/lep
 sudo rm -rf /usr/local/share/lep/frontend
 sudo cp -r frontend/dist /usr/local/share/lep/frontend
+sudo cmake --install target/luanti/build
 ```
+
+Die letzte Zeile legt Luanti ab. Prüfen:
+
+```sh
+luantiserver --version
+```
+
+Erwartet: `Luanti 5.18.0 (Linux)`, darunter `Using LuaJIT`.
 
 ## 4. Benutzer anlegen
 
@@ -240,10 +263,12 @@ sudo systemctl restart lep-backend
 sudo systemctl --user -M lep@ restart lep-agent
 ```
 
+Nennt `third_party/luanti.toml` nach dem `git pull` eine neue Version, kommen `scripts/luanti-build.sh` und `sudo cmake --install target/luanti/build` dazu. Laufende Welten nutzen das neue Luanti nach ihrem nächsten Neustart.
+
 Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die Vorlage eine neue Version, und der Agent packt sie beim Start neben die alte. Haben sich die Dienstdateien in `deploy/` geändert, werden sie wie in Abschnitt 5 und 6 neu abgelegt, gefolgt von `daemon-reload`.
 
 ## Was noch fehlt
 
 - **HTTPS:** ein Webserver mit Zertifikat vor dem Backend. Dann lauscht das Backend nur auf `127.0.0.1`.
-- **Welten starten:** Luanti und der Dienst `lep-world@<Kennung>.service`, mit den Ports in der Firewall.
+- **Welten starten:** der Dienst `lep-world@<Kennung>.service`, mit den Ports in der Firewall.
 - **Sicherung** der Datenbank des Backends.

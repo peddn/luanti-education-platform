@@ -48,7 +48,7 @@ luanti-education-platform/
 │   ├── lep_tz/                  Technisches Zeichnen
 │   └── lep_logic/               Logikrätsel
 │
-├── third_party/                 Spiel und fremde Mods als Listen mit festen Versionen
+├── third_party/                 Luanti, Spiel und fremde Mods als Listen mit festen Versionen
 │
 ├── Cargo.toml                   Rust-Arbeitsbereich
 ├── crates/protocol/             gemeinsame Typen der Schnittstelle
