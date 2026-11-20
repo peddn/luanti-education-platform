@@ -3,7 +3,9 @@
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use lep_protocol::agent::{CreateWorld, JOB_CREATE_WORLD};
+use lep_protocol::agent::{
+    CreateWorld, WorldJob, JOB_CREATE_WORLD, JOB_RESTART_WORLD, JOB_START_WORLD, JOB_STOP_WORLD,
+};
 use lep_protocol::world::{JOB_PING, JOB_SYNC_STATE};
 use serde_json::json;
 use sqlx::SqlitePool;
@@ -175,8 +177,14 @@ pub enum WorldCommand {
     /// key is shown only now.
     Add { name: String },
     /// Create a world and ask the agent to set it up on the game
-    /// server. Nobody gets to see its key.
+    /// server and start it. Nobody gets to see its key.
     Create { name: String },
+    /// Ask the agent to start a world, now and after every reboot.
+    Start { name: String },
+    /// Ask the agent to stop a world and keep it stopped.
+    Stop { name: String },
+    /// Ask the agent to start a world anew, if it runs.
+    Restart { name: String },
     /// Give a world a new key and print it. The old key stops working.
     Rekey { name: String },
     /// List the worlds and when they were last heard of.
@@ -188,6 +196,29 @@ pub enum WorldCommand {
     State { name: String },
     /// Ask a world to send its whole state again.
     Sync { name: String },
+}
+
+/// Puts a job for the agent in that starts or stops a world.
+async fn steer(pool: &SqlitePool, name: &str, kind: &str) -> Result<String> {
+    let Some(world) = worlds::find_by_name(pool, name).await? else {
+        bail!("there is no world called '{}'", name.trim());
+    };
+    if world.port.is_none() {
+        bail!(
+            "the agent does not run world '{}': it was set up by hand, or the agent has not \
+             created it yet",
+            world.name
+        );
+    }
+    let payload = serde_json::to_value(WorldJob {
+        world: world.id.clone(),
+    })?;
+    jobs::add_for_agent(pool, &world.id, kind, &payload).await?;
+    Ok(format!(
+        "The job for world '{}' is waiting for the agent. It fetches it within half a \
+         minute. How it went: lep-backend world list",
+        world.name
+    ))
 }
 
 /// Runs a command that works on the database and returns what to print.
@@ -212,11 +243,14 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
             })?;
             jobs::add_for_agent(pool, &world.id, JOB_CREATE_WORLD, &payload).await?;
             Ok(format!(
-                "World '{}' created.\nid: {}\nThe agent sets it up on the game server \
-                 within half a minute. How it went: lep-backend world list",
+                "World '{}' created.\nid: {}\nThe agent sets it up on the game server and \
+                 starts it within half a minute. How it went: lep-backend world list",
                 world.name, world.id
             ))
         }
+        WorldCommand::Start { name } => steer(pool, &name, JOB_START_WORLD).await,
+        WorldCommand::Stop { name } => steer(pool, &name, JOB_STOP_WORLD).await,
+        WorldCommand::Restart { name } => steer(pool, &name, JOB_RESTART_WORLD).await,
         WorldCommand::Rekey { name } => {
             let key = worlds::rekey(pool, &name).await?;
             Ok(format!(
@@ -248,7 +282,12 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
                     jobs::last_for_agent(pool, &world.id, JOB_CREATE_WORLD).await?,
                 ) {
                     (Some(port), _) => format!(
-                        "port {port}, template {}",
+                        "{}, port {port}, template {}",
+                        if world.running == Some(true) {
+                            "running"
+                        } else {
+                            "stopped"
+                        },
                         world.template_version.as_deref().unwrap_or("unknown")
                     ),
                     (None, None) => "set up by hand".to_owned(),
@@ -384,17 +423,61 @@ mod tests {
             "{listed}"
         );
 
-        let state = lep_protocol::agent::WorldState {
+        // The agent does not run the world yet, so there is nothing to
+        // start or stop.
+        let stop = || WorldCommand::Stop {
+            name: "7b".to_owned(),
+        };
+        assert!(run_world(&pool, stop()).await.is_err());
+
+        let mut state = lep_protocol::agent::WorldState {
             id: world.id.clone(),
             port: 30000,
             template: "bdbbf00c8a29".to_owned(),
+            running: true,
         };
-        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        worlds::note_agent_state(&pool, std::slice::from_ref(&state))
+            .await
+            .unwrap();
         let listed = run_world(&pool, WorldCommand::List).await.unwrap();
         assert!(
-            listed.contains("port 30000, template bdbbf00c8a29"),
+            listed.contains("running, port 30000, template bdbbf00c8a29"),
             "{listed}"
         );
+
+        let asked = run_world(&pool, stop()).await.unwrap();
+        assert!(asked.contains("waiting for the agent"));
+        let waiting = jobs::take_waiting_for_agent(&pool).await.unwrap();
+        assert_eq!(waiting.len(), 1);
+        assert_eq!(waiting[0].kind, JOB_STOP_WORLD);
+        assert_eq!(waiting[0].payload["world"], world.id);
+
+        state.running = false;
+        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        let listed = run_world(&pool, WorldCommand::List).await.unwrap();
+        assert!(listed.contains("stopped, port 30000"), "{listed}");
+
+        for command in [
+            WorldCommand::Start {
+                name: "7b".to_owned(),
+            },
+            WorldCommand::Restart {
+                name: "7b".to_owned(),
+            },
+        ] {
+            run_world(&pool, command).await.unwrap();
+        }
+        let kinds: Vec<String> = jobs::take_waiting_for_agent(&pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|job| job.kind)
+            .collect();
+        assert_eq!(kinds, [JOB_STOP_WORLD, JOB_START_WORLD, JOB_RESTART_WORLD]);
+        let missing = WorldCommand::Start {
+            name: "no such world".to_owned(),
+        };
+        assert!(run_world(&pool, missing).await.is_err());
     }
 
     #[tokio::test]

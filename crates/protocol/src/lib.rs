@@ -657,14 +657,31 @@ pub mod agent {
         pub port: u16,
         /// Version of the template the world uses.
         pub template: String,
+        /// True if the world runs.
+        #[serde(default)]
+        pub running: bool,
+    }
+
+    /// Kinds of the jobs that start a world, stop it, or start it anew
+    /// if it runs. Their payload is a `WorldJob`.
+    pub const JOB_START_WORLD: &str = "start_world";
+    pub const JOB_STOP_WORLD: &str = "stop_world";
+    pub const JOB_RESTART_WORLD: &str = "restart_world";
+
+    /// Payload of a job that names nothing but a world.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct WorldJob {
+        /// Fixed identifier of the world.
+        pub world: String,
     }
 
     /// Kind of the job that creates a world. Its payload is a
     /// `CreateWorld`.
     pub const JOB_CREATE_WORLD: &str = "create_world";
 
-    /// Payload of the job that creates a world. For a world that exists
-    /// already, only the key of the bridge is written again.
+    /// Payload of the job that creates a world and starts it. For a
+    /// world that exists already, only the key of the bridge is written
+    /// again.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct CreateWorld {
         /// Fixed identifier of the world. The folder of the world is named

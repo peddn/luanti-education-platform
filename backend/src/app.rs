@@ -137,6 +137,7 @@ impl AppState {
         lep_protocol::agent::AgentReport,
         lep_protocol::agent::WorldState,
         lep_protocol::agent::CreateWorld,
+        lep_protocol::agent::WorldJob,
         lep_protocol::web::Group,
         lep_protocol::web::Groups,
         lep_protocol::web::GroupChange,

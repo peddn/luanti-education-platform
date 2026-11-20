@@ -2,6 +2,7 @@
 //! the game server is doing.
 
 use std::future::Future;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
@@ -11,6 +12,7 @@ use tokio::sync::{watch, Notify};
 use crate::backend::{Backend, CallError};
 use crate::config::Config;
 use crate::template::{self, Manifest, Outcome, Template};
+use crate::units::{self, Units};
 use crate::{jobs, report};
 
 /// The agent while it runs: its settings and its template.
@@ -19,6 +21,8 @@ pub struct Agent {
     /// The unpacked template. Without it the agent runs and reports, but
     /// creates no worlds.
     pub template: Option<Prepared>,
+    /// The services of the worlds.
+    pub units: Arc<dyn Units>,
 }
 
 /// A template that lies unpacked in the folder of the agent.
@@ -76,6 +80,22 @@ pub fn prepare_template(
     }
 }
 
+/// Puts the template for the services of the worlds in place. The
+/// returned text says what happened. If it fails, the agent still runs
+/// and reports, but cannot start worlds.
+pub fn prepare_units(config: &Config, units: &dyn Units) -> Result<String, String> {
+    let text =
+        units::template(&config.data_dir, &config.luanti).map_err(|err| format!("{err:#}"))?;
+    match units.install(&text) {
+        Ok(true) => Ok(format!("wrote {}", units::TEMPLATE_FILE)),
+        Ok(false) => Ok(format!("{} is in place", units::TEMPLATE_FILE)),
+        Err(err) => Err(format!(
+            "cannot set up {}, so worlds cannot be started: {err:#}",
+            units::TEMPLATE_FILE
+        )),
+    }
+}
+
 /// Remembers how the last report went, so that the log says when
 /// something changes and not the same thing every half minute.
 #[derive(Debug, Default)]
@@ -111,7 +131,9 @@ impl Contact {
 
 /// Sends one report and returns how it went.
 pub async fn report_once(agent: &Agent, backend: &Backend) -> Result<(), CallError> {
-    let report = report::build(&agent.config.data_dir, agent.template_version())
+    // Without systemd no world runs, and the jobs say why.
+    let running = agent.units.running().unwrap_or_default();
+    let report = report::build(&agent.config.data_dir, agent.template_version(), &running)
         .map_err(|err| CallError::Unreachable(format!("nothing to report: {err:#}")))?;
     backend.send_report(&report).await
 }
@@ -294,6 +316,30 @@ mod tests {
         let (prepared, text) = prepare_template(&config, Some(broken));
         assert!(prepared.is_none());
         assert!(text.contains("cannot be used"), "{text}");
+    }
+
+    #[test]
+    fn puts_the_service_of_the_worlds_in_place() {
+        use crate::units::testing::FakeUnits;
+        let config = Config::parse(
+            "backend = \"http://127.0.0.1:1\"\nkey = \"lepa_0123\"\ndata_dir = \"/var/lib/lep\"\n",
+        )
+        .unwrap();
+        let units = FakeUnits::default();
+        assert!(prepare_units(&config, &units).unwrap().contains("wrote"));
+        assert!(prepare_units(&config, &units).unwrap().contains("in place"));
+        let text = units.template.lock().unwrap().clone().unwrap();
+        assert!(text.contains("ExecStart=/usr/local/bin/luantiserver --quiet"));
+        assert!(text.contains("/var/lib/lep/worlds/%i/world"));
+
+        let refused = prepare_units(&config, &FakeUnits::broken()).unwrap_err();
+        assert!(refused.contains("worlds cannot be started"));
+
+        let odd = Config::parse(
+            "backend = \"http://127.0.0.1:1\"\nkey = \"lepa_0123\"\ndata_dir = \"/var/lib/my lep\"\n",
+        )
+        .unwrap();
+        assert!(prepare_units(&odd, &units).is_err());
     }
 
     #[test]

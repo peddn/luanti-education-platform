@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -7,6 +8,7 @@ use lep_agent::backend::Backend;
 use lep_agent::config::{self, Config};
 use lep_agent::service::{self, Agent};
 use lep_agent::template;
+use lep_agent::units::{Systemctl, Units};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -80,7 +82,16 @@ async fn run(path: &std::path::Path) -> Result<()> {
             "the settings name no 'admin' for the worlds, so the agent cannot create any"
         );
     }
-    let agent = Agent { config, template };
+    let units = Arc::new(Systemctl::for_this_user()?);
+    match service::prepare_units(&config, &*units) {
+        Ok(said) => tracing::info!("{said}"),
+        Err(said) => tracing::warn!("{said}"),
+    }
+    let agent = Agent {
+        config,
+        template,
+        units,
+    };
     service::run(&agent, &backend, shutdown()).await;
     tracing::info!("stopped");
     Ok(())
@@ -107,7 +118,20 @@ async fn check(path: &std::path::Path) -> Result<()> {
     );
     let worlds = lep_agent::worlds::list(&config.data_dir)?;
     println!("Worlds:   {}", worlds.len());
-    let agent = Agent { config, template };
+    let units = Arc::new(Systemctl::for_this_user()?);
+    println!("Luanti:   {}", config.luanti.display());
+    if !config.luanti.is_file() {
+        println!("Warning:  there is no such file, so no world can run.");
+    }
+    match units.running() {
+        Ok(running) => println!("Running:  {}", running.len()),
+        Err(err) => println!("Warning:  systemd cannot be asked: {err:#}"),
+    }
+    let agent = Agent {
+        config,
+        template,
+        units,
+    };
     service::report_once(&agent, &backend).await?;
     println!("The backend took the report.");
     Ok(())

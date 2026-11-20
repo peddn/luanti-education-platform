@@ -23,6 +23,8 @@ pub struct World {
     pub port: Option<u16>,
     /// Version of the template the world uses, as the agent reported it.
     pub template_version: Option<String>,
+    /// Whether the world runs, as the agent reported it.
+    pub running: Option<bool>,
 }
 
 fn from_row(row: &sqlx::sqlite::SqliteRow) -> World {
@@ -37,6 +39,7 @@ fn from_row(row: &sqlx::sqlite::SqliteRow) -> World {
             .get::<Option<i64>, _>("port")
             .and_then(|port| u16::try_from(port).ok()),
         template_version: row.get("template_version"),
+        running: row.get("running"),
     }
 }
 
@@ -89,7 +92,7 @@ pub async fn rekey(pool: &SqlitePool, name: &str) -> Result<String> {
 /// Returns all worlds, sorted by name.
 pub async fn list(pool: &SqlitePool) -> Result<Vec<World>> {
     let rows = sqlx::query(
-        "SELECT id, name, created_at, last_seen_at, started_at, engine, port, template_version
+        "SELECT id, name, created_at, last_seen_at, started_at, engine, port, template_version, running
          FROM worlds ORDER BY name",
     )
     .fetch_all(pool)
@@ -99,7 +102,7 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<World>> {
 
 pub async fn find_by_name(pool: &SqlitePool, name: &str) -> Result<Option<World>> {
     let row = sqlx::query(
-        "SELECT id, name, created_at, last_seen_at, started_at, engine, port, template_version
+        "SELECT id, name, created_at, last_seen_at, started_at, engine, port, template_version, running
          FROM worlds WHERE name = ?",
     )
     .bind(name.trim())
@@ -112,7 +115,7 @@ pub async fn find_by_name(pool: &SqlitePool, name: &str) -> Result<Option<World>
 pub async fn find_by_key(pool: &SqlitePool, key: &str) -> Result<Option<World>> {
     let row = sqlx::query(
         "UPDATE worlds SET last_seen_at = ? WHERE key_hash = ?
-         RETURNING id, name, created_at, last_seen_at, started_at, engine, port, template_version",
+         RETURNING id, name, created_at, last_seen_at, started_at, engine, port, template_version, running",
     )
     .bind(clock::now())
     .bind(keys::hash(key))
@@ -145,14 +148,17 @@ pub async fn note_agent_state(pool: &SqlitePool, states: &[WorldState]) -> Resul
     let mut changed = Vec::new();
     for state in states {
         let rows = sqlx::query(
-            "UPDATE worlds SET port = ?, template_version = ?
-             WHERE id = ? AND (port IS NOT ? OR template_version IS NOT ?)",
+            "UPDATE worlds SET port = ?, template_version = ?, running = ?
+             WHERE id = ?
+               AND (port IS NOT ? OR template_version IS NOT ? OR running IS NOT ?)",
         )
         .bind(i64::from(state.port))
         .bind(&state.template)
+        .bind(state.running)
         .bind(&state.id)
         .bind(i64::from(state.port))
         .bind(&state.template)
+        .bind(state.running)
         .execute(pool)
         .await?
         .rows_affected();
@@ -179,11 +185,13 @@ mod tests {
                 id: world.id.clone(),
                 port: 30007,
                 template: "bdbbf00c8a29".to_owned(),
+                running: true,
             },
             WorldState {
                 id: "unknown-world".to_owned(),
                 port: 30008,
                 template: "bdbbf00c8a29".to_owned(),
+                running: false,
             },
         ];
         let changed = note_agent_state(&pool, &states).await.unwrap();
@@ -193,8 +201,20 @@ mod tests {
         assert_eq!(world.template_version.as_deref(), Some("bdbbf00c8a29"));
         assert_eq!(list(&pool).await.unwrap().len(), 1);
 
+        assert_eq!(world.running, Some(true));
+
         // The same report again changes nothing.
         assert!(note_agent_state(&pool, &states).await.unwrap().is_empty());
+
+        // A world that stopped is a change.
+        let stopped = WorldState {
+            running: false,
+            ..states[0].clone()
+        };
+        let changed = note_agent_state(&pool, &[stopped]).await.unwrap();
+        assert_eq!(changed.len(), 1);
+        let world = find_by_name(&pool, "7b").await.unwrap().unwrap();
+        assert_eq!(world.running, Some(false));
     }
 
     #[tokio::test]
