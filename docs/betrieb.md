@@ -261,7 +261,13 @@ Der Server-Admin hat in jeder Welt alle Privilegien, auch die der Schulverwaltun
 
 1. Im Spiel in der ersten Welt anmelden und mit `/pult` das Lehrerpult öffnen, Reiter „Web-Zugang“.
 2. Die eigene Mailadresse eintragen.
-3. Den Link aus der Mail im Browser öffnen und die Adresse bestätigen. Ohne Mailserver steht die Mail im Log des Backends: `sudo journalctl -u lep-backend -n 30`.
+3. Den Link aus der Mail im Browser öffnen und die Adresse bestätigen. Ohne Mailserver steht die Mail im Log des Backends. Dieser Befehl zeigt den neuesten Link vollständig:
+
+   ```sh
+   sudo journalctl -u lep-backend --no-pager -o cat | grep -o 'http[^ ]*' | tail -n 1
+   ```
+
+   Ohne `--no-pager` schneidet `journalctl` lange Zeilen am Rand des Terminals ab, und ein abgeschnittener Link gilt nicht. Ein Link gilt 15 Minuten und einmal, und jede neue Anforderung macht ältere ungültig.
 4. In der Web-Anwendung unter der Adresse aus `LEP_PUBLIC_URL` mit dieser Mailadresse anmelden. Auch dieser Link kommt per Mail oder steht im Log.
 
 Danach legt die Schulverwaltung weitere Gruppen auf der Seite „Gruppen“ an: Name eintragen, „Gruppe anlegen“. Der Agent richtet die Welt ein und startet sie, die Seite zeigt den Zustand von selbst: „wird eingerichtet …“, dann „läuft“.
