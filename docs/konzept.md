@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 68 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 69 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -942,7 +942,7 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
 - Jede Welt ist ein Dienst aus einer Vorlage: `lep-world@<Kennung>.service`. systemd startet eine abgestürzte Welt neu, und die Welten laufen weiter, wenn der Agent selbst neu startet.
 - Der Agent ist selbst ein Dienst, `lep-agent.service`.
 - Welche Welten laufen sollen, weiß der Agent. Nach einem Neustart der Maschine startet er sie.
-- Der Server-Admin sieht die Welten mit den gewohnten Befehlen, als Benutzer `lep`: `systemctl --user status lep-world@<Kennung>`, `journalctl --user -u lep-world@<Kennung>`.
+- Der Server-Admin sieht die Dienste des Benutzers `lep` mit den gewohnten Befehlen: `sudo systemctl --user -M lep@ status lep-world@<Kennung>` und `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service`.
 
 Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner Dienste und die Einstellungen. Die Dienstvorlage und der Dienst des Agenten liegen im Ordner des Benutzers `lep`. Danach braucht der Betrieb keine Root-Rechte mehr.
 
@@ -997,7 +997,7 @@ Es gibt einen einzigen Zeitpunkt, zu dem Welten endgültig verschwinden: den Jah
 
 **Testumgebung**
 
-Der Agent muss sich ohne systemd und ohne Root-Rechte ausprobieren lassen. Dafür bekommt er eine zweite Art, Welten zu führen: als eigene Prozesse in einem Ordner der Testumgebung. Diese Art ist nur für die Entwicklung da. Die Aufträge und ihre Prüfungen sind in beiden Arten dieselben.
+Der Agent kennt nur eine Art, Welten zu führen: als Dienste von systemd. Eine zweite Art nur für die Entwicklung gibt es nicht, damit geprüft wird, was später läuft. In der Testumgebung laufen die Welten als Dienste des eigenen Benutzers, das geht ohne Root-Rechte und ohne Linger, solange man angemeldet ist. Die automatischen Tests ersetzen die Aufrufe von systemd durch eine Nachbildung. Der Aufbau auf einem Server steht in [`betrieb.md`](betrieb.md).
 
 **Offen, zu klären beim Bau**
 

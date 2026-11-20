@@ -1,0 +1,13 @@
+# Settings of the LEP agent. Goes to /etc/lep/agent.toml, owned by the
+# user lep and readable for nobody else (mode 600): it holds the key.
+
+# Address of the backend. It must start with https://, because the key
+# travels with every request. Only a backend on the same machine may be
+# reached with http://.
+backend = "http://127.0.0.1:8080"
+
+# The key from: lep-backend agent key
+key = "lepa_..."
+
+# Folder for everything the agent touches.
+data_dir = "/var/lib/lep"

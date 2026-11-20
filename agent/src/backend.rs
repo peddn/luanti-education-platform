@@ -57,7 +57,10 @@ impl Backend {
             .redirect(redirect::Policy::none())
             .user_agent(concat!("lep-agent/", env!("CARGO_PKG_VERSION")))
             .build()
-            .context("cannot set up the connection to the backend")?;
+            .context(
+                "cannot set up the connection to the backend. The certificates of the \
+                 system must be there (package ca-certificates) and readable",
+            )?;
         Ok(Self {
             http,
             report: config

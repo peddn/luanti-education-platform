@@ -108,6 +108,12 @@ Die Arbeitsumgebung ist pro Sitzung neu. Was hier steht, muss zu Beginn einer Si
 - Der Server braucht in dieser Umgebung `ipv6_server = false`, `enable_ipv6 = false` und `bind_address = 127.0.0.1` in der Konfiguration.
 - Screenshots aus dem Spiel sind möglich: `Xvfb` als virtueller Bildschirm, Client mit `LIBGL_ALWAYS_SOFTWARE=1` und `enable_sound = false`, Aufnahme mit `import -window root` (Pakete `xvfb xdotool libgl1-mesa-dri imagemagick`). Vorher die Tageszeit auf Mittag setzen, sonst ist das Bild nachts schwarz.
 - Abläufe im Spiel lassen sich mit einem kleinen Hilfsmod in `.dev/mods/` prüfen, der nach dem Beitritt Schritte ausführt und ins Log schreibt. Er wird nicht eingecheckt. Vor jedem Lauf alte Luanti-Prozesse beenden, sonst startet der Server nicht.
+- systemd läuft in dieser Umgebung nicht von selbst (Container, Ubuntu 24.04 mit systemd 255), lässt sich aber in einem abgetrennten Bereich hochfahren, um Dienste und Linger zu prüfen:
+  - Vorher `systemctl mask docker.service docker.socket containerd.service postgresql.service redis-server.service`, sonst starten diese vorinstallierten Dienste mit.
+  - Start: `setsid unshare --pid --fork --mount --mount-proc --uts sh -c 'mount -t tmpfs tmpfs /tmp; mount -t tmpfs tmpfs /run; exec env container=docker /lib/systemd/systemd --system --log-target=console --unit=multi-user.target' >/root/vm-console.log 2>&1 &`. Die eigenen `/tmp` und `/run` sind nötig: Ohne sie leert der Start das echte `/tmp`.
+  - Befehle darin: `nsenter -t <PID von systemd> -p -m <befehl>`, mit vollen Pfaden, weil das Arbeitsverzeichnis wechselt. Ende mit `systemctl poweroff`, erneuter Start prüft das Verhalten nach einem Neustart.
+  - Für Benutzer ohne Root die Variable `SSL_CERT_FILE` entfernen (`env -u SSL_CERT_FILE`), sie zeigt hier auf eine Datei, die nur root lesen kann.
+  - `journalctl -M` geht nicht, `systemctl --user -M <benutzer>@` schon. Der Ablauf in `docs/betrieb.md` ist so geprüft. Unterschiede zu Debian sind möglich, der Nutzer prüft auf einer Debian-VM.
 - Rust (`cargo`) und Node (`node`, `npm`) sind vorhanden, crates.io und die npm-Registry sind erreichbar.
 - Prüfungen vor jedem Pull Request: `scripts/test.sh` (Lua, Rust und Oberfläche; `scripts/test.sh lua`, `rust` oder `frontend` für einen Teil), dazu ein Start der Testwelt mit `scripts/dev-setup.sh` und `scripts/dev-run.sh --server`, um das Laden der Mods im Log zu prüfen.
 

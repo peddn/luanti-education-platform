@@ -1,0 +1,18 @@
+# Service of the user lep for the LEP agent.
+# Goes to /var/lib/lep/.config/systemd/user/lep-agent.service, see
+# docs/betrieb.md. It runs without a login because the services of the
+# user lep keep running (loginctl enable-linger lep).
+
+[Unit]
+Description=Luanti Education Platform: agent
+
+[Service]
+Environment=RUST_LOG=info NO_COLOR=1
+ExecStart=/usr/local/bin/lep-agent --config /etc/lep/agent.toml
+# The agent only ends when it is told to, or when its settings are
+# wrong. A backend out of reach does not end it.
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

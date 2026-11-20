@@ -1,0 +1,45 @@
+# Service of the system for the LEP backend.
+# Goes to /etc/systemd/system/lep-backend.service, see docs/betrieb.md.
+
+[Unit]
+Description=Luanti Education Platform: backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=lep-backend
+Group=lep-backend
+Environment=RUST_LOG=info NO_COLOR=1
+# Where the database and the frontend are. The settings file may name
+# other places, but it does not have to name any.
+Environment=LEP_DATABASE=/var/lib/lep-backend/lep.sqlite
+Environment=LEP_FRONTEND=/usr/local/share/lep/frontend
+# Settings, with the password of the mail server. Only root and the
+# group of the backend may read the file. What it sets wins over the
+# lines above.
+EnvironmentFile=/etc/lep/backend.env
+ExecStart=/usr/local/bin/lep-backend serve
+Restart=on-failure
+RestartSec=5
+
+# The database lives in /var/lib/lep-backend. systemd creates the folder
+# and gives it to the user of the backend.
+StateDirectory=lep-backend
+StateDirectoryMode=0700
+
+# The backend needs nothing else of the machine.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
