@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 75 · 20. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 76 · 21. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -915,7 +915,7 @@ Gebaut wird der Agent am Anfang von Schritt 7. Dieser Abschnitt legt fest, wie e
 
 Angenommen wird ein Linux mit systemd, in der Regel Debian.
 
-- **Benutzer:** ein Systembenutzer ohne Anmeldung, in den Beispielen `lep`. Ihm gehört alles, was der Agent anfasst. Der Server-Admin legt ihn einmal an:
+- **Benutzer:** ein Systembenutzer ohne Anmeldung, `lep-agent`. Unter ihm laufen der Agent und alle Welten, und ihm gehört alles, was der Agent anfasst. Das Backend hat seinen eigenen Benutzer, `lep-backend`. Keiner der beiden kommt an die Dateien des anderen. Der Server-Admin legt ihn einmal an:
 
   ```sh
   sudo useradd --system --shell /usr/bin/nologin --user-group --create-home --home-dir /var/lib/lep lep
@@ -938,16 +938,16 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
 
 **Dienste**
 
-- Welten und Agent sind Dienste des Benutzers `lep`, nicht des Systems. Sie laufen in dessen eigener Dienstverwaltung (`systemctl --user`). Der Benutzer `lep` darf damit nur seine eigenen Dienste steuern, und es braucht keine zusätzliche Regel, die ihm Rechte am System gibt.
-- Damit diese Dienste ohne Anmeldung laufen und beim Hochfahren der Maschine starten, schaltet der Server-Admin einmal das Weiterlaufen ein (Linger): `sudo loginctl enable-linger lep`.
+- Die Welten sind Dienste des Benutzers `lep-agent`, nicht des Systems. Sie laufen in dessen eigener Dienstverwaltung (`systemctl --user`). Der Agent läuft als derselbe Benutzer und darf damit genau diese Dienste steuern. Es braucht keine zusätzliche Regel, die ihm Rechte am System gibt.
+- Der Agent selbst ist ein Dienst des Systems, `lep-agent.service`, wie das Backend. Er läuft als `lep-agent`, nicht als root. So lässt er sich mit denselben Befehlen bedienen wie das Backend, seine Dienstdatei gehört root und nicht ihm selbst, und systemd schottet ihn ab: Schreiben darf er nur in `/var/lib/lep`.
+- Damit diese Dienste ohne Anmeldung laufen und beim Hochfahren der Maschine starten, schaltet der Server-Admin einmal das Weiterlaufen ein (Linger): `sudo loginctl enable-linger lep-agent`.
 - Jede Welt ist ein Dienst aus einer Vorlage: `lep-world@<Kennung>.service`. systemd startet eine abgestürzte Welt neu, und die Welten laufen weiter, wenn der Agent selbst neu startet.
-- Die Dienstvorlage schreibt der Agent bei jedem Start selbst in den Ordner des Benutzers `lep`. Sie enthält Pfade aus seinen Einstellungen und kann so nicht von ihnen abweichen.
-- Der Agent ist selbst ein Dienst, `lep-agent.service`.
+- Die Dienstvorlage der Welten schreibt der Agent selbst in den Ordner seines Benutzers. Sie enthält Pfade aus seinen Einstellungen und kann so nicht von ihnen abweichen. Ist die Dienstverwaltung des Benutzers beim Start des Agenten noch nicht bereit, versucht er es mit jeder Meldung erneut.
 - Welche Welten laufen sollen, merkt sich systemd, nicht der Agent. „Starten“ schaltet den Dienst der Welt ein und startet ihn, „Stoppen“ schaltet ihn aus und stoppt ihn. Nach einem Neustart der Maschine bringt systemd die eingeschalteten Welten von selbst hoch, auch wenn der Agent nicht läuft.
 - Luanti schreibt in das Protokoll des Dienstes nur Fehler. Was im Spiel geschieht, auch Chatnachrichten, steht allein in der Logdatei im Ordner der Welt (Abschnitt 12).
-- Der Server-Admin sieht die Dienste des Benutzers `lep` mit den gewohnten Befehlen: `sudo systemctl --user -M lep@ status lep-world@<Kennung>` und `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service`.
+- Der Server-Admin sieht den Agenten wie jeden Dienst (`systemctl status lep-agent`, `sudo journalctl -u lep-agent`) und die Welten in der Dienstverwaltung des Benutzers: `sudo systemctl --user -M lep-agent@ status lep-world@<Kennung>` und `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service`.
 
-Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner Dienste und die Einstellungen. Die Dienstvorlage der Welten und der Dienst des Agenten liegen im Ordner des Benutzers `lep`. Danach braucht der Betrieb keine Root-Rechte mehr.
+Einmalig als root einzurichten sind also: der Benutzer, das Weiterlaufen seiner Dienste, die Einstellungen und der Dienst des Agenten. Die Dienstvorlage der Welten liegt im Ordner des Benutzers `lep-agent`. Danach braucht der Betrieb der Welten keine Root-Rechte mehr.
 
 **Vorlage einer Welt**
 
