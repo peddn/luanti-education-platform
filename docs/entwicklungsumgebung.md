@@ -126,10 +126,10 @@ Der Server lauscht auf Port 30000. Ob die Mods geladen wurden, zeigt die Ausgabe
 
 1. Luanti starten und den Reiter **Spiel beitreten** öffnen.
 2. Adresse `127.0.0.1`, Port `30000`.
-3. Als Admin beim ersten Mal **Registrieren** wählen, mit dem Namen aus der Einstellung `name` (in der Testumgebung `tester`) und einem Passwort. Luanti legt Konten nicht stillschweigend an.
+3. Als Admin mit dem Namen aus der Einstellung `name` anmelden (in der Testumgebung `tester`). In einer neuen Welt steht sein Startpasswort in `.dev/worlds/dev/lep_admin_password.txt`. Nach dem Ändern des Passworts im Client löscht die Welt die Datei.
 4. Danach mit **Anmelden** verbinden.
 
-**Die Welt ist geschlossen.** Nur der Admin kann sein Konto durch Registrieren anlegen. Jeder andere unbekannte Name wird abgewiesen: „Ein Konto mit diesem Namen gibt es nicht.“ Konten, die es in der Welt schon gibt, funktionieren weiter.
+**Die Welt ist geschlossen.** Niemand legt ein Konto durch Registrieren an, auch der Admin nicht: Sein Konto legt die Welt beim ersten Start selbst an, mit einem gewürfelten Startpasswort in der Datei `lep_admin_password.txt` im Ordner der Welt. Jeder unbekannte Name wird abgewiesen: „Ein Konto mit diesem Namen gibt es nicht.“ Konten, die es in der Welt schon gibt, funktionieren weiter.
 
 Weitere Konten entstehen über die Oberfläche (Abschnitt „Schülerkonten“). Für einen zweiten Spieler ohne Admin-Rechte dort ein Konto anlegen und mit Name und Passwort vom Zugangszettel anmelden. Eine Lehrkraft legt die Schulverwaltung an (Abschnitt „Lehrkräfte“). Ein Schülerkonto wird im Browser nie Lehrkraft, auch wenn ihm der Admin im Spiel Privilegien gibt.
 
