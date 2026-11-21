@@ -95,8 +95,9 @@ function lep_accounts.check_admin()
 	end
 end
 
--- The accounts are there once all mods are loaded.
-core.register_on_mods_loaded(lep_accounts.check_admin)
+-- Accounts cannot be created while the mods are still loading. The
+-- first step of the server comes before anybody can enter.
+core.after(0, lep_accounts.check_admin)
 
 core.register_on_leaveplayer(function(player)
 	if player:get_player_name() == core.settings:get("name") then
