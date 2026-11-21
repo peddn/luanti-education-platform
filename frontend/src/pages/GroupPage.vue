@@ -88,6 +88,29 @@ const router = useRouter()
 const working = ref(false)
 const setupError = ref(/** @type {ErrorCode | null} */ (null))
 
+const asking = ref(false)
+const steerError = ref(/** @type {ErrorCode | null} */ (null))
+// Stopping cuts off whoever plays, so it is asked for twice.
+const confirmStop = ref(false)
+
+/**
+ * Asks the game server to start or stop the world.
+ *
+ * @param {'start' | 'stop' | 'restart'} step
+ */
+async function steer(step) {
+  steerError.value = null
+  confirmStop.value = false
+  asking.value = true
+  try {
+    group.value = await api.steerWorld(props.id, step)
+  } catch (err) {
+    steerError.value = errorCode(err)
+  } finally {
+    asking.value = false
+  }
+}
+
 // Asks the game server again to set the world up.
 async function retry() {
   setupError.value = null
@@ -128,7 +151,7 @@ async function save() {
   if (wanted !== group.value.name) {
     change.name = wanted
   }
-  if (address.value.trim() !== (group.value.address ?? '')) {
+  if (!group.value.address_fixed && address.value.trim() !== (group.value.address ?? '')) {
     change.address = address.value.trim()
   }
   saving.value = true
@@ -196,6 +219,87 @@ async function save() {
         </template>
       </div>
 
+      <div
+        v-if="group.world === 'running' || group.world === 'stopped'"
+        data-test="steer"
+        class="space-y-3 rounded border border-slate-200 bg-white p-5"
+      >
+        <p v-if="group.steering === 'start'" data-test="steering" class="text-slate-600">
+          {{ $t('groups.starting') }}
+        </p>
+        <p v-else-if="group.steering === 'stop'" data-test="steering" class="text-slate-600">
+          {{ $t('groups.stopping') }}
+        </p>
+        <p v-else-if="group.steering === 'restart'" data-test="steering" class="text-slate-600">
+          {{ $t('groups.restarting') }}
+        </p>
+        <div v-else-if="confirmStop" data-test="confirm-stop" class="space-y-3">
+          <p>{{ $t('groups.stopQuestion') }}</p>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              data-test="stop-yes"
+              :disabled="asking"
+              class="rounded bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60"
+              @click="steer('stop')"
+            >
+              {{ $t('groups.stopYes') }}
+            </button>
+            <button
+              type="button"
+              data-test="stop-no"
+              class="rounded border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+              @click="confirmStop = false"
+            >
+              {{ $t('groups.stopNo') }}
+            </button>
+          </div>
+        </div>
+        <div v-else class="flex gap-3">
+          <button
+            v-if="group.world === 'stopped'"
+            type="button"
+            data-test="start"
+            :disabled="asking"
+            class="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+            @click="steer('start')"
+          >
+            {{ $t('groups.start') }}
+          </button>
+          <template v-else>
+            <button
+              type="button"
+              data-test="restart"
+              :disabled="asking"
+              class="rounded border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-60"
+              @click="steer('restart')"
+            >
+              {{ $t('groups.restart') }}
+            </button>
+            <button
+              type="button"
+              data-test="stop"
+              :disabled="asking"
+              class="rounded border border-red-700 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+              @click="confirmStop = true"
+            >
+              {{ $t('groups.stop') }}
+            </button>
+          </template>
+        </div>
+        <ErrorNote v-if="steerError" :code="steerError" />
+        <div
+          v-if="group.step_refusal !== undefined && !group.steering"
+          data-test="step-refused"
+          role="alert"
+          class="space-y-2 rounded border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+        >
+          <p class="font-semibold">{{ $t('groups.stepRefusedTitle') }}</p>
+          <p>{{ $t('groups.stepRefusedHint') }}</p>
+          <p data-test="step-refusal" class="rounded bg-white px-3 py-2 font-mono">{{ group.step_refusal }}</p>
+        </div>
+      </div>
+
       <RouterLink
         :to="{ name: 'students', params: { id } }"
         data-test="students"
@@ -251,7 +355,12 @@ async function save() {
         </label>
         <p v-if="invalidName" data-test="invalid" class="text-sm text-red-800">{{ $t('groups.invalidName') }}</p>
 
-        <label class="block space-y-1">
+        <div v-if="group.address_fixed" class="space-y-1">
+          <h2 class="font-semibold">{{ $t('groups.address') }}</h2>
+          <p data-test="address">{{ group.address }}</p>
+          <p class="text-sm text-slate-500">{{ $t('groups.addressFixed') }}</p>
+        </div>
+        <label v-else class="block space-y-1">
           <span class="font-semibold">{{ $t('groups.address') }}</span>
           <input
             v-model="address"

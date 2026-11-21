@@ -6,6 +6,7 @@ use axum::http::{header, Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use lep_backend::app::{self, AppState};
 use lep_backend::{clock, db, game_server, groups, jobs, logins, teachers, worlds};
+use lep_protocol::agent::WorldState;
 use lep_protocol::world::{JobResult, WebAccessAction, WebAccessRequest};
 use serde_json::{json, Value};
 use sqlx::SqlitePool;
@@ -304,6 +305,75 @@ async fn the_administration_creates_retries_and_discards_groups() {
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(json["code"], "wrong_state");
     assert_eq!(setup.group_names(&leitung).await, ["7b", "8a"]);
+}
+
+#[tokio::test]
+async fn teachers_steer_the_worlds_of_their_groups() {
+    let setup = Setup::new().await;
+    let pool = &setup.state.db;
+    let leitung = log_in(pool, "leitung").await;
+    let lehrer1 = log_in(pool, "lehrer1").await;
+    let lehrer2 = log_in(pool, "lehrer2").await;
+    // lehrer1 teaches the first group, lehrer2 none.
+    let (status, _) = setup
+        .patch(&setup.first, &leitung, json!({ "teachers": ["lehrer1"] }))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let path = format!("/api/web/v1/groups/{}/world", setup.first);
+    let order = |step: &str| Some(json!({ "step": step }));
+
+    // The world was set up by hand: the agent does not run it.
+    let (status, json) = setup
+        .call(Method::POST, &path, Some(&lehrer1), order("stop"))
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(json["code"], "wrong_state");
+
+    game_server::rekey(pool).await.unwrap();
+    let state = WorldState {
+        id: setup.first.clone(),
+        port: 30000,
+        template: "bdbbf00c8a29".to_owned(),
+        running: true,
+    };
+    worlds::note_agent_state(pool, &[state], None)
+        .await
+        .unwrap();
+
+    // A teacher of the group may, and so may the school administration.
+    let (status, json) = setup
+        .call(Method::POST, &path, Some(&lehrer1), order("stop"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["world"], "running");
+    assert_eq!(json["steering"], "stop");
+    let (status, json) = setup
+        .call(Method::POST, &path, Some(&leitung), order("restart"))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["steering"], "restart");
+    let kinds: Vec<String> = jobs::take_waiting_for_agent(pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|job| job.kind)
+        .collect();
+    assert_eq!(kinds, ["stop_world", "restart_world"]);
+
+    // For a teacher of another group this one does not exist.
+    let (status, json) = setup
+        .call(Method::POST, &path, Some(&lehrer2), order("stop"))
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(json["code"], "not_found");
+    let (status, _) = setup.call(Method::POST, &path, None, order("stop")).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    // Only the three steps exist.
+    for body in [order("delete"), Some(json!({})), None] {
+        let (status, _) = setup.call(Method::POST, &path, Some(&lehrer1), body).await;
+        assert!(status.is_client_error(), "{status}");
+    }
+    assert_eq!(jobs::take_waiting_for_agent(pool).await.unwrap().len(), 2);
 }
 
 #[tokio::test]

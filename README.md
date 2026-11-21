@@ -4,7 +4,7 @@ Eine Lernplattform auf Basis von [Luanti](https://www.luanti.org/) für Schulen.
 
 Geplante Lernmodule: Rechnen, Textfragen, Technisches Zeichnen, Logikrätsel.
 
-**Status:** In Entwicklung. Die Mods für Orte, Lobby, Lernräume, Fortschritt, Belohnungen, Rechnen und das Lehrerpult laufen. Backend und Web-Anwendung laufen für eine Welt: Konten, Gruppen, Fortschritt, Protokolle, Belohnungen und Jahresabschluss. Der Agent für den Spielserver ist begonnen: Er meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie als Dienste von systemd. Die Schulverwaltung legt Gruppen im Browser an.
+**Status:** In Entwicklung. Die Mods für Orte, Lobby, Lernräume, Fortschritt, Belohnungen, Rechnen und das Lehrerpult laufen. Backend und Web-Anwendung laufen für eine Welt: Konten, Gruppen, Fortschritt, Protokolle, Belohnungen und Jahresabschluss. Der Agent für den Spielserver ist begonnen: Er meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie als Dienste von systemd. Die Schulverwaltung legt Gruppen im Browser an, und Lehrkräfte starten und stoppen dort die Welten ihrer Gruppen.
 
 Dieses Projekt ist unabhängig und gehört nicht zum Luanti-Projekt. Es wird von dessen Entwicklern weder betrieben noch unterstützt.
 

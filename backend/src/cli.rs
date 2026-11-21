@@ -3,9 +3,8 @@
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use lep_protocol::agent::{
-    WorldJob, JOB_CREATE_WORLD, JOB_RESTART_WORLD, JOB_START_WORLD, JOB_STOP_WORLD,
-};
+use lep_protocol::agent::JOB_CREATE_WORLD;
+use lep_protocol::web::WorldStep;
 use lep_protocol::world::{JOB_PING, JOB_SYNC_STATE};
 use serde_json::json;
 use sqlx::SqlitePool;
@@ -200,21 +199,17 @@ pub enum WorldCommand {
 }
 
 /// Puts a job for the agent in that starts or stops a world.
-async fn steer(pool: &SqlitePool, name: &str, kind: &str) -> Result<String> {
+async fn steer(pool: &SqlitePool, name: &str, step: WorldStep) -> Result<String> {
     let Some(world) = worlds::find_by_name(pool, name).await? else {
         bail!("there is no world called '{}'", name.trim());
     };
-    if world.port.is_none() {
+    if groups::steer(pool, &world.id, step).await?.is_err() {
         bail!(
             "the agent does not run world '{}': it was set up by hand, or the agent has not \
              created it yet",
             world.name
         );
     }
-    let payload = serde_json::to_value(WorldJob {
-        world: world.id.clone(),
-    })?;
-    jobs::add_for_agent(pool, &world.id, kind, &payload).await?;
     Ok(format!(
         "The job for world '{}' is waiting for the agent. It fetches it within half a \
          minute. How it went: lep-backend world list",
@@ -256,9 +251,9 @@ pub async fn run_world(pool: &SqlitePool, command: WorldCommand) -> Result<Strin
                 world.name, world.id
             ))
         }
-        WorldCommand::Start { name } => steer(pool, &name, JOB_START_WORLD).await,
-        WorldCommand::Stop { name } => steer(pool, &name, JOB_STOP_WORLD).await,
-        WorldCommand::Restart { name } => steer(pool, &name, JOB_RESTART_WORLD).await,
+        WorldCommand::Start { name } => steer(pool, &name, WorldStep::Start).await,
+        WorldCommand::Stop { name } => steer(pool, &name, WorldStep::Stop).await,
+        WorldCommand::Restart { name } => steer(pool, &name, WorldStep::Restart).await,
         WorldCommand::Rekey { name } => {
             let key = worlds::rekey(pool, &name).await?;
             Ok(format!(
@@ -357,6 +352,7 @@ pub fn openapi() -> String {
 mod tests {
     use super::*;
     use crate::db;
+    use lep_protocol::agent::{JOB_RESTART_WORLD, JOB_START_WORLD, JOB_STOP_WORLD};
 
     #[tokio::test]
     async fn gives_the_agent_a_key_and_shows_the_game_server() {
@@ -374,6 +370,7 @@ mod tests {
             free_disk_bytes: 3 * 1024 * 1024,
             template: Some("bdbbf00c8a29".to_owned()),
             worlds: Vec::new(),
+            host: None,
         };
         game_server::note_report(&pool, &report).await.unwrap();
         let shown = run_agent(&pool, AgentCommand::Show).await.unwrap();
@@ -445,7 +442,7 @@ mod tests {
             template: "bdbbf00c8a29".to_owned(),
             running: true,
         };
-        worlds::note_agent_state(&pool, std::slice::from_ref(&state))
+        worlds::note_agent_state(&pool, std::slice::from_ref(&state), None)
             .await
             .unwrap();
         let listed = run_world(&pool, WorldCommand::List).await.unwrap();
@@ -462,7 +459,9 @@ mod tests {
         assert_eq!(waiting[0].payload["world"], world.id);
 
         state.running = false;
-        worlds::note_agent_state(&pool, &[state]).await.unwrap();
+        worlds::note_agent_state(&pool, &[state], None)
+            .await
+            .unwrap();
         let listed = run_world(&pool, WorldCommand::List).await.unwrap();
         assert!(listed.contains("stopped, port 30000"), "{listed}");
 

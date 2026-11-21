@@ -259,6 +259,78 @@ describe('group page', () => {
     expect(page.get('[data-test=refused]').text()).toContain('Das geht in diesem Zustand der Gruppe nicht mehr.')
   })
 
+  it('lets a teacher restart and stop a running world, after asking twice', async () => {
+    const send = backend({
+      'GET /api/web/v1/groups/id-7b': [200, G7B],
+      'POST /api/web/v1/groups/id-7b/world': [200, { ...G7B, steering: 'stop' }],
+    })
+    const page = await show(GroupPage, false, { id: 'id-7b' })
+    expect(page.find('[data-test=start]').exists()).toBe(false)
+    expect(page.find('[data-test=restart]').exists()).toBe(true)
+
+    // The first click only asks.
+    await page.get('[data-test=stop]').trigger('click')
+    expect(page.get('[data-test=confirm-stop]').text()).toContain('Wer gerade spielt, wird getrennt.')
+    expect(send).toHaveBeenCalledTimes(1)
+    await page.get('[data-test=stop-no]').trigger('click')
+    expect(page.find('[data-test=confirm-stop]').exists()).toBe(false)
+    expect(send).toHaveBeenCalledTimes(1)
+
+    await page.get('[data-test=stop]').trigger('click')
+    await page.get('[data-test=stop-yes]').trigger('click')
+    await flushPromises()
+    const [path, init] = send.mock.calls[1]
+    expect(path).toBe('/api/web/v1/groups/id-7b/world')
+    expect(JSON.parse(String(init?.body))).toEqual({ step: 'stop' })
+    // While the game server works, there is nothing to click.
+    expect(page.get('[data-test=steering]').text()).toBe('wird gestoppt …')
+    expect(page.find('[data-test=stop]').exists()).toBe(false)
+    expect(page.find('[data-test=restart]').exists()).toBe(false)
+  })
+
+  it('offers to start a stopped world and says why that failed', async () => {
+    const stopped = { ...G7B, world: 'stopped', step_refusal: 'the world was started, but ended at once' }
+    const send = backend({
+      'GET /api/web/v1/groups/id-7b': [200, stopped],
+      'POST /api/web/v1/groups/id-7b/world': [200, { ...G7B, world: 'stopped', steering: 'start' }],
+    })
+    const page = await show(GroupPage, false, { id: 'id-7b' })
+    expect(page.find('[data-test=stop]').exists()).toBe(false)
+    expect(page.get('[data-test=step-refusal]').text()).toBe('the world was started, but ended at once')
+
+    await page.get('[data-test=start]').trigger('click')
+    await flushPromises()
+    expect(JSON.parse(String(send.mock.calls[1][1]?.body))).toEqual({ step: 'start' })
+    expect(page.get('[data-test=steering]').text()).toBe('wird gestartet …')
+    expect(page.find('[data-test=step-refused]').exists()).toBe(false)
+  })
+
+  it('offers nothing to steer for a world the game server does not run', async () => {
+    backend({
+      'GET /api/web/v1/groups/id-8a': [200, G8A],
+      'GET /api/web/v1/groups/id-9c': [200, G9C],
+    })
+    const manual = await show(GroupPage, false, { id: 'id-8a' })
+    expect(manual.find('[data-test=steer]').exists()).toBe(false)
+    const pending = await show(GroupPage, false, { id: 'id-9c' })
+    expect(pending.find('[data-test=steer]').exists()).toBe(false)
+  })
+
+  it('shows an address from the game server without a field to change it', async () => {
+    const fixed = { ...G7B, address: 'spiel.schule.example, Port 30000', address_fixed: true }
+    const send = backend({
+      'GET /api/web/v1/groups/id-7b': [200, fixed],
+      'GET /api/web/v1/teachers': [200, { teachers: ['lehrer1'] }],
+      'PATCH /api/web/v1/groups/id-7b': [200, fixed],
+    })
+    const page = await show(GroupPage, true, { id: 'id-7b' })
+    expect(page.find('input[name=address]').exists()).toBe(false)
+    expect(page.get('[data-test=address]').text()).toBe('spiel.schule.example, Port 30000')
+    await page.get('form').trigger('submit')
+    await flushPromises()
+    expect(JSON.parse(String(send.mock.calls[2][1]?.body))).toEqual({ teachers: ['lehrer1'] })
+  })
+
   it('lets the school administration rename and assign', async () => {
     const changed = { ...G7B, name: 'Klasse 7b', teachers: ['lehrer2', 'leitung'] }
     const send = backend({

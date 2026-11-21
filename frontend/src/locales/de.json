@@ -95,7 +95,19 @@
     "retry": "Erneut versuchen",
     "discard": "Gruppe verwerfen",
     "discardHint": "Verwerfen entfernt die Gruppe wieder. Das geht nur, weil ihre Welt nie entstanden ist.",
-    "working": "Einen Augenblick …"
+    "working": "Einen Augenblick …",
+    "start": "Starten",
+    "stop": "Stoppen",
+    "restart": "Neu starten",
+    "starting": "wird gestartet …",
+    "stopping": "wird gestoppt …",
+    "restarting": "wird neu gestartet …",
+    "stopQuestion": "Wirklich stoppen? Wer gerade spielt, wird getrennt. Die Welt bleibt gestoppt, bis sie jemand startet.",
+    "stopYes": "Ja, stoppen",
+    "stopNo": "Abbrechen",
+    "stepRefusedTitle": "Der Spielserver hat das nicht ausgeführt",
+    "stepRefusedHint": "Der Grund im Wortlaut des Spielservers, für den Server-Admin:",
+    "addressFixed": "Die Adresse kommt vom Spielserver und steht auf den Zugangszetteln."
   },
   "students": {
     "titleFor": "Schülerkonten der Gruppe {group}",

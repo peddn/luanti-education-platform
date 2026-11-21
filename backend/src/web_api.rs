@@ -19,7 +19,7 @@ use lep_protocol::web::{
     AccessSlips, ChangeTopic, ConfirmRequest, Confirmed, DisplayLock, DisplayNameHistory,
     DraftRequest, Group, GroupChange, GroupProgress, Groups, LoginLinkRequest, LoginRequest,
     MailTransport, Me, NewGroup, ProgressChange, ProtocolPage, RemovalRequest, Removals,
-    StaffCreate, StaffList, StartLevelChange, Status, Students, TeacherList, YearEnd,
+    StaffCreate, StaffList, StartLevelChange, Status, Students, TeacherList, WorldOrder, YearEnd,
     YearEndRequest, YEAR_END_CONFIRMATION,
 };
 use lep_protocol::world::Done;
@@ -38,7 +38,7 @@ use crate::changes;
 use crate::display_names;
 use crate::failure::Failure;
 use crate::game_server;
-use crate::groups::{self, ChangeError, CreateError, RefusedError};
+use crate::groups::{self, ChangeError, CreateError, RefusedError, SteerError};
 use crate::jobs::AGENT_BELL;
 use crate::logins::{self, LoggedIn, SESSION_SECONDS};
 use crate::progress::{self, ChangeError as ChangeProgressError};
@@ -76,6 +76,7 @@ pub fn router(state: &AppState) -> Router<AppState> {
             get(show_group).patch(change_group).delete(discard_group),
         )
         .route("/v1/groups/{id}/setup", post(retry_group))
+        .route("/v1/groups/{id}/world", post(steer_world))
         .route("/v1/teachers", get(list_teachers))
         .route(
             "/v1/groups/{id}/students",
@@ -587,6 +588,49 @@ pub async fn discard_group(
     state.changes.tell(&id, &[ChangeTopic::Group]);
     tracing::info!(account = %teacher.account, group = %id, "refused group discarded");
     Ok(Json(Done {}))
+}
+
+/// Starts or stops the world of a group, or starts it anew. The teachers
+/// of the group and the school administration may do this. For everybody
+/// else the group does not exist.
+#[utoipa::path(
+    post,
+    path = "/api/web/v1/groups/{id}/world",
+    params(("id" = String, Path, description = "Identifier of the group")),
+    request_body = WorldOrder,
+    responses(
+        (status = 200, description = "The group, with what the agent was asked to do", body = Group),
+        (status = 400, description = "The request cannot be read (invalid_request)", body = ApiError),
+        (status = 401, description = "Not logged in (unauthorized)", body = ApiError),
+        (status = 404, description = "No such group for this teacher (not_found)", body = ApiError),
+        (status = 409, description = "The agent does not run this world (wrong_state)", body = ApiError),
+    ),
+    security(("session" = []))
+)]
+pub async fn steer_world(
+    State(state): State<AppState>,
+    Teacher(teacher): Teacher,
+    Path(id): Path<String>,
+    request: Result<Json<WorldOrder>, JsonRejection>,
+) -> Result<Json<Group>, Failure> {
+    // Only who may see the group gets this far.
+    group_of(&state, &teacher.account, &id).await?;
+    let order = body(request)?;
+    match groups::steer(&state.db, &id, order.step).await? {
+        Ok(()) => {}
+        Err(SteerError::NotFound) => return Err(Failure::not_found("no such group")),
+        Err(SteerError::NotRun) => {
+            return Err(Failure::new(
+                StatusCode::CONFLICT,
+                ErrorCode::WrongState,
+                "the agent does not run the world of this group",
+            ))
+        }
+    }
+    state.waiters.wake(AGENT_BELL);
+    state.changes.tell(&id, &[ChangeTopic::Group]);
+    tracing::info!(account = %teacher.account, group = %id, step = ?order.step, "world steered");
+    group_of(&state, &teacher.account, &id).await.map(Json)
 }
 
 /// Lists the accounts that can be assigned to groups. Only the school

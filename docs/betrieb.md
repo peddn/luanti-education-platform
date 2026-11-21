@@ -2,7 +2,7 @@
 
 Diese Anleitung richtet Backend und Agent als Dienste auf einem Server mit **Debian 13** ein. Beide laufen auf derselben Maschine. Die Regeln dahinter stehen im [Konzept](konzept.md), Abschnitt 11.3.
 
-**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie. Die Schulverwaltung legt Gruppen im Browser an. Starten und Stoppen im Browser und Lehrkräfte in neuen Welten folgen mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
+**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie. Die Schulverwaltung legt Gruppen im Browser an, und Welten lassen sich dort starten und stoppen. Lehrkräfte in neuen Welten folgen mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
 
 **Noch nicht für den echten Betrieb mit Schülerdaten:** Die Anleitung endet ohne HTTPS. Ohne HTTPS reisen Anmeldung und Startpasswörter ungeschützt durch das Netz. Für einen Versuch auf einer eigenen VM reicht das, für eine Schule nicht.
 
@@ -170,6 +170,7 @@ In derselben Datei stehen zwei Angaben für die Welten:
 
 - `admin`: dein Kontoname als Server-Admin. Der Agent trägt ihn in jede neue Welt ein, damit sie einen ersten Zugang hat. Erlaubt sind 1 bis 19 Zeichen: Buchstaben, Ziffern, `-` und `_`. Ohne diese Angabe legt der Agent keine Welt an.
 - `ports`: der Bereich der Ports für die Welten, voreingestellt `30000-30099`. Läuft auf dem Server eine Firewall, muss sie UDP für diesen Bereich durchlassen.
+- `host`: der Name oder die Adresse, unter der Spieler den Server erreichen, ohne Port, zum Beispiel `spiel.schule.example` oder die IP der Maschine. Zusammen mit dem Port einer Welt wird daraus ihre Adresse auf den Zugangszetteln, etwa „spiel.schule.example, Port 30000“. Ohne diese Angabe trägt die Schulverwaltung die Adresse jeder Welt von Hand ein.
 - `luanti`: der Pfad des Luanti-Servers, voreingestellt `/usr/local/bin/luantiserver`. Dorthin legt ihn Abschnitt 3.
 
 Die Datei gehört dem Benutzer `lep` und ist für niemanden sonst lesbar. Probe, ob der Agent das Backend erreicht:
@@ -178,7 +179,7 @@ Die Datei gehört dem Benutzer `lep` und ist für niemanden sonst lesbar. Probe,
 sudo -u lep lep-agent check
 ```
 
-Erwartet: `The backend took the report.` Darüber stehen die Vorlage, der Admin, der Bereich der Ports und der Pfad von Luanti.
+Erwartet: `The backend took the report.` Darüber stehen die Vorlage, der Admin, der Bereich der Ports, der Name des Servers und der Pfad von Luanti.
 
 Die Dienste des Benutzers `lep` sollen ohne Anmeldung laufen und beim Hochfahren starten (Linger). Das wird einmal eingeschaltet:
 
@@ -257,10 +258,10 @@ Welche Welten laufen sollen, merkt sich systemd. Stürzt eine Welt ab, startet s
 
 ## 10. Der erste Web-Zugang und Gruppen im Browser
 
-Der Server-Admin hat in jeder Welt alle Privilegien, auch die der Schulverwaltung und das für den Web-Zugang. Mit der ersten Welt richtet er sich den Zugang zur Web-Anwendung ein:
+Der Server-Admin hat in jeder Welt das Privileg für den Web-Zugang. Das Privileg der Schulverwaltung hat er nicht von selbst: Wer den Server betreibt, sieht nicht automatisch alle Gruppen und Schülerlisten. Mit der ersten Welt macht er sich oder jemand anderen zur Schulverwaltung und richtet den Zugang zur Web-Anwendung ein:
 
-1. Im Spiel in der ersten Welt anmelden und mit `/pult` das Lehrerpult öffnen, Reiter „Web-Zugang“.
-2. Die eigene Mailadresse eintragen.
+1. Im Spiel in der ersten Welt anmelden und das Privileg der Schulverwaltung vergeben, an das eigene Konto oder an das einer Lehrkraft: `/grant <name> lep_manage_school`. Wer es in einer Welt hat, ist für das Backend Schulverwaltung aller Gruppen.
+2. Mit `/pult` das Lehrerpult öffnen, Reiter „Web-Zugang“, und die eigene Mailadresse eintragen.
 3. Den Link aus der Mail im Browser öffnen und die Adresse bestätigen. Ohne Mailserver steht die Mail im Log des Backends. Dieser Befehl zeigt den neuesten Link vollständig:
 
    ```sh
@@ -273,6 +274,8 @@ Der Server-Admin hat in jeder Welt alle Privilegien, auch die der Schulverwaltun
 Danach legt die Schulverwaltung weitere Gruppen auf der Seite „Gruppen“ an: Name eintragen, „Gruppe anlegen“. Der Agent richtet die Welt ein und startet sie, die Seite zeigt den Zustand von selbst: „wird eingerichtet …“, dann „läuft“.
 
 Lehnt der Agent ab, steht bei der Gruppe „abgelehnt“. Auf ihrer Seite steht der Grund im Wortlaut des Agenten, mit zwei Knöpfen: „Erneut versuchen“, nachdem die Ursache behoben ist, und „Gruppe verwerfen“. Verwerfen gibt es nur für Gruppen, deren Welt nie entstanden ist.
+
+Auf der Seite einer Gruppe lässt sich ihre Welt auch starten, stoppen und neu starten, mit derselben Wirkung wie die Befehle aus Abschnitt 9. Das dürfen die Lehrkräfte der Gruppe und die Schulverwaltung. Stoppen fragt nach, weil es trennt, wer gerade spielt. Führt der Agent etwas nicht aus, steht sein Grund auf der Seite.
 
 Eine im Browser angelegte Welt kennt zunächst nur den Server-Admin. Dass die Lehrkräfte dort ankommen, folgt mit dem nächsten Teil.
 
@@ -319,6 +322,5 @@ Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die 
 ## Was noch fehlt
 
 - **HTTPS:** ein Webserver mit Zertifikat vor dem Backend. Dann lauscht das Backend nur auf `127.0.0.1`.
-- **Welten im Browser starten und stoppen**, und die Adresse einer Welt für die Zugangszettel vom Agenten.
 - **Lehrkräfte in neuen Welten:** Eine frische Welt kennt nur den Server-Admin.
 - **Sicherung** der Datenbank des Backends.

@@ -216,6 +216,7 @@ async fn a_teacher_logs_in_with_a_link_and_out_again() {
         free_disk_bytes: 7,
         template: Some("bdbbf00c8a29".to_owned()),
         worlds: Vec::new(),
+        host: None,
     };
     lep_backend::game_server::note_report(&setup.state.db, &report)
         .await

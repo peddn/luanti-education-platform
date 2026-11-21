@@ -2155,6 +2155,93 @@
         ]
       }
     },
+    "/api/web/v1/groups/{id}/world": {
+      "post": {
+        "tags": [
+          "web_api"
+        ],
+        "summary": "Starts or stops the world of a group, or starts it anew. The teachers\nof the group and the school administration may do this. For everybody\nelse the group does not exist.",
+        "operationId": "steer_world",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identifier of the group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorldOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The group, with what the agent was asked to do",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request cannot be read (invalid_request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not logged in (unauthorized)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group for this teacher (not_found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The agent does not run this world (wrong_state)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/web/v1/login": {
       "post": {
         "tags": [
@@ -3078,6 +3165,13 @@
             "description": "Free space on the disk that holds the worlds, in bytes.",
             "minimum": 0
           },
+          "host": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name under which players reach the game server, from the\nsettings of the agent. Missing if they name none."
+          },
           "template": {
             "type": [
               "string",
@@ -3517,6 +3611,10 @@
             ],
             "description": "Where players reach the world, for example\n`spiel.schule.example, Port 30000`. It is printed on the\naccess slips. Missing until somebody entered it."
           },
+          "address_fixed": {
+            "type": "boolean",
+            "description": "True if the address comes from the agent. Then nobody enters\nit by hand."
+          },
           "id": {
             "type": "string",
             "description": "Fixed identifier of the group and its world."
@@ -3548,6 +3646,24 @@
               "null"
             ],
             "description": "Why the agent refused to set the world up, in its own words.\nOnly with `refused`."
+          },
+          "steering": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorldStep",
+                "description": "What the agent was asked to do with the world and has not\nanswered yet."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "step_refusal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the agent refused the last thing it was asked to do with\nthe world, in its own words."
           },
           "teachers": {
             "type": "array",
@@ -5103,6 +5219,18 @@
           }
         }
       },
+      "WorldOrder": {
+        "type": "object",
+        "description": "Request to start or stop the world of a group.",
+        "required": [
+          "step"
+        ],
+        "properties": {
+          "step": {
+            "$ref": "#/components/schemas/WorldStep"
+          }
+        }
+      },
       "WorldSetup": {
         "type": "string",
         "description": "How it stands with the world of a group on the game server.",
@@ -5163,6 +5291,15 @@
             "description": "Version of the template the world uses."
           }
         }
+      },
+      "WorldStep": {
+        "type": "string",
+        "description": "What can be done with a world that the agent runs.",
+        "enum": [
+          "start",
+          "stop",
+          "restart"
+        ]
       },
       "YearEnd": {
         "type": "object",

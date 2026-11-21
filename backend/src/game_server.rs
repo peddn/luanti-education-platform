@@ -39,16 +39,27 @@ pub async fn note_report(pool: &SqlitePool, report: &AgentReport) -> Result<()> 
     let free = i64::try_from(report.free_disk_bytes).unwrap_or(i64::MAX);
     sqlx::query(
         "UPDATE game_server
-         SET last_seen_at = ?, version = ?, free_disk_bytes = ?, template_version = ?
+         SET last_seen_at = ?, version = ?, free_disk_bytes = ?, template_version = ?, host = ?
          WHERE id = 1",
     )
     .bind(clock::now())
     .bind(&report.version)
     .bind(free)
     .bind(&report.template)
+    .bind(&report.host)
     .execute(pool)
     .await?;
     Ok(())
+}
+
+/// Returns the name under which players reach the game server, if the
+/// agent reported one.
+pub async fn host(pool: &SqlitePool) -> Result<Option<String>> {
+    let host: Option<Option<String>> =
+        sqlx::query_scalar("SELECT host FROM game_server WHERE id = 1")
+            .fetch_optional(pool)
+            .await?;
+    Ok(host.flatten())
 }
 
 /// Describes the game server for the web application. `None` as long as
@@ -88,6 +99,7 @@ mod tests {
             free_disk_bytes: 5_000_000_000,
             template: Some("bdbbf00c8a29".to_owned()),
             worlds: Vec::new(),
+            host: Some("spiel.schule.example".to_owned()),
         }
     }
 
@@ -145,6 +157,10 @@ mod tests {
         assert!(fresh.connected);
         assert_eq!(fresh.free_disk_bytes, Some(5_000_000_000));
         assert_eq!(fresh.template.as_deref(), Some("bdbbf00c8a29"));
+        assert_eq!(
+            host(&pool).await.unwrap().as_deref(),
+            Some("spiel.schule.example")
+        );
 
         // An agent without a template says so, and the old one is gone.
         let bare = AgentReport {

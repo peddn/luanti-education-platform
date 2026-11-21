@@ -24,6 +24,19 @@ const MAX_TEMPLATE_LENGTH: usize = 64;
 /// Most worlds one report may name.
 const MAX_WORLDS: usize = 1000;
 
+/// Longest name of a game server.
+const MAX_HOST_LENGTH: usize = 100;
+
+/// Returns true if a text can be the name of a game server: a host name
+/// or an address, nothing that would look odd on a printed slip.
+fn is_host(text: &str) -> bool {
+    !text.is_empty()
+        && text.len() <= MAX_HOST_LENGTH
+        && text
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || ".-:[]".contains(c))
+}
+
 /// Returns true if a text can be the version of a template.
 fn is_template_version(text: &str) -> bool {
     !text.is_empty()
@@ -110,16 +123,25 @@ pub async fn report(
             running: world.running,
         })
         .collect();
+    let host = report.host.as_deref().map(str::trim);
+    if host.is_some_and(|host| !is_host(host)) {
+        return Err(Failure::invalid_request(
+            "the name of the game server cannot be read",
+        ));
+    }
     let report = AgentReport {
         version: version.to_owned(),
         free_disk_bytes: report.free_disk_bytes,
         template: template.map(str::to_ascii_lowercase),
         worlds,
+        host: host.map(str::to_owned),
     };
     game_server::note_report(&state.db, &report).await?;
     // Only worlds the backend knows are touched: the agent cannot make
     // one up by naming it.
-    for world_id in worlds::note_agent_state(&state.db, &report.worlds).await? {
+    let changed =
+        worlds::note_agent_state(&state.db, &report.worlds, report.host.as_deref()).await?;
+    for world_id in changed {
         state.changes.tell(&world_id, &[ChangeTopic::Group]);
     }
     Ok(Json(Done {}))

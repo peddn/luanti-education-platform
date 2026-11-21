@@ -16,12 +16,14 @@ pub fn build(
     data_dir: &Path,
     template: Option<&str>,
     running: &BTreeSet<WorldId>,
+    host: Option<&str>,
 ) -> Result<AgentReport> {
     Ok(AgentReport {
         version: VERSION.to_owned(),
         free_disk_bytes: free_disk_bytes(data_dir)?,
         template: template.map(str::to_owned),
         worlds: worlds::states(data_dir, running)?,
+        host: host.map(str::to_owned),
     })
 }
 
@@ -42,10 +44,14 @@ mod tests {
     fn describes_the_game_server() {
         let folder = tempfile::tempdir().unwrap();
         let nothing = BTreeSet::new();
-        let report = build(folder.path(), Some("bdbbf00c8a29"), &nothing).unwrap();
+        let host = Some("spiel.schule.example");
+        let report = build(folder.path(), Some("bdbbf00c8a29"), &nothing, host).unwrap();
+        assert_eq!(report.host.as_deref(), host);
         assert_eq!(report.version, VERSION);
         assert_eq!(report.template.as_deref(), Some("bdbbf00c8a29"));
-        assert_eq!(build(folder.path(), None, &nothing).unwrap().template, None);
+        let bare = build(folder.path(), None, &nothing, None).unwrap();
+        assert_eq!(bare.template, None);
+        assert_eq!(bare.host, None);
         assert!(report.worlds.is_empty());
         assert!(report.free_disk_bytes > 0);
     }
@@ -53,6 +59,6 @@ mod tests {
     #[test]
     fn a_missing_folder_is_an_error() {
         let folder = tempfile::tempdir().unwrap();
-        assert!(build(&folder.path().join("missing"), None, &BTreeSet::new()).is_err());
+        assert!(build(&folder.path().join("missing"), None, &BTreeSet::new(), None).is_err());
     }
 }

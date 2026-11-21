@@ -119,6 +119,10 @@ async fn check(path: &std::path::Path) -> Result<()> {
     let worlds = lep_agent::worlds::list(&config.data_dir)?;
     println!("Worlds:   {}", worlds.len());
     let units = Arc::new(Systemctl::for_this_user()?);
+    match &config.host {
+        Some(host) => println!("Host:     {host}"),
+        None => println!("Host:     none set, so addresses of worlds are entered by hand"),
+    }
     println!("Luanti:   {}", config.luanti.display());
     if !config.luanti.is_file() {
         println!("Warning:  there is no such file, so no world can run.");

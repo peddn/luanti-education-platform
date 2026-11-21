@@ -21,6 +21,12 @@ admin = "admin"
 # through for all of them.
 ports = "30000-30099"
 
+# Name or address under which players reach this machine, without a
+# port. With the port of a world it makes the address that is printed on
+# the access slips, like "spiel.schule.example, Port 30000". Without it
+# the school administration enters the address of every world by hand.
+host = "spiel.schule.example"
+
 # The Luanti server the worlds run with. scripts/luanti-build.sh and
 # "sudo cmake --install target/luanti/build" put it here.
 luanti = "/usr/local/bin/luantiserver"
