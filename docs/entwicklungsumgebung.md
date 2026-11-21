@@ -248,8 +248,11 @@ Lehrkräfte legt die Schulverwaltung auf der Seite „Lehrkräfte“ an. Dort se
 
 - Der Name hat 2 bis 19 Zeichen aus Buchstaben, Ziffern, `_` und `-` und darf an der Schule weder vergeben noch gelöscht worden sein.
 - Die Welt gibt dem neuen Konto die Privilegien des Bündels „Lehrkraft“: `lep_view_players`, `lep_send_players`, `lep_watch_players`, `lep_set_attention`, `lep_set_mode`, `lep_set_time`, `lep_mute_players`, `lep_place_quest_chest` und `lep_web_access`. Die Liste steht in `mods/lep_accounts/src/accounts.lua`. Einzelne Privilegien vergibt und nimmt weiter der Admin im Spiel.
-- Geschützt sind der Admin aus der Einstellung `name` und jedes Konto mit `lep_manage_school`, `privs` oder `server`: Für sie nimmt die Welt von außen weder ein Passwort noch eine Löschung an (`staff`). Im Backend kommt dazu: Niemand ändert das eigene Konto.
+- Geschützt sind der Admin aus der Einstellung `name` und jedes Konto mit `lep_manage_school`, `privs` oder `server`: Für sie nimmt die Welt von außen weder ein Startpasswort noch eine Löschung an (`staff`). Im Backend kommt dazu: Niemand ändert das eigene Konto.
 - Die Welt schreibt Anlegen, neues Passwort und Löschen ins Protokoll des Pults (`web:create_teacher`, `web:reset_teacher_password`, `web:remove_teacher`), unter dem Konto der Schulverwaltung.
+- **Ein Passwort in allen Welten.** Die Welten bekommen von einem Startpasswort nur den Eintrag, den Luanti speichert (`#1#Salz#Prüfwert`). Das Backend rechnet ihn aus (`backend/src/srp.rs`). Alle 30 Sekunden und bei jedem Start meldet eine Welt die Einträge ihrer Lehrkräfte (Ereignis `staff_passwords`). Hat jemand sein Passwort im Spiel geändert, trägt das Backend den neuen Eintrag in die anderen Welten ein (Auftrag `set_password_entry`, im Protokoll des Pults `web:sync_password` unter dem Konto selbst). Fehlt eine Lehrkraft in einer Welt, die nie nach ihr gefragt wurde, lässt das Backend sie dort anlegen. Die Regeln stehen in `backend/src/staff_passwords.rs`.
+- Den Eintrag nimmt die Welt auch für Konten mit `lep_manage_school` an, nie für den Admin oder für Konten mit `privs` oder `server`. Deren Einträge meldet sie auch nicht.
+- Das gilt für Lehrkräfte, die in der Web-Anwendung angelegt wurden. Eine Lehrkraft, die der Admin im Spiel gemacht hat, behält pro Welt ihr eigenes Passwort.
 - Ein Konto aus einer Schülerliste erkennt das Backend nie als Lehrkraft oder Schulverwaltung an, was auch immer die Welt meldet.
 - Wer in keiner Welt mehr `lep_web_access` hat, verliert seine Zuordnungen zu Gruppen.
 

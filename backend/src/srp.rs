@@ -55,6 +55,13 @@ fn entry_with(name: &str, password: &str, salt: &[u8]) -> String {
 mod tests {
     use super::*;
 
+    const PINNED: &str =
+        "#1#BwcHBwcHBwcHBwcHBwcHBw#Y0XEqFw0Ou5nI16Cdh+og4i11NmP6ArImXfZLO8zLZqYqYsf3BAAMs\
+        selVsOQ+Kl/OsB18goCukBQqX237AREkrYbIcSpKoL+ucTRcIp8L+m/SXQNCCXdx3EBAPdNBZgCxN+bN\
+        GfTFD0eU4Bunmb7MA/0pk7p+6Z0DJVTRiiGR90vm4gOTKCmuOigSNBsHiJx20CqNrdeQHrTjMLBRkqua\
+        Vs/bADyXZ72LNKOKN6WawWdpW1i7J51LaKy5g1Krofow7Ompiofm6QtMEsyum2ajXzba1hQM9O7TsoX7\
+        Ivm5XsCsvkCWDRgolfd57BycvUnAKZi47wazD1l4uzbjeJwQ";
+
     #[test]
     fn every_entry_has_its_own_salt() {
         let first = entry("frau_meier", "wolke-apfel-47");
@@ -62,6 +69,14 @@ mod tests {
         assert!(first.starts_with("#1#"));
         assert_ne!(first, second);
         assert_eq!(first.split('#').count(), 4);
+    }
+
+    /// The steps were checked against Luanti 5.18 by logging in with a
+    /// password whose entry came from here. This keeps them as they are.
+    #[test]
+    fn the_steps_stay_as_the_engine_expects_them() {
+        let made = entry_with("frau_meier", "wolke-apfel-47", &[7u8; SALT_BYTES]);
+        assert_eq!(made, PINNED);
     }
 
     #[test]
