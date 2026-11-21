@@ -18,9 +18,11 @@ reports.EVENT_DISPLAY_NAME = "display_name"
 reports.EVENT_ACCOUNT_USED = "account_used"
 reports.EVENT_REWARDS = "rewards"
 reports.EVENT_ACCOUNT_REMOVED = "account_removed"
+reports.EVENT_STAFF_PASSWORDS = "staff_passwords"
 reports.JOB_CREATE_ACCOUNTS = "create_accounts"
 reports.JOB_REMOVE_ACCOUNT = "remove_account"
 reports.JOB_SET_PASSWORD = "set_password"
+reports.JOB_SET_PASSWORD_ENTRY = "set_password_entry"
 reports.JOB_SET_LEVEL = "set_level"
 reports.JOB_SET_LOCKED = "set_locked"
 reports.JOB_SET_START_LEVEL = "set_start_level"
@@ -214,6 +216,55 @@ function reports.teachers(accounts, school_admins)
 		return copy
 	end
 	return { accounts = names(accounts), school_admins = names(school_admins) }
+end
+
+--- Builds the payload of the event "staff_passwords": what this world
+-- stores of the passwords of its teachers. Always the whole list.
+-- @param list List of tables with name and entry.
+-- @param record_of Function(name) that returns the version and the mark
+--   of the entry the backend had this world write last, or nil.
+-- @param mark_of Function(entry) that returns the mark of an entry.
+function reports.staff_passwords(list, record_of, mark_of)
+	local copy = {}
+	for index, account in ipairs(list or {}) do
+		local version, mark = record_of(account.name)
+		copy[index] = {
+			name = tostring(account.name),
+			entry = tostring(account.entry),
+			-- The version the password here is built on, and whether it
+			-- was changed in this world since.
+			version = whole(version or 0),
+			changed = mark == nil or mark ~= mark_of(account.entry),
+		}
+	end
+	return { accounts = copy }
+end
+
+--- Returns a text that changes whenever the payload of "staff_passwords"
+-- does.
+function reports.staff_passwords_mark(payload)
+	local parts = {}
+	for index, account in ipairs(payload.accounts) do
+		parts[index] = table.concat({ account.name, account.entry, account.version,
+			tostring(account.changed) }, " ")
+	end
+	return table.concat(parts, "\n")
+end
+
+--- Builds what the world keeps about the entry the backend had it write:
+-- the version and a mark of the entry, not the entry itself.
+function reports.staff_password_record(version, mark)
+	return whole(version) .. " " .. mark
+end
+
+--- Reads what reports.staff_password_record built.
+-- @return version and mark, or nil
+function reports.parse_staff_password_record(text)
+	local version, mark = tostring(text or ""):match("^(%d+) (%S+)$")
+	if not version then
+		return nil
+	end
+	return tonumber(version), mark
 end
 
 --- Builds the payload of the event "accounts_created": the names of the

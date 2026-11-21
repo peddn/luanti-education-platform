@@ -215,7 +215,7 @@ async fn the_school_administration_creates_a_teacher_in_every_world() {
         assert_eq!(
             payload,
             &json!({ "accounts": [{ "name": "frau_meier", "password": password }],
-                "teacher": true, "by": "leitung" })
+                "teacher": true, "by": "leitung", "version": 1 })
         );
     }
     let list = setup.staff().await;

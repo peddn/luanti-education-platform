@@ -954,6 +954,11 @@ export interface components {
              *     administration orders that.
              */
             teacher?: boolean;
+            /**
+             * Format: int32
+             * @description The version of the passwords, for accounts of teachers.
+             */
+            version?: number | null;
         };
         /**
          * @description Payload of the job that creates a world and starts it. For a
@@ -1326,9 +1331,18 @@ export interface components {
         };
         /** @description An account a world shall create. */
         NewAccount: {
+            /**
+             * @description What another world stores of the password, for a teacher who
+             *     exists there already. The password cannot be worked out from
+             *     it.
+             */
+            entry?: string | null;
             name: string;
-            /** @description The start password. The world stores only its hash. */
-            password: string;
+            /**
+             * @description The start password. The world stores only its hash. Missing
+             *     if `entry` is given.
+             */
+            password?: string | null;
         };
         /** @description Request to create a group. Its world is set up by the agent. */
         NewGroup: {
@@ -1629,6 +1643,24 @@ export interface components {
              *     refuses the admin and the school administration.
              */
             staff?: boolean;
+            /**
+             * Format: int32
+             * @description The version of the password, for accounts of teachers.
+             */
+            version?: number | null;
+        };
+        /**
+         * @description Payload of the job "set_password_entry". A world takes it for
+         *     teachers and for the school administration, never for its admin.
+         */
+        SetPasswordEntry: {
+            entry: string;
+            name: string;
+            /**
+             * Format: int32
+             * @description The version of the password. The world remembers it.
+             */
+            version: number;
         };
         /**
          * @description Payload of the job "set_rewards". The world checks the table,
@@ -1684,6 +1716,32 @@ export interface components {
         /** @description The accounts of all teachers, sorted by name. */
         StaffList: {
             staff: components["schemas"]["StaffAccount"][];
+        };
+        /** @description What a world stores of the password of one teacher. */
+        StaffPassword: {
+            /** @description True if the password was changed in this world since. */
+            changed?: boolean;
+            /**
+             * @description The entry of the engine: a salt and a verifier. The password
+             *     cannot be worked out from it.
+             */
+            entry: string;
+            name: string;
+            /**
+             * Format: int32
+             * @description The version of the password the entry is built on: the one
+             *     the backend named when it had this world write it last. 0 if
+             *     it never did.
+             */
+            version?: number;
+        };
+        /**
+         * @description Payload of the event "staff_passwords": what a world stores of
+         *     the passwords of its teachers. It replaces what the backend knew
+         *     before. The admin of the world is never in it.
+         */
+        StaffPasswords: {
+            accounts?: components["schemas"]["StaffPassword"][];
         };
         /**
          * @description How far the account of a teacher is that the school

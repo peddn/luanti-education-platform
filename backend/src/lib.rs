@@ -22,6 +22,7 @@ pub mod protocols;
 pub mod removals;
 pub mod rewards;
 pub mod staff;
+pub mod staff_passwords;
 pub mod state;
 pub mod students;
 pub mod teachers;

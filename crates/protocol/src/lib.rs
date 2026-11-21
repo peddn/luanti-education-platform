@@ -77,6 +77,9 @@ pub mod world {
     /// Kind of the event that says a world has deleted an account with
     /// everything it knew about it.
     pub const EVENT_ACCOUNT_REMOVED: &str = "account_removed";
+    /// Kind of the event that carries what a world stores of the
+    /// passwords of its teachers.
+    pub const EVENT_STAFF_PASSWORDS: &str = "staff_passwords";
     /// Kind of the job that only checks the way to the world and back.
     pub const JOB_PING: &str = "ping";
     /// Kind of the job that makes a world send its whole state again.
@@ -92,6 +95,10 @@ pub mod world {
     /// Kind of the job that makes a world set a new start password for an
     /// account.
     pub const JOB_SET_PASSWORD: &str = "set_password";
+
+    /// Kind of the job that makes a world write what another world
+    /// stores of the password of a teacher.
+    pub const JOB_SET_PASSWORD_ENTRY: &str = "set_password_entry";
 
     /// Kind of the job that makes a world take the display name of a
     /// student away.
@@ -364,8 +371,51 @@ pub mod world {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct NewAccount {
         pub name: String,
-        /// The start password. The world stores only its hash.
-        pub password: String,
+        /// The start password. The world stores only its hash. Missing
+        /// if `entry` is given.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub password: Option<String>,
+        /// What another world stores of the password, for a teacher who
+        /// exists there already. The password cannot be worked out from
+        /// it.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub entry: Option<String>,
+    }
+
+    /// What a world stores of the password of one teacher.
+    #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StaffPassword {
+        pub name: String,
+        /// The entry of the engine: a salt and a verifier. The password
+        /// cannot be worked out from it.
+        pub entry: String,
+        /// The version of the password the entry is built on: the one
+        /// the backend named when it had this world write it last. 0 if
+        /// it never did.
+        #[serde(default)]
+        pub version: u32,
+        /// True if the password was changed in this world since.
+        #[serde(default)]
+        pub changed: bool,
+    }
+
+    /// Payload of the event "staff_passwords": what a world stores of
+    /// the passwords of its teachers. It replaces what the backend knew
+    /// before. The admin of the world is never in it.
+    #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StaffPasswords {
+        #[serde(default, deserialize_with = "null_as_default")]
+        pub accounts: Vec<StaffPassword>,
+    }
+
+    /// Payload of the job "set_password_entry". A world takes it for
+    /// teachers and for the school administration, never for its admin.
+    #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetPasswordEntry {
+        pub name: String,
+        pub entry: String,
+        /// The version of the password. The world remembers it.
+        pub version: u32,
     }
 
     /// Payload of the job "create_accounts".
@@ -381,6 +431,9 @@ pub mod world {
         /// world writes it into the protocol of the desk.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub by: Option<String>,
+        /// The version of the passwords, for accounts of teachers.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub version: Option<u32>,
     }
 
     /// Payload of the job "set_password". A world sets the password only
@@ -398,6 +451,9 @@ pub mod world {
         /// Account name of who ordered it, for accounts of teachers.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub by: Option<String>,
+        /// The version of the password, for accounts of teachers.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub version: Option<u32>,
     }
 
     /// Payload of the event "display_name": what an account is shown

@@ -15,7 +15,7 @@ use lep_protocol::world::{
 };
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use crate::{clock, jobs, names, removals, students};
+use crate::{clock, jobs, names, removals, staff_passwords, students};
 
 /// Shortest and longest name of a teacher. The engine takes 20
 /// characters; the backend stays one below.
@@ -101,9 +101,11 @@ pub async fn create(
     if worlds.is_empty() {
         return Ok(Err(StaffError::NoWorld));
     }
+    // The first password of the account: version 1.
+    let version = 1;
     sqlx::query(
-        "INSERT INTO staff_accounts (account, state, created_at, created_by)
-         VALUES (?, 'creating', ?, ?)",
+        "INSERT INTO staff_accounts (account, state, created_at, created_by, password_version)
+         VALUES (?, 'creating', ?, ?, 1)",
     )
     .bind(name)
     .bind(clock::now())
@@ -117,10 +119,12 @@ pub async fn create(
     let payload = serde_json::to_value(CreateAccounts {
         accounts: vec![NewAccount {
             name: slip.account.clone(),
-            password: slip.password.clone(),
+            password: Some(slip.password.clone()),
+            entry: None,
         }],
         teacher: true,
         by: Some(by.to_owned()),
+        version: Some(version),
     })?;
     for world in &worlds {
         jobs::add_about(pool, world, JOB_CREATE_ACCOUNTS, &payload, Some(name)).await?;
@@ -202,11 +206,15 @@ pub async fn reset_password(
         account: account.clone(),
         password: roll_password(),
     };
+    // The worlds hash the new password each for itself. Whichever
+    // reports first gives the entry all of them get.
+    let version = staff_passwords::start_over(pool, &account).await?;
     let payload = serde_json::to_value(SetPassword {
         name: slip.account.clone(),
         password: slip.password.clone(),
         staff: true,
         by: Some(by.to_owned()),
+        version,
     })?;
     let worlds = world_ids(pool).await?;
     for world in &worlds {
@@ -272,6 +280,8 @@ pub async fn forget(pool: &SqlitePool, account: &str) -> Result<()> {
         "DELETE FROM teachers WHERE account = ?",
         "DELETE FROM group_teachers WHERE account = ?",
         "DELETE FROM jobs WHERE subject = ? AND kind = 'create_accounts'",
+        "DELETE FROM jobs WHERE subject = ? AND kind = 'set_password_entry'",
+        "DELETE FROM staff_worlds WHERE account = ?",
     ] {
         sqlx::query(delete).bind(account).execute(&mut *tx).await?;
     }

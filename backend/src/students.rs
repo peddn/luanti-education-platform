@@ -314,11 +314,13 @@ pub async fn create(
     let payload = CreateAccounts {
         teacher: false,
         by: None,
+        version: None,
         accounts: slips
             .iter()
             .map(|slip| NewAccount {
                 name: slip.account.clone(),
-                password: slip.password.clone(),
+                password: Some(slip.password.clone()),
+                entry: None,
             })
             .collect(),
     };
@@ -361,6 +363,7 @@ pub async fn reset_password(
         password: slip.password.clone(),
         staff: false,
         by: None,
+        version: None,
     };
     jobs::add_about(
         pool,
@@ -572,8 +575,8 @@ mod tests {
         assert_eq!(sent.accounts.len(), 3);
         for (account, slip) in sent.accounts.iter().zip(&slips) {
             assert_eq!(
-                (&account.name, &account.password),
-                (&slip.account, &slip.password)
+                (&account.name, account.password.as_ref()),
+                (&slip.account, Some(&slip.password))
             );
         }
 
