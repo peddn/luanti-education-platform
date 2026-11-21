@@ -4,10 +4,10 @@ use anyhow::Result;
 use lep_protocol::web::ChangeTopic;
 use lep_protocol::world::{
     AccountRemoved, AccountUsed, AccountsCreated, DisplayName, Event, EventOutcome, Modules,
-    Progress, ProtocolEntry, Teachers, Trophies, WebAccessRequest, WorldStarted,
+    Progress, ProtocolEntry, StaffPasswords, Teachers, Trophies, WebAccessRequest, WorldStarted,
     EVENT_ACCOUNTS_CREATED, EVENT_ACCOUNT_REMOVED, EVENT_ACCOUNT_USED, EVENT_DISPLAY_NAME,
-    EVENT_MODULES, EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_TEACHERS, EVENT_TROPHIES,
-    EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
+    EVENT_MODULES, EVENT_PROGRESS, EVENT_PROTOCOL, EVENT_STAFF_PASSWORDS, EVENT_TEACHERS,
+    EVENT_TROPHIES, EVENT_WEB_ACCESS, EVENT_WORLD_STARTED,
 };
 use serde::de::DeserializeOwned;
 
@@ -89,6 +89,15 @@ pub async fn take_in(app: &AppState, world_id: &str, event: &Event) -> Result<Ev
             Some(report) => {
                 students::note_created(pool, world_id, &report).await?;
                 crate::staff::note_created(pool, &report).await?;
+                true
+            }
+            None => false,
+        },
+        EVENT_STAFF_PASSWORDS => match payload::<StaffPasswords>(event) {
+            Some(report) => {
+                for world in crate::staff_passwords::note(pool, world_id, &report).await? {
+                    app.waiters.wake(&world);
+                }
                 true
             }
             None => false,

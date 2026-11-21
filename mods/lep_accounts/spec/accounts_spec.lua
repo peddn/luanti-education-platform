@@ -14,8 +14,14 @@ local function world_with(existing)
 		has_password = function(name, password)
 			return existing[name] == password
 		end,
+		-- Accounts that came with an entry have it as their password here.
+		has_entry = function(name, entry)
+			return existing[name] == entry
+		end,
 	}
 end
+
+local ENTRY = "#1#c2FsdDE#dmVyaWZpZXIx"
 
 local function names(list)
 	local result = {}
@@ -88,6 +94,78 @@ describe("lep_accounts", function()
 		assert.are.same({}, created)
 		assert.are.same({ "kluge Eule", string.rep("a", 21), "frohesReh", "mutigerDachs",
 			"FlinkerOtter" }, refused)
+	end)
+
+	it("knows what the engine stores of a password", function()
+		assert.is_true(accounts.is_entry(ENTRY))
+		assert.is_true(accounts.is_entry("#1#c2FsdA==#dmVy+/ZpZXI="))
+		for _, wrong in ipairs({ "", "#1#", "#1##abc", "#1#abc#", "#1#abc", "#2#abc#def",
+				"abc#def", "#1#abc#def#ghi", "#1#a b#def", "#1#abc#de\nf", "#1#abc===#def",
+				"wolke-apfel-47", "#1#abc#" .. string.rep("a", 600) }) do
+			assert.is_false(accounts.is_entry(wrong), wrong)
+		end
+		assert.is_false(accounts.is_entry(nil))
+		assert.is_false(accounts.is_entry(5))
+	end)
+
+	it("creates a teacher with the password of another world", function()
+		local world = world_with({ lehrer1 = ENTRY, lehrer3 = "another" })
+		local to_create, created, refused = accounts.plan({
+			{ name = "lehrer1", entry = ENTRY },
+			{ name = "lehrer2", entry = ENTRY },
+			{ name = "lehrer3", entry = ENTRY },
+			-- Not both, and nothing that is no entry.
+			{ name = "lehrer4", entry = ENTRY, password = "wolke-apfel-47" },
+			{ name = "lehrer5", entry = "wolke-apfel-47" },
+			{ name = "lehrer6", password = "wolke-apfel-47" },
+		}, world, true)
+		assert.are.same({ { name = "lehrer2", entry = ENTRY },
+			{ name = "lehrer6", password = "wolke-apfel-47" } }, to_create)
+		assert.are.same({ "lehrer1" }, created)
+		assert.are.same({ "lehrer3", "lehrer4", "lehrer5" }, refused)
+
+		-- Never for students.
+		to_create, created, refused = accounts.plan({ { name = "klugeEule", entry = ENTRY } },
+			world_with({}))
+		assert.are.same({}, to_create)
+		assert.are.same({}, created)
+		assert.are.same({ "klugeEule" }, refused)
+	end)
+
+	it("keeps the passwords of teachers in step, never the ones of the admin", function()
+		local ordinary = { interact = true, shout = true }
+		local teacher = { interact = true, shout = true, lep_web_access = true }
+		local school = { interact = true, lep_web_access = true, lep_manage_school = true }
+		assert.is_true(accounts.is_staff("lehrer1", teacher, ordinary, "tester"))
+		-- The school administration has one password everywhere too.
+		assert.is_true(accounts.is_staff("leitung", school, ordinary, "tester"))
+		assert.is_true(accounts.may_set_entry("leitung", ENTRY, true, school, ordinary, "tester"))
+		assert.is_true(accounts.may_set_entry("lehrer1", ENTRY, true, teacher, ordinary, "tester"))
+
+		assert.is_false(accounts.is_staff("klugeEule", ordinary, ordinary, "tester"))
+		assert.same({ false, accounts.ORDINARY }, { accounts.may_set_entry("klugeEule", ENTRY,
+			true, ordinary, ordinary, "tester") })
+
+		-- The admin, with or without privileges, and whoever could make
+		-- themselves one.
+		for _, held in ipairs({ teacher, {}, { privs = true }, { server = true } }) do
+			assert.is_false(accounts.is_staff("tester", held, ordinary, "tester"))
+			assert.same({ false, accounts.STAFF }, { accounts.may_set_entry("tester", ENTRY,
+				true, held, ordinary, "tester") })
+		end
+		for _, privilege in ipairs({ "privs", "server" }) do
+			local held = { lep_web_access = true, [privilege] = true }
+			assert.is_false(accounts.is_staff("lehrer1", held, ordinary, "tester"), privilege)
+			assert.same({ false, accounts.STAFF }, { accounts.may_set_entry("lehrer1", ENTRY,
+				true, held, ordinary, "tester") })
+		end
+
+		assert.same({ false, accounts.UNKNOWN }, { accounts.may_set_entry("lehrer1", ENTRY,
+			false, {}, ordinary, "tester") })
+		assert.same({ false, accounts.INVALID }, { accounts.may_set_entry("lehrer1",
+			"wolke-apfel-47", true, teacher, ordinary, "tester") })
+		assert.same({ false, accounts.INVALID }, { accounts.may_set_entry("lehrer 1", ENTRY,
+			true, teacher, ordinary, "tester") })
 	end)
 
 	it("reads lists of privileges", function()

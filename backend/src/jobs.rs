@@ -201,7 +201,8 @@ async fn note_result(pool: &SqlitePool, job_id: &str, result: &JobResult) -> Res
     sqlx::query(
         "UPDATE jobs SET finished_at = ?, ok = ?, message = ?,
             payload = CASE
-                WHEN kind IN ('create_accounts', 'set_password', 'create_world') THEN '{}'
+                WHEN kind IN ('create_accounts', 'set_password', 'set_password_entry',
+                              'create_world') THEN '{}'
                 ELSE payload END
          WHERE id = ? AND finished_at IS NULL",
     )

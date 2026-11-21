@@ -85,4 +85,43 @@ describe("lep_bridge accounts", function()
 		assert.is_nil(staff_by)
 		assert.is_nil(accounts.parse_password({ name = "lehrer2", password = "x", staff = true }))
 	end)
+
+	it("reads what belongs to one password in all worlds", function()
+		local entry = "#1#c2FsdDE#dmVyaWZpZXIx"
+		local list, by, version = accounts.parse({ accounts = { { name = "lehrer2",
+			entry = entry } }, teacher = true, by = "leitung", version = 3 })
+		assert.are.same({ { name = "lehrer2", entry = entry } }, list)
+		assert.are.same({ "leitung", 3 }, { by, version })
+		-- An entry instead of a password is only taken for teachers, and
+		-- students have no versions.
+		assert.is_nil(accounts.parse({ accounts = { { name = "klugeEule", entry = entry } } }))
+		list, by, version = accounts.parse({ accounts = {}, version = 3 })
+		assert.are.same({}, list)
+		assert.is_nil(by)
+		assert.is_nil(version)
+
+		list, by, version = accounts.parse({ accounts = {}, teacher = true, by = "leitung",
+			version = -1 })
+		assert.are.same({}, list)
+		assert.are.equal("leitung", by)
+		assert.is_nil(version)
+
+		assert.are.same({ "lehrer2", entry, 2 }, { accounts.parse_entry({ name = "lehrer2",
+			entry = entry, version = 2 }) })
+		-- A new start password names who ordered it.
+		assert.are.same({ "lehrer2", entry, 2, "leitung" }, { accounts.parse_entry({
+			name = "lehrer2", entry = entry, version = 2, by = "leitung" }) })
+		for _, wrong in ipairs({
+			{ name = "lehrer2", entry = entry },
+			{ name = "lehrer2", entry = entry, version = 1.5 },
+			{ name = "lehrer2", entry = entry, version = "2" },
+			{ name = "lehrer 2", entry = entry, version = 2 },
+			{ name = "lehrer2", entry = "", version = 2 },
+			{ name = "lehrer2", entry = entry, version = 2, by = "nobody here" },
+			{ entry = entry, version = 2 },
+		}) do
+			assert.is_nil(accounts.parse_entry(wrong))
+		end
+		assert.is_nil(accounts.parse_entry(nil))
+	end)
 end)

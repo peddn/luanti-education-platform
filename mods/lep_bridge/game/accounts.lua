@@ -64,7 +64,7 @@ local function record(by, action, target)
 end
 
 lep_bridge.register_job(reports.JOB_CREATE_ACCOUNTS, function(payload)
-	local list, teachers_by = accounts.parse(payload)
+	local list, teachers_by, version = accounts.parse(payload)
 	if not list then
 		return false, "the order cannot be read"
 	end
@@ -72,6 +72,7 @@ lep_bridge.register_job(reports.JOB_CREATE_ACCOUNTS, function(payload)
 	if teachers_by then
 		for _, name in ipairs(created) do
 			record(teachers_by, "web:create_teacher", name)
+			lep_bridge._note_staff_password(name, version)
 		end
 	end
 	-- The job is done once the accounts exist. The rooms follow in the

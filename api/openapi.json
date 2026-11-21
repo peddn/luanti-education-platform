@@ -3288,6 +3288,15 @@
           "teacher": {
             "type": "boolean",
             "description": "True if the accounts are for teachers: the world gives them\nthe privileges of the bundle for teachers. Only the school\nadministration orders that."
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The version of the passwords, for accounts of teachers.",
+            "minimum": 0
           }
         }
       },
@@ -4064,16 +4073,25 @@
         "type": "object",
         "description": "An account a world shall create.",
         "required": [
-          "name",
-          "password"
+          "name"
         ],
         "properties": {
+          "entry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What a world stores of the password, for a teacher: a salt\nand a verifier. The password cannot be worked out from it,\nand all worlds get the same."
+          },
           "name": {
             "type": "string"
           },
           "password": {
-            "type": "string",
-            "description": "The start password. The world stores only its hash."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The start password. The world stores only its hash. Missing\nif `entry` is given."
           }
         }
       },
@@ -4666,6 +4684,36 @@
           }
         }
       },
+      "SetPasswordEntry": {
+        "type": "object",
+        "description": "Payload of the job \"set_password_entry\". A world takes it for\nteachers and for the school administration, never for its admin.",
+        "required": [
+          "name",
+          "entry",
+          "version"
+        ],
+        "properties": {
+          "by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Account name of the member of the school administration who\nordered a new start password. Missing if the teacher chose\nthe password in another world."
+          },
+          "entry": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The version of the password. The world remembers it.",
+            "minimum": 0
+          }
+        }
+      },
       "SetRewards": {
         "type": "object",
         "description": "Payload of the job \"set_rewards\". The world checks the table,\ntakes it as a whole or not at all, and writes the change into\nthe protocol of the desk. It answers with a fixed word: \"set\", or\nthe row that is wrong.",
@@ -4815,6 +4863,47 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StaffAccount"
+            }
+          }
+        }
+      },
+      "StaffPassword": {
+        "type": "object",
+        "description": "What a world stores of the password of one teacher.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "changed": {
+            "type": "boolean",
+            "description": "True if the password was changed in this world since."
+          },
+          "entry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The entry of the engine: a salt and a verifier. The password\ncannot be worked out from it. Missing while the world has an\nolder form of entry, which never leaves it: that is so until\nsomebody has logged in with the account once."
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The version of the password the entry is built on: the one\nthe backend named when it had this world write it last. 0 if\nit never did.",
+            "minimum": 0
+          }
+        }
+      },
+      "StaffPasswords": {
+        "type": "object",
+        "description": "Payload of the event \"staff_passwords\": what a world stores of\nthe passwords of its teachers. It replaces what the backend knew\nbefore. The admin of the world is never in it.",
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffPassword"
             }
           }
         }

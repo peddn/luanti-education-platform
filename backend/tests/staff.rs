@@ -211,11 +211,16 @@ async fn the_school_administration_creates_a_teacher_in_every_world() {
 
     let orders = setup.waiting("create_accounts").await;
     assert_eq!(orders.len(), 2, "one per world");
+    // The worlds never see the password: they get what the engine
+    // stores of it, the same in every world.
+    let stored = orders[0].1["accounts"][0]["entry"].as_str().unwrap();
+    assert!(stored.starts_with("#1#"), "{stored}");
+    assert!(!orders[0].1.to_string().contains(password));
     for (_, payload) in &orders {
         assert_eq!(
             payload,
-            &json!({ "accounts": [{ "name": "frau_meier", "password": password }],
-                "teacher": true, "by": "leitung" })
+            &json!({ "accounts": [{ "name": "frau_meier", "entry": stored }],
+                "teacher": true, "by": "leitung", "version": 1 })
         );
     }
     let list = setup.staff().await;
@@ -249,6 +254,32 @@ async fn the_school_administration_creates_a_teacher_in_every_world() {
     assert!(entry(&list, "lehrer1").unwrap().get("state").is_none());
     assert_eq!(entry(&list, "leitung").unwrap()["school_admin"], true);
     assert_eq!(entry(&list, "leitung").unwrap()["web_access"], "confirmed");
+
+    // A new start password goes out the same way, as the next version.
+    let (status, slips) = setup
+        .web(
+            Method::POST,
+            &format!("{STAFF}/frau_meier/password"),
+            &setup.leitung,
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let password = slips["slips"][0]["password"].as_str().unwrap();
+    assert!(setup.waiting("set_password").await.is_empty());
+    let orders = setup.waiting("set_password_entry").await;
+    assert_eq!(orders.len(), 2, "one per world");
+    let renewed = orders[0].1["entry"].as_str().unwrap();
+    assert_ne!(renewed, stored);
+    for (_, payload) in &orders {
+        assert_eq!(
+            payload,
+            &json!({ "name": "frau_meier", "entry": renewed, "version": 2, "by": "leitung" })
+        );
+        assert!(!payload.to_string().contains(password));
+    }
+    let list = setup.staff().await;
+    assert_eq!(entry(&list, "frau_meier").unwrap()["password"], "pending");
 }
 
 #[tokio::test]
