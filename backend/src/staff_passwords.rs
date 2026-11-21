@@ -219,12 +219,9 @@ pub async fn note(
             .iter()
             .find(|reported| reported.name == kept.account);
         match reported {
-            Some(reported) if is_entry(&reported.entry) => {
+            Some(reported) => {
                 wake.extend(note_present(pool, world_id, kept, reported).await?);
             }
-            // An entry in an older form: the account is there, but
-            // nothing can be done with it.
-            Some(_) => {}
             None => {
                 if note_missing(pool, world_id, &kept).await? {
                     wake.insert(world_id.to_owned());
@@ -253,7 +250,10 @@ async fn note_present(
             .await?;
     }
     let newest = reported.version == kept.version;
-    let same = kept.entry.as_deref() == Some(reported.entry.as_str());
+    // A world that names no entry has one that never leaves it: nobody
+    // has logged in there with the account yet.
+    let named = reported.entry.as_deref().filter(|entry| is_entry(entry));
+    let same = named.is_some() && kept.entry.as_deref() == named;
     sqlx::query(
         "INSERT INTO staff_worlds (world_id, account, in_step) VALUES (?1, ?2, ?3)
          ON CONFLICT (world_id, account) DO UPDATE SET in_step = ?3",
@@ -270,36 +270,25 @@ async fn note_present(
         if (!newest || reported.changed)
             && !is_waiting(pool, world_id, JOB_SET_PASSWORD_ENTRY, &kept.account).await?
         {
-            order_entry(pool, world_id, &kept.account, &reported.entry, kept.version).await?;
-            return Ok(vec![world_id.to_owned()]);
+            if let Some(entry) = &kept.entry {
+                order_entry(pool, world_id, &kept.account, entry, kept.version).await?;
+                return Ok(vec![world_id.to_owned()]);
+            }
         }
         return Ok(Vec::new());
     }
-    if newest && reported.changed {
-        // Somebody chose a new password in this world.
-        return pass_on(
-            pool,
-            world_id,
-            &kept.account,
-            &reported.entry,
-            kept.version + 1,
-            true,
-        )
-        .await;
+    if let (Some(entry), true, true) = (named, newest, reported.changed) {
+        // Somebody chose a new password in this world, or logged in for
+        // the first time.
+        return pass_on(pool, world_id, &kept.account, entry, kept.version + 1, true).await;
     }
     let Some(entry) = &kept.entry else {
         // Every world got a start password and hashed it for itself.
         // The first one that has done so names the entry for all.
-        if newest && may_name_entry(pool, world_id, &kept.account).await? {
-            return pass_on(
-                pool,
-                world_id,
-                &kept.account,
-                &reported.entry,
-                kept.version,
-                false,
-            )
-            .await;
+        if let (Some(named), true) = (named, newest) {
+            if may_name_entry(pool, world_id, &kept.account).await? {
+                return pass_on(pool, world_id, &kept.account, named, kept.version, false).await;
+            }
         }
         return Ok(Vec::new());
     };

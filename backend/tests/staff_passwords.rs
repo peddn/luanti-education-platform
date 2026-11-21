@@ -20,7 +20,8 @@ struct Setup {
 fn account(name: &str, entry: &str, version: u32, changed: bool) -> StaffPassword {
     StaffPassword {
         name: name.to_owned(),
-        entry: entry.to_owned(),
+        // Without an entry: the world keeps what it has to itself.
+        entry: (!entry.is_empty()).then(|| entry.to_owned()),
         version,
         changed,
     }
@@ -359,15 +360,14 @@ async fn only_teachers_created_here_are_kept_in_step() {
     .execute(&setup.pool)
     .await
     .unwrap();
-    // A teacher made in the game, a student with a privilege, and an
-    // entry that is none.
+    // A teacher made in the game and a student with a privilege.
     assert!(setup
         .report(
             &setup.first,
             vec![
                 account("lehrer1", E2, 0, true),
                 account("klugeEule", E2, 0, true),
-                account("frau_meier", "#1#no entry", 1, true),
+                account("frau_meier", E1, 1, false),
             ]
         )
         .await
@@ -378,6 +378,23 @@ async fn only_teachers_created_here_are_kept_in_step() {
         .await
         .unwrap();
     assert_eq!(jobs, 0);
+
+    // An entry that is none is never passed on: the world gets the one
+    // that counts.
+    assert_eq!(
+        setup
+            .report(
+                &setup.first,
+                vec![account("frau_meier", "#1#no entry", 1, true)]
+            )
+            .await,
+        vec![setup.first.clone()]
+    );
+    assert_eq!(setup.kept().await, (Some(E1.to_owned()), 1));
+    assert_eq!(
+        setup.work(&setup.first, true).await,
+        vec![entry_order(E1, 1)]
+    );
 
     // While the account is being deleted, nothing is passed on.
     staff::remove(&setup.pool, "frau_meier", "leitung")
@@ -393,6 +410,64 @@ async fn only_teachers_created_here_are_kept_in_step() {
     // Deleted: nothing about the password stays.
     staff::forget(&setup.pool, "frau_meier").await.unwrap();
     assert!(setup.arrived().await.is_empty());
+}
+
+#[tokio::test]
+async fn the_first_login_gives_all_worlds_the_same_entry() {
+    let setup = Setup::new().await;
+    setup.work(&setup.first, true).await;
+    setup.work(&setup.second, true).await;
+    // Nobody has logged in: both worlds have the account and keep what
+    // they store of the start password to themselves.
+    for world in [&setup.first, &setup.second] {
+        assert!(setup
+            .report(world, vec![account("frau_meier", "", 1, false)])
+            .await
+            .is_empty());
+    }
+    assert_eq!(setup.kept().await, (None, 1));
+    assert_eq!(
+        setup.arrived().await,
+        vec![("7b".to_owned(), false), ("8a".to_owned(), false)]
+    );
+    // A world that is created now waits for the first login.
+    let (third, _) = worlds::add(&setup.pool, "9c").await.unwrap();
+    assert!(setup.report(&third.id, Vec::new()).await.is_empty());
+
+    // The teacher logs in in the second world.
+    let mut woken = setup
+        .report(&setup.second, vec![account("frau_meier", E2, 1, true)])
+        .await;
+    woken.sort();
+    let mut both = vec![setup.first.clone(), setup.second.clone()];
+    both.sort();
+    assert_eq!(woken, both);
+    assert_eq!(setup.kept().await, (Some(E2.to_owned()), 2));
+    assert_eq!(
+        setup.work(&setup.first, true).await,
+        vec![entry_order(E2, 2)]
+    );
+    assert_eq!(
+        setup.report(&third.id, Vec::new()).await,
+        vec![third.id.clone()]
+    );
+
+    // A world that still has the old form is brought in step, even when
+    // it missed the order.
+    sqlx::query("DELETE FROM jobs WHERE kind = 'set_password_entry'")
+        .execute(&setup.pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        setup
+            .report(&setup.first, vec![account("frau_meier", "", 1, false)])
+            .await,
+        vec![setup.first.clone()]
+    );
+    assert_eq!(
+        setup.work(&setup.first, true).await,
+        vec![entry_order(E2, 2)]
+    );
 }
 
 #[tokio::test]

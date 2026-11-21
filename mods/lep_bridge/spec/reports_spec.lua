@@ -126,19 +126,27 @@ describe("lep_bridge reports", function()
 		local function record_of(name)
 			return reports.parse_staff_password_record(records[name])
 		end
+		local function may_leave(text)
+			return text:sub(1, 3) == "#1#"
+		end
+		records.lehrer4 = reports.staff_password_record(2, mark_of("legacy"))
 		local payload = reports.staff_passwords({
 			{ name = "lehrer1", entry = entry },
 			{ name = "lehrer2", entry = other },
 			-- Made in the game: the backend never wrote anything.
 			{ name = "lehrer3", entry = other },
-		}, record_of, mark_of)
+			-- Never logged in: what is stored stays in the world.
+			{ name = "lehrer4", entry = "legacy" },
+		}, record_of, mark_of, may_leave)
 		assert.is_true(fits("StaffPasswords", payload))
 		assert.are.same({ accounts = {
 			{ name = "lehrer1", entry = entry, version = 3, changed = false },
 			{ name = "lehrer2", entry = other, version = 3, changed = true },
 			{ name = "lehrer3", entry = other, version = 0, changed = true },
+			{ name = "lehrer4", version = 2, changed = false },
 		} }, payload)
-		assert.is_true(fits("StaffPasswords", reports.staff_passwords({}, record_of, mark_of)))
+		assert.is_true(fits("StaffPasswords",
+			reports.staff_passwords({}, record_of, mark_of, may_leave)))
 		assert.are.equal("staff_passwords", reports.EVENT_STAFF_PASSWORDS)
 		assert.are.equal("set_password_entry", reports.JOB_SET_PASSWORD_ENTRY)
 
@@ -149,7 +157,7 @@ describe("lep_bridge reports", function()
 		for _, change in ipairs({ { "entry", entry }, { "version", 4 }, { "changed", false } }) do
 			local copy = reports.staff_passwords({ { name = "lehrer1", entry = entry },
 				{ name = "lehrer2", entry = other }, { name = "lehrer3", entry = other } },
-				record_of, mark_of)
+				record_of, mark_of, may_leave)
 			copy.accounts[2][change[1]] = change[2]
 			assert.are_not.equal(mark, reports.staff_passwords_mark(copy), change[1])
 		end

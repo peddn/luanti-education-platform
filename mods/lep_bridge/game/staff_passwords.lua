@@ -6,6 +6,10 @@
 -- the backend passes on from another world. No password is ever seen
 -- here, and no entry is written into a log.
 --
+-- Until a teacher has logged in once, the engine stores an older form
+-- of entry that is as good as the password. That one never leaves the
+-- world: the account is reported without it.
+--
 -- The backend counts the passwords of a teacher: each new one is a new
 -- version. The world remembers which version it was told to write, and
 -- says with every report whether the password was changed here since.
@@ -40,7 +44,7 @@ local reported
 
 local function report(always)
 	local payload = reports.staff_passwords(lep_accounts.get_staff_entries(), record_of,
-		core.sha256)
+		core.sha256, lep_accounts.is_password_entry)
 	local mark = reports.staff_passwords_mark(payload)
 	if always or mark ~= reported then
 		reported = mark

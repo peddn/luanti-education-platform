@@ -4873,8 +4873,7 @@
         "type": "object",
         "description": "What a world stores of the password of one teacher.",
         "required": [
-          "name",
-          "entry"
+          "name"
         ],
         "properties": {
           "changed": {
@@ -4882,8 +4881,11 @@
             "description": "True if the password was changed in this world since."
           },
           "entry": {
-            "type": "string",
-            "description": "The entry of the engine: a salt and a verifier. The password\ncannot be worked out from it."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The entry of the engine: a salt and a verifier. The password\ncannot be worked out from it. Missing while the world has an\nolder form of entry, which never leaves it: that is so until\nsomebody has logged in with the account once."
           },
           "name": {
             "type": "string"

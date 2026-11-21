@@ -144,10 +144,19 @@ function lep_accounts.set_password_entry(name, entry)
 	return true, true
 end
 
+--- Returns true if a text is an entry of a password that may be passed
+-- on to another world: the password cannot be worked out from it, and
+-- nobody can log in with it. Until an account was used once, the engine
+-- stores an older form that is as good as the password itself.
+function lep_accounts.is_password_entry(text)
+	return accounts.is_entry(text)
+end
+
 --- Returns what this world stores of the passwords of its teachers:
 -- a list of tables with name and entry, sorted by name. The admin and
 -- whoever can hand out privileges or run the server are never in it,
--- and no student is.
+-- and no student is. Not every entry may leave the world: see
+-- lep_accounts.is_password_entry.
 function lep_accounts.get_staff_entries()
 	local handler = core.get_auth_handler()
 	local ordinary, admin = ordinary_privileges(), core.settings:get("name")
@@ -159,8 +168,7 @@ function lep_accounts.get_staff_entries()
 	local list = {}
 	for _, name in ipairs(names) do
 		local entry = handler.get_auth(name)
-		if entry and accounts.is_entry(entry.password)
-				and accounts.is_staff(name, own_privileges(name), ordinary, admin) then
+		if entry and accounts.is_staff(name, own_privileges(name), ordinary, admin) then
 			list[#list + 1] = { name = name, entry = entry.password }
 		end
 	end

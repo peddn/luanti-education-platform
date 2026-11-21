@@ -1723,9 +1723,11 @@ export interface components {
             changed?: boolean;
             /**
              * @description The entry of the engine: a salt and a verifier. The password
-             *     cannot be worked out from it.
+             *     cannot be worked out from it. Missing while the world has an
+             *     older form of entry, which never leaves it: that is so until
+             *     somebody has logged in with the account once.
              */
-            entry: string;
+            entry?: string | null;
             name: string;
             /**
              * Format: int32

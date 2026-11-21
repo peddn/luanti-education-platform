@@ -224,13 +224,15 @@ end
 -- @param record_of Function(name) that returns the version and the mark
 --   of the entry the backend had this world write last, or nil.
 -- @param mark_of Function(entry) that returns the mark of an entry.
-function reports.staff_passwords(list, record_of, mark_of)
+-- @param may_leave Function(entry) that returns true if an entry may be
+--   passed on. An account with another one is named without it.
+function reports.staff_passwords(list, record_of, mark_of, may_leave)
 	local copy = {}
 	for index, account in ipairs(list or {}) do
 		local version, mark = record_of(account.name)
 		copy[index] = {
 			name = tostring(account.name),
-			entry = tostring(account.entry),
+			entry = may_leave(account.entry) and tostring(account.entry) or nil,
 			-- The version the password here is built on, and whether it
 			-- was changed in this world since.
 			version = whole(version or 0),
@@ -245,7 +247,7 @@ end
 function reports.staff_passwords_mark(payload)
 	local parts = {}
 	for index, account in ipairs(payload.accounts) do
-		parts[index] = table.concat({ account.name, account.entry, account.version,
+		parts[index] = table.concat({ account.name, tostring(account.entry), account.version,
 			tostring(account.changed) }, " ")
 	end
 	return table.concat(parts, "\n")

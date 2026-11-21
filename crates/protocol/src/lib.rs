@@ -387,8 +387,11 @@ pub mod world {
     pub struct StaffPassword {
         pub name: String,
         /// The entry of the engine: a salt and a verifier. The password
-        /// cannot be worked out from it.
-        pub entry: String,
+        /// cannot be worked out from it. Missing while the world has an
+        /// older form of entry, which never leaves it: that is so until
+        /// somebody has logged in with the account once.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub entry: Option<String>,
         /// The version of the password the entry is built on: the one
         /// the backend named when it had this world write it last. 0 if
         /// it never did.
