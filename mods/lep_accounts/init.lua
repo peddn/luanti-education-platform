@@ -6,6 +6,7 @@ local load = lep_core.loader(core.get_current_modname())
 
 lep_accounts = {}
 
+load("game/managed")
 load("game/api")
 load("game/door")
 load("game/admin")

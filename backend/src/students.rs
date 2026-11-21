@@ -314,7 +314,6 @@ pub async fn create(
     let payload = CreateAccounts {
         teacher: false,
         by: None,
-        version: None,
         accounts: slips
             .iter()
             .map(|slip| NewAccount {

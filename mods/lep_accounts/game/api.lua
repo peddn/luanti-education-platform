@@ -42,23 +42,14 @@ local function ordinary_privileges()
 	return accounts.privilege_set(core.settings:get("default_privs"))
 end
 
--- The privileges an account holds by itself. What a student holds only
--- because of the room they are in does not make them a teacher.
-local function own_privileges(name)
-	local privileges = core.get_player_privs(name)
-	if core.global_exists("lep_places") then
-		privileges = accounts.without(privileges, lep_places.get_granted_privileges(name))
-	end
-	return privileges
-end
-
 --- Creates accounts with a start password each.
 -- An account that exists is never touched: its name is refused. Only an
 -- account that exists with exactly this password counts as created,
 -- because then the same order was done before.
 -- @param list List of tables with name and password. A teacher may
---   come with `entry` instead: what another world stores of their
---   password. Then they have the same password here.
+--   come with `entry` instead: what the engine stores of the password.
+--   Such an account is managed from then on: its password is the same
+--   in every world and cannot be changed inside the game.
 -- @param options Optional table. With teacher = true the new accounts
 --   get the privileges of the bundle for teachers on top, as far as this
 --   world knows them. An account that existed before gets nothing.
@@ -84,6 +75,9 @@ function lep_accounts.create(list, options)
 				end
 				core.set_player_privs(entry.name, privileges)
 			end
+			if entry.entry then
+				lep_accounts._set_managed(entry.name, true)
+			end
 			lep_accounts._release_name(entry.name)
 			created[#created + 1] = entry.name
 			core.log("action", "[lep_accounts] account " .. entry.name .. " created"
@@ -102,10 +96,23 @@ end
 -- Privileges that come from the place a player is in do not count.
 -- Who is in the game stays in; the new password counts from the next
 -- login.
--- @return true, or false and why not: "unknown", "staff" or "invalid"
+-- An account whose password is managed in the web application is
+-- refused as well: it gets its passwords with set_password_entry.
+-- @return true, or false and why not: "unknown", "staff", "managed" or
+--   "invalid"
 function lep_accounts.set_password(name, password, options)
+	if lep_accounts.is_managed(name) then
+		core.log("warning", "[lep_accounts] password for " .. tostring(name)
+			.. " not set: " .. accounts.MANAGED)
+		return false, accounts.MANAGED
+	end
 	local exists = lep_accounts.exists(name)
-	local privileges = exists and own_privileges(name) or {}
+	local privileges = exists and core.get_player_privs(name) or {}
+	if exists and core.global_exists("lep_places") then
+		-- What a student holds only because of the room they are in does
+		-- not make them a teacher.
+		privileges = accounts.without(privileges, lep_places.get_granted_privileges(name))
+	end
 	local ok, why = accounts.may_set_password(name, password, exists, privileges,
 		ordinary_privileges(), options ~= nil and options.staff == true,
 		core.settings:get("name"))
@@ -119,59 +126,25 @@ function lep_accounts.set_password(name, password, options)
 	return true
 end
 
---- Writes what another world stores of the password of a teacher, so
--- the teacher has the same password here. The password itself is not
--- known and cannot be worked out. Refused for the admin, for whoever
--- can hand out privileges or run the server, and for students.
--- Who is in the game stays in.
--- @return true and whether something changed, or false and why not:
---   "unknown", "staff", "ordinary" or "invalid"
+--- Gives a teacher a new password, as what the engine stores of it.
+-- The backend sends the same to every world, so the teacher has one
+-- password everywhere, and the password itself is never seen here.
+-- Only for accounts this world created on order as teachers. Refused
+-- for the admin and for whoever can hand out privileges or run the
+-- server. Who is in the game stays in.
+-- @return true, or false and why not: "unknown", "unmanaged", "staff"
+--   or "invalid"
 function lep_accounts.set_password_entry(name, entry)
 	local exists = lep_accounts.exists(name)
 	local ok, why = accounts.may_set_entry(name, entry, exists,
-		exists and own_privileges(name) or {}, ordinary_privileges(),
+		lep_accounts.is_managed(name), exists and core.get_player_privs(name) or {},
 		core.settings:get("name"))
 	if not ok then
-		core.log("warning", "[lep_accounts] password of " .. tostring(name)
-			.. " not taken over: " .. why)
+		core.log("warning", "[lep_accounts] password for " .. tostring(name)
+			.. " not set: " .. why)
 		return false, why
 	end
-	if has_entry(name, entry) then
-		return true, false
-	end
-	core.get_auth_handler().set_password(name, entry)
-	core.log("action", "[lep_accounts] password of " .. name .. " taken over")
-	return true, true
-end
-
---- Returns true if a text is an entry of a password that may be passed
--- on to another world: the password cannot be worked out from it, and
--- nobody can log in with it. A password that was set in the world as
--- plain text, by a command or by an order with a start password, is
--- stored in an older form that is as good as the password itself.
-function lep_accounts.is_password_entry(text)
-	return accounts.is_entry(text)
-end
-
---- Returns what this world stores of the passwords of its teachers:
--- a list of tables with name and entry, sorted by name. The admin and
--- whoever can hand out privileges or run the server are never in it,
--- and no student is. Not every entry may leave the world: see
--- lep_accounts.is_password_entry.
-function lep_accounts.get_staff_entries()
-	local handler = core.get_auth_handler()
-	local ordinary, admin = ordinary_privileges(), core.settings:get("name")
-	local names = {}
-	for name in handler.iterate() do
-		names[#names + 1] = name
-	end
-	table.sort(names)
-	local list = {}
-	for _, name in ipairs(names) do
-		local entry = handler.get_auth(name)
-		if entry and accounts.is_staff(name, own_privileges(name), ordinary, admin) then
-			list[#list + 1] = { name = name, entry = entry.password }
-		end
-	end
-	return list
+	lep_accounts._write_password(name, entry)
+	core.log("action", "[lep_accounts] password of " .. name .. " set")
+	return true
 end

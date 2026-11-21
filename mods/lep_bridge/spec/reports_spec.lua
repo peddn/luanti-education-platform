@@ -112,63 +112,6 @@ describe("lep_bridge reports", function()
 			reports.teachers({ "lehrer1" }))
 	end)
 
-	it("reports the passwords of teachers with their version", function()
-		local entry, other = "#1#c2FsdDE#dmVyaWZpZXIx", "#1#c2FsdDI#dmVyaWZpZXIy"
-		local function mark_of(text)
-			return "mark-of-" .. #text .. text:sub(-1)
-		end
-		local records = {
-			-- Written on order of the backend and untouched since.
-			lehrer1 = reports.staff_password_record(3, mark_of(entry)),
-			-- Changed in this world since.
-			lehrer2 = reports.staff_password_record(3, mark_of(entry)),
-		}
-		local function record_of(name)
-			return reports.parse_staff_password_record(records[name])
-		end
-		local function may_leave(text)
-			return text:sub(1, 3) == "#1#"
-		end
-		records.lehrer4 = reports.staff_password_record(2, mark_of("legacy"))
-		local payload = reports.staff_passwords({
-			{ name = "lehrer1", entry = entry },
-			{ name = "lehrer2", entry = other },
-			-- Made in the game: the backend never wrote anything.
-			{ name = "lehrer3", entry = other },
-			-- Set by a command in the world: what is stored stays there.
-			{ name = "lehrer4", entry = "legacy" },
-		}, record_of, mark_of, may_leave)
-		assert.is_true(fits("StaffPasswords", payload))
-		assert.are.same({ accounts = {
-			{ name = "lehrer1", entry = entry, version = 3, changed = false },
-			{ name = "lehrer2", entry = other, version = 3, changed = true },
-			{ name = "lehrer3", entry = other, version = 0, changed = true },
-			{ name = "lehrer4", version = 2, changed = false },
-		} }, payload)
-		assert.is_true(fits("StaffPasswords",
-			reports.staff_passwords({}, record_of, mark_of, may_leave)))
-		assert.are.equal("staff_passwords", reports.EVENT_STAFF_PASSWORDS)
-		assert.are.equal("set_password_entry", reports.JOB_SET_PASSWORD_ENTRY)
-
-		-- The mark tells every change apart: entry, version and whether
-		-- it was changed here.
-		local mark = reports.staff_passwords_mark(payload)
-		assert.are.equal(mark, reports.staff_passwords_mark(payload))
-		for _, change in ipairs({ { "entry", entry }, { "version", 4 }, { "changed", false } }) do
-			local copy = reports.staff_passwords({ { name = "lehrer1", entry = entry },
-				{ name = "lehrer2", entry = other }, { name = "lehrer3", entry = other } },
-				record_of, mark_of, may_leave)
-			copy.accounts[2][change[1]] = change[2]
-			assert.are_not.equal(mark, reports.staff_passwords_mark(copy), change[1])
-		end
-		assert.are_not.equal(mark, reports.staff_passwords_mark({ accounts = {} }))
-
-		assert.are.same({ 3, "abc" }, { reports.parse_staff_password_record("3 abc") })
-		assert.is_nil(reports.parse_staff_password_record(""))
-		assert.is_nil(reports.parse_staff_password_record(nil))
-		assert.is_nil(reports.parse_staff_password_record("abc"))
-	end)
-
 	it("builds requests about web access as the backend expects them", function()
 		local set = reports.web_access("lehrer1", "set", "anna@schule.example")
 		assert.is_true(fits("WebAccessRequest", set))

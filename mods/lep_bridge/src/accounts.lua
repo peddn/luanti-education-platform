@@ -8,22 +8,11 @@ local function is_name(value)
 	return type(value) == "string" and value:match("^[%w_-]+$") ~= nil and #value <= 60
 end
 
--- Reads the version of a password: a whole number from 0 on, or nil.
-local function version_of(value)
-	if type(value) == "number" and value >= 0 and value == math.floor(value)
-			and value < 2 ^ 31 then
-		return value
-	end
-	return nil
-end
-
 --- Reads the payload of the job "create_accounts".
 -- @return List of tables with name and password, or nil if the payload
---   cannot be read. A teacher may come with `entry` instead of a
---   password. Entries that are no table are left out. The second
+--   cannot be read. Entries that are no table are left out. The second
 --   value is nil for students; for teachers it is the account name of
---   the member of the school administration who ordered it. The third
---   is the version of the passwords, for teachers, or nil.
+--   the member of the school administration who ordered it.
 function accounts.parse(payload)
 	if type(payload) ~= "table" or type(payload.accounts) ~= "table" then
 		return nil
@@ -40,7 +29,8 @@ function accounts.parse(payload)
 	local list = {}
 	for _, entry in ipairs(payload.accounts) do
 		if type(entry) == "table" then
-			-- What is stored of a password is only taken for teachers.
+			-- What the engine stores of a password, instead of the
+			-- password: only taken for teachers.
 			if entry.entry ~= nil and not by then
 				return nil
 			end
@@ -48,7 +38,20 @@ function accounts.parse(payload)
 				entry = entry.entry }
 		end
 	end
-	return list, by, by and version_of(payload.version) or nil
+	return list, by
+end
+
+--- Reads the payload of the job "set_password_entry": a new password
+-- for a teacher, as what the engine stores of it.
+-- @return name, entry and the account name of who ordered it, or nil if
+--   the payload cannot be read.
+function accounts.parse_entry(payload)
+	if type(payload) ~= "table" or not is_name(payload.name)
+			or type(payload.entry) ~= "string" or payload.entry == ""
+			or not is_name(payload.by) then
+		return nil
+	end
+	return payload.name, payload.entry, payload.by
 end
 
 --- Reads the payload of the job "set_password".
@@ -68,21 +71,6 @@ function accounts.parse_password(payload)
 		by = payload.by
 	end
 	return payload.name, payload.password, by
-end
-
---- Reads the payload of the job "set_password_entry".
--- @return name, entry and version, or nil if the payload cannot be read.
---   The fourth value is the account name of the member of the school
---   administration who ordered a new start password, or nil if the
---   password comes from another world.
-function accounts.parse_entry(payload)
-	if type(payload) ~= "table" or not is_name(payload.name)
-			or type(payload.entry) ~= "string" or payload.entry == ""
-			or not version_of(payload.version)
-			or payload.by ~= nil and not is_name(payload.by) then
-		return nil
-	end
-	return payload.name, payload.entry, payload.version, payload.by
 end
 
 --- Runs jobs one after the other. A job is a function(done) that calls

@@ -132,40 +132,47 @@ describe("lep_accounts", function()
 		assert.are.same({ "klugeEule" }, refused)
 	end)
 
-	it("keeps the passwords of teachers in step, never the ones of the admin", function()
-		local ordinary = { interact = true, shout = true }
+	it("takes a managed password only for accounts it created as teachers", function()
 		local teacher = { interact = true, shout = true, lep_web_access = true }
 		local school = { interact = true, lep_web_access = true, lep_manage_school = true }
-		assert.is_true(accounts.is_staff("lehrer1", teacher, ordinary, "tester"))
+		assert.is_true(accounts.may_set_entry("lehrer1", ENTRY, true, true, teacher, "tester"))
 		-- The school administration has one password everywhere too.
-		assert.is_true(accounts.is_staff("leitung", school, ordinary, "tester"))
-		assert.is_true(accounts.may_set_entry("leitung", ENTRY, true, school, ordinary, "tester"))
-		assert.is_true(accounts.may_set_entry("lehrer1", ENTRY, true, teacher, ordinary, "tester"))
+		assert.is_true(accounts.may_set_entry("leitung", ENTRY, true, true, school, "tester"))
+		-- Whatever its privileges are now: the world created it that way.
+		assert.is_true(accounts.may_set_entry("lehrer1", ENTRY, true, true, {}, "tester"))
 
-		assert.is_false(accounts.is_staff("klugeEule", ordinary, ordinary, "tester"))
-		assert.same({ false, accounts.ORDINARY }, { accounts.may_set_entry("klugeEule", ENTRY,
-			true, ordinary, ordinary, "tester") })
-
-		-- The admin, with or without privileges, and whoever could make
-		-- themselves one.
-		for _, held in ipairs({ teacher, {}, { privs = true }, { server = true } }) do
-			assert.is_false(accounts.is_staff("tester", held, ordinary, "tester"))
-			assert.same({ false, accounts.STAFF }, { accounts.may_set_entry("tester", ENTRY,
-				true, held, ordinary, "tester") })
+		-- Not for accounts the admin made by hand, whatever they hold,
+		-- and not for students.
+		for _, held in ipairs({ teacher, school, { interact = true, shout = true } }) do
+			assert.same({ false, accounts.UNMANAGED }, { accounts.may_set_entry("lehrer1", ENTRY,
+				true, false, held, "tester") })
 		end
+
+		-- Never for the admin and for whoever could make themselves one,
+		-- even if the account was created on order once.
+		assert.same({ false, accounts.STAFF }, { accounts.may_set_entry("tester", ENTRY,
+			true, true, teacher, "tester") })
 		for _, privilege in ipairs({ "privs", "server" }) do
 			local held = { lep_web_access = true, [privilege] = true }
-			assert.is_false(accounts.is_staff("lehrer1", held, ordinary, "tester"), privilege)
 			assert.same({ false, accounts.STAFF }, { accounts.may_set_entry("lehrer1", ENTRY,
-				true, held, ordinary, "tester") })
+				true, true, held, "tester") })
+			assert.is_true(accounts.is_locked("lehrer1", held, "tester"))
 		end
+		assert.is_false(accounts.is_locked("leitung", school, "tester"))
+		assert.is_true(accounts.is_locked("tester", {}, "tester"))
 
 		assert.same({ false, accounts.UNKNOWN }, { accounts.may_set_entry("lehrer1", ENTRY,
-			false, {}, ordinary, "tester") })
+			false, false, {}, "tester") })
 		assert.same({ false, accounts.INVALID }, { accounts.may_set_entry("lehrer1",
-			"wolke-apfel-47", true, teacher, ordinary, "tester") })
+			"wolke-apfel-47", true, true, teacher, "tester") })
 		assert.same({ false, accounts.INVALID }, { accounts.may_set_entry("lehrer 1", ENTRY,
-			true, teacher, ordinary, "tester") })
+			true, true, teacher, "tester") })
+	end)
+
+	it("lets only unmanaged accounts change their password in the game", function()
+		assert.is_true(accounts.may_change_in_game(false))
+		assert.is_true(accounts.may_change_in_game(nil))
+		assert.is_false(accounts.may_change_in_game(true))
 	end)
 
 	it("reads lists of privileges", function()

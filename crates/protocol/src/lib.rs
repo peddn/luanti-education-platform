@@ -77,9 +77,6 @@ pub mod world {
     /// Kind of the event that says a world has deleted an account with
     /// everything it knew about it.
     pub const EVENT_ACCOUNT_REMOVED: &str = "account_removed";
-    /// Kind of the event that carries what a world stores of the
-    /// passwords of its teachers.
-    pub const EVENT_STAFF_PASSWORDS: &str = "staff_passwords";
     /// Kind of the job that only checks the way to the world and back.
     pub const JOB_PING: &str = "ping";
     /// Kind of the job that makes a world send its whole state again.
@@ -96,8 +93,8 @@ pub mod world {
     /// account.
     pub const JOB_SET_PASSWORD: &str = "set_password";
 
-    /// Kind of the job that makes a world write what another world
-    /// stores of the password of a teacher.
+    /// Kind of the job that gives a teacher a new password, as what the
+    /// engine stores of it.
     pub const JOB_SET_PASSWORD_ENTRY: &str = "set_password_entry";
 
     /// Kind of the job that makes a world take the display name of a
@@ -375,55 +372,26 @@ pub mod world {
         /// if `entry` is given.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub password: Option<String>,
-        /// What a world stores of the password, for a teacher: a salt
-        /// and a verifier. The password cannot be worked out from it,
-        /// and all worlds get the same.
+        /// For a teacher, instead of the password: what the engine
+        /// stores of it, a salt and a verifier. The password cannot be
+        /// worked out from it, and every world gets the same. The world
+        /// marks such an account: its password is managed in the web
+        /// application and cannot be changed in the game.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub entry: Option<String>,
     }
 
-    /// What a world stores of the password of one teacher.
-    #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
-    pub struct StaffPassword {
-        pub name: String,
-        /// The entry of the engine: a salt and a verifier. The password
-        /// cannot be worked out from it. Missing while the world has an
-        /// older form of entry, which never leaves it: that is so until
-        /// somebody has logged in with the account once.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub entry: Option<String>,
-        /// The version of the password the entry is built on: the one
-        /// the backend named when it had this world write it last. 0 if
-        /// it never did.
-        #[serde(default)]
-        pub version: u32,
-        /// True if the password was changed in this world since.
-        #[serde(default)]
-        pub changed: bool,
-    }
-
-    /// Payload of the event "staff_passwords": what a world stores of
-    /// the passwords of its teachers. It replaces what the backend knew
-    /// before. The admin of the world is never in it.
-    #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
-    pub struct StaffPasswords {
-        #[serde(default, deserialize_with = "null_as_default")]
-        pub accounts: Vec<StaffPassword>,
-    }
-
-    /// Payload of the job "set_password_entry". A world takes it for
-    /// teachers and for the school administration, never for its admin.
+    /// Payload of the job "set_password_entry": a new password for a
+    /// teacher, as a salt and a verifier. A world takes it only for
+    /// accounts it created with such an entry, and never for its admin.
     #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct SetPasswordEntry {
         pub name: String,
         pub entry: String,
-        /// The version of the password. The world remembers it.
-        pub version: u32,
-        /// Account name of the member of the school administration who
-        /// ordered a new start password. Missing if the teacher chose
-        /// the password in another world.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub by: Option<String>,
+        /// Account name of who ordered it: a member of the school
+        /// administration, or the teacher. The world writes it into the
+        /// protocol of the desk.
+        pub by: String,
     }
 
     /// Payload of the job "create_accounts".
@@ -439,9 +407,6 @@ pub mod world {
         /// world writes it into the protocol of the desk.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub by: Option<String>,
-        /// The version of the passwords, for accounts of teachers.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub version: Option<u32>,
     }
 
     /// Payload of the job "set_password". A world sets the password only

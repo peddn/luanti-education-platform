@@ -207,7 +207,7 @@ async fn the_school_administration_creates_a_teacher_in_every_world() {
     assert_eq!(slips["slips"][0]["account"], "frau_meier");
     let password = slips["slips"][0]["password"].as_str().unwrap();
     // Longer than the one of a student: four words and four digits.
-    assert_eq!(password.split('-').count(), 6, "{password}");
+    assert_eq!(password.split('-').count(), 9, "{password}");
 
     let orders = setup.waiting("create_accounts").await;
     assert_eq!(orders.len(), 2, "one per world");
@@ -220,7 +220,7 @@ async fn the_school_administration_creates_a_teacher_in_every_world() {
         assert_eq!(
             payload,
             &json!({ "accounts": [{ "name": "frau_meier", "entry": stored }],
-                "teacher": true, "by": "leitung", "version": 1 })
+                "teacher": true, "by": "leitung" })
         );
     }
     let list = setup.staff().await;
@@ -274,12 +274,81 @@ async fn the_school_administration_creates_a_teacher_in_every_world() {
     for (_, payload) in &orders {
         assert_eq!(
             payload,
-            &json!({ "name": "frau_meier", "entry": renewed, "version": 2, "by": "leitung" })
+            &json!({ "name": "frau_meier", "entry": renewed, "by": "leitung" })
         );
         assert!(!payload.to_string().contains(password));
     }
     let list = setup.staff().await;
     assert_eq!(entry(&list, "frau_meier").unwrap()["password"], "pending");
+
+    // A second new password before a world fetched the first: only the
+    // newer one is left to fetch.
+    for world in [&setup.first, &setup.second] {
+        sqlx::query("UPDATE jobs SET delivered_at = NULL WHERE world_id = ?")
+            .bind(world)
+            .execute(&setup.state.db)
+            .await
+            .unwrap();
+    }
+    setup
+        .web(
+            Method::POST,
+            &format!("{STAFF}/frau_meier/password"),
+            &setup.leitung,
+            None,
+        )
+        .await;
+    let orders = setup.waiting("set_password_entry").await;
+    assert_eq!(orders.len(), 2, "one per world");
+    assert_ne!(orders[0].1["entry"], renewed);
+
+    // A world that is created later gets the teacher with the password
+    // that counts now, and nothing about an account that was refused.
+    sqlx::query(
+        "INSERT INTO staff_accounts (account, state, created_at, created_by, password_entry)
+         VALUES ('herr_alt', 'refused', 0, 'leitung', '#1#YQ#Yg')",
+    )
+    .execute(&setup.state.db)
+    .await
+    .unwrap();
+    let (third, _) = lep_backend::worlds::add(&setup.state.db, "9c")
+        .await
+        .unwrap();
+    let orders = jobs::take_waiting(&setup.state.db, &third.id)
+        .await
+        .unwrap();
+    assert_eq!(orders.len(), 1);
+    assert_eq!(orders[0].kind, "create_accounts");
+    assert_eq!(
+        orders[0].payload,
+        json!({ "accounts": [{ "name": "frau_meier", "entry": orders_entry(&setup).await }],
+            "teacher": true, "by": "leitung" })
+    );
+
+    // Not a teacher who is being deleted.
+    setup
+        .web(
+            Method::POST,
+            &format!("{STAFF}/frau_meier/removal"),
+            &setup.leitung,
+            Some(json!({ "confirm": "frau_meier" })),
+        )
+        .await;
+    let (fourth, _) = lep_backend::worlds::add(&setup.state.db, "9d")
+        .await
+        .unwrap();
+    let orders = jobs::take_waiting(&setup.state.db, &fourth.id)
+        .await
+        .unwrap();
+    assert!(orders.iter().all(|job| job.kind != "create_accounts"));
+}
+
+/// What the backend keeps of the password of "frau_meier".
+async fn orders_entry(setup: &Setup) -> String {
+    sqlx::query_scalar("SELECT password_entry FROM staff_accounts WHERE account = 'frau_meier'")
+        .fetch_one(&setup.state.db)
+        .await
+        .unwrap()
 }
 
 #[tokio::test]

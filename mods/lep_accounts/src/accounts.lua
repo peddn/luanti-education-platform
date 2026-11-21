@@ -42,8 +42,8 @@ end
 --   has_password(name, pw) returns true if the account has this password
 --   has_entry(name, entry) returns true if exactly this is stored of the
 --                          password of the account
--- @param entries_allowed True if accounts may come with the entry of a
---   password instead of a password: only for teachers.
+-- @param entries_allowed True if accounts may come with what the engine
+--   stores of a password instead of the password: only for teachers.
 -- @return to_create (list of name and password or entry), created (names
 --   that exist already with exactly this password, from an earlier run of
 --   the same order), refused (names)
@@ -129,23 +129,16 @@ function accounts.is_protected(name, privileges, admin)
 	return false
 end
 
---- Returns true if nothing about the password of an account ever goes
--- in or out: the admin from the settings and whoever can hand out
--- privileges or run the server. The school administration is not among
--- them: its members shall have one password in all worlds too.
+--- Returns true if an account never gets a password from outside,
+-- not even one the backend manages: the admin from the settings and
+-- whoever can hand out privileges or run the server. The school
+-- administration is not among them: its members have one password in
+-- all worlds like every teacher.
 function accounts.is_locked(name, privileges, admin)
 	if type(admin) == "string" and admin ~= "" and name == admin then
 		return true
 	end
 	return privileges.privs == true or privileges.server == true
-end
-
---- Returns true if an account is one whose password is kept the same
--- in all worlds: it holds more than every new player gets, and it is
--- not locked. Students are left out: they live in one world.
-function accounts.is_staff(name, privileges, ordinary, admin)
-	return not accounts.is_ordinary(privileges, ordinary)
-		and not accounts.is_locked(name, privileges, admin)
 end
 
 --- Decides whether an order from outside may touch an account, as far
@@ -181,24 +174,34 @@ end
 accounts.UNKNOWN = "unknown"
 accounts.STAFF = "staff"
 accounts.INVALID = "invalid"
-accounts.ORDINARY = "ordinary"
+accounts.UNMANAGED = "unmanaged"
+accounts.MANAGED = "managed"
 
---- Decides whether the entry of a password may be written for an
--- account from outside. That is how a password a teacher chose in one
--- world arrives in the others.
--- @return true, or false and why not: INVALID, UNKNOWN, STAFF (the
---   account is locked) or ORDINARY (it is the account of a student)
-function accounts.may_set_entry(name, entry, exists, privileges, ordinary, admin)
+--- Decides whether what the engine stores of a password may be written
+-- for an account from outside. Only for accounts this world created on
+-- order as teachers: their passwords are managed in the web
+-- application, so they are the same in every world.
+-- @param managed True if the world created the account that way.
+-- @return true, or false and why not: INVALID, UNKNOWN, UNMANAGED or
+--   STAFF (the account is locked)
+function accounts.may_set_entry(name, entry, exists, managed, privileges, admin)
 	if not accounts.is_name(name) or not accounts.is_entry(entry) then
 		return false, accounts.INVALID
 	elseif not exists then
 		return false, accounts.UNKNOWN
+	elseif not managed then
+		return false, accounts.UNMANAGED
 	elseif accounts.is_locked(name, privileges, admin) then
 		return false, accounts.STAFF
-	elseif accounts.is_ordinary(privileges, ordinary) then
-		return false, accounts.ORDINARY
 	end
 	return true
+end
+
+--- Decides whether a password may be changed inside the game, by the
+-- player in their client or by a command. Not for managed accounts: it
+-- would count in this world only.
+function accounts.may_change_in_game(managed)
+	return not managed
 end
 
 --- Decides whether the password of an account may be set from outside.

@@ -3288,15 +3288,6 @@
           "teacher": {
             "type": "boolean",
             "description": "True if the accounts are for teachers: the world gives them\nthe privileges of the bundle for teachers. Only the school\nadministration orders that."
-          },
-          "version": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "The version of the passwords, for accounts of teachers.",
-            "minimum": 0
           }
         }
       },
@@ -4081,7 +4072,7 @@
               "string",
               "null"
             ],
-            "description": "What a world stores of the password, for a teacher: a salt\nand a verifier. The password cannot be worked out from it,\nand all worlds get the same."
+            "description": "For a teacher, instead of the password: what the engine\nstores of it, a salt and a verifier. The password cannot be\nworked out from it, and every world gets the same. The world\nmarks such an account: its password is managed in the web\napplication and cannot be changed in the game."
           },
           "name": {
             "type": "string"
@@ -4686,31 +4677,22 @@
       },
       "SetPasswordEntry": {
         "type": "object",
-        "description": "Payload of the job \"set_password_entry\". A world takes it for\nteachers and for the school administration, never for its admin.",
+        "description": "Payload of the job \"set_password_entry\": a new password for a\nteacher, as a salt and a verifier. A world takes it only for\naccounts it created with such an entry, and never for its admin.",
         "required": [
           "name",
           "entry",
-          "version"
+          "by"
         ],
         "properties": {
           "by": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Account name of the member of the school administration who\nordered a new start password. Missing if the teacher chose\nthe password in another world."
+            "type": "string",
+            "description": "Account name of who ordered it: a member of the school\nadministration, or the teacher. The world writes it into the\nprotocol of the desk."
           },
           "entry": {
             "type": "string"
           },
           "name": {
             "type": "string"
-          },
-          "version": {
-            "type": "integer",
-            "format": "int32",
-            "description": "The version of the password. The world remembers it.",
-            "minimum": 0
           }
         }
       },
@@ -4863,47 +4845,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StaffAccount"
-            }
-          }
-        }
-      },
-      "StaffPassword": {
-        "type": "object",
-        "description": "What a world stores of the password of one teacher.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "changed": {
-            "type": "boolean",
-            "description": "True if the password was changed in this world since."
-          },
-          "entry": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The entry of the engine: a salt and a verifier. The password\ncannot be worked out from it. Missing while the world has an\nolder form of entry, which never leaves it: that is so until\nsomebody has logged in with the account once."
-          },
-          "name": {
-            "type": "string"
-          },
-          "version": {
-            "type": "integer",
-            "format": "int32",
-            "description": "The version of the password the entry is built on: the one\nthe backend named when it had this world write it last. 0 if\nit never did.",
-            "minimum": 0
-          }
-        }
-      },
-      "StaffPasswords": {
-        "type": "object",
-        "description": "Payload of the event \"staff_passwords\": what a world stores of\nthe passwords of its teachers. It replaces what the backend knew\nbefore. The admin of the world is never in it.",
-        "properties": {
-          "accounts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StaffPassword"
             }
           }
         }

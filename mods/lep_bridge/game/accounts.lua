@@ -64,7 +64,7 @@ local function record(by, action, target)
 end
 
 lep_bridge.register_job(reports.JOB_CREATE_ACCOUNTS, function(payload)
-	local list, teachers_by, version = accounts.parse(payload)
+	local list, teachers_by = accounts.parse(payload)
 	if not list then
 		return false, "the order cannot be read"
 	end
@@ -72,7 +72,6 @@ lep_bridge.register_job(reports.JOB_CREATE_ACCOUNTS, function(payload)
 	if teachers_by then
 		for _, name in ipairs(created) do
 			record(teachers_by, "web:create_teacher", name)
-			lep_bridge._note_staff_password(name, version)
 		end
 	end
 	-- The job is done once the accounts exist. The rooms follow in the
@@ -98,5 +97,23 @@ lep_bridge.register_job(reports.JOB_SET_PASSWORD, function(payload)
 	if staff_by then
 		record(staff_by, "web:reset_teacher_password", name)
 	end
+	return true, "set"
+end)
+
+-- A new password for a teacher the school administration created. The
+-- backend sends what the engine stores of it, the same to every world,
+-- so the password itself is never seen here.
+lep_bridge.register_job(reports.JOB_SET_PASSWORD_ENTRY, function(payload)
+	local name, entry, by = accounts.parse_entry(payload)
+	if not name then
+		return false, "the order cannot be read"
+	end
+	local ok, why = lep_accounts.set_password_entry(name, entry)
+	if not ok then
+		-- A fixed word the backend passes on: unknown, unmanaged, staff
+		-- or invalid.
+		return false, why
+	end
+	record(by, by == name and "web:change_password" or "web:reset_teacher_password", name)
 	return true, "set"
 end)

@@ -71,6 +71,9 @@ pub async fn add(pool: &SqlitePool, name: &str) -> Result<(World, String)> {
     let world = find_by_name(pool, name)
         .await?
         .context("the new world is missing")?;
+    // The teachers there are belong into every world. The orders wait
+    // until the world asks for the first time.
+    crate::staff::bring_into(pool, &world.id).await?;
     Ok((world, key))
 }
 

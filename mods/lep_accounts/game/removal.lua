@@ -80,7 +80,11 @@ local function delete(name)
 	if failed > 0 then
 		return false
 	end
-	return core.remove_player_auth(name)
+	if not core.remove_player_auth(name) then
+		return false
+	end
+	lep_accounts._set_managed(name, false)
+	return true
 end
 
 --- Removes an account and everything this world knows about it. A
