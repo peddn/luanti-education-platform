@@ -6,9 +6,10 @@
 -- the backend passes on from another world. No password is ever seen
 -- here, and no entry is written into a log.
 --
--- Until a teacher has logged in once, the engine stores an older form
--- of entry that is as good as the password. That one never leaves the
--- world: the account is reported without it.
+-- A password that was set in the world as plain text, for example by
+-- a command of the admin, is stored in an older form that is as good as
+-- the password. That one never leaves the world: the account is
+-- reported without it.
 --
 -- The backend counts the passwords of a teacher: each new one is a new
 -- version. The world remembers which version it was told to write, and
@@ -85,7 +86,7 @@ core.register_globalstep(function(dtime)
 end)
 
 lep_bridge.register_job(reports.JOB_SET_PASSWORD_ENTRY, function(payload)
-	local name, entry, version = accounts.parse_entry(payload)
+	local name, entry, version, by = accounts.parse_entry(payload)
 	if not name then
 		return false, "the order cannot be read"
 	end
@@ -94,10 +95,15 @@ lep_bridge.register_job(reports.JOB_SET_PASSWORD_ENTRY, function(payload)
 		-- A fixed word: unknown, staff, ordinary or invalid.
 		return false, changed
 	end
-	-- Nobody ordered this: the teacher changed the password in another
-	-- world. It stands under their own account.
-	if changed and core.global_exists("lep_desk") then
-		lep_desk.record(name, "web:sync_password", name)
+	if core.global_exists("lep_desk") then
+		if by then
+			-- A new start password from the school administration.
+			lep_desk.record(by, "web:reset_teacher_password", name)
+		elseif changed then
+			-- Nobody ordered this: the teacher changed the password in
+			-- another world. It stands under their own account.
+			lep_desk.record(name, "web:sync_password", name)
+		end
 	end
 	lep_bridge._note_staff_password(name, version)
 	return true, "set"

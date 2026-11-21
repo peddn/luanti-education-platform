@@ -1332,9 +1332,9 @@ export interface components {
         /** @description An account a world shall create. */
         NewAccount: {
             /**
-             * @description What another world stores of the password, for a teacher who
-             *     exists there already. The password cannot be worked out from
-             *     it.
+             * @description What a world stores of the password, for a teacher: a salt
+             *     and a verifier. The password cannot be worked out from it,
+             *     and all worlds get the same.
              */
             entry?: string | null;
             name: string;
@@ -1643,17 +1643,18 @@ export interface components {
              *     refuses the admin and the school administration.
              */
             staff?: boolean;
-            /**
-             * Format: int32
-             * @description The version of the password, for accounts of teachers.
-             */
-            version?: number | null;
         };
         /**
          * @description Payload of the job "set_password_entry". A world takes it for
          *     teachers and for the school administration, never for its admin.
          */
         SetPasswordEntry: {
+            /**
+             * @description Account name of the member of the school administration who
+             *     ordered a new start password. Missing if the teacher chose
+             *     the password in another world.
+             */
+            by?: string | null;
             entry: string;
             name: string;
             /**

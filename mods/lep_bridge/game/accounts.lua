@@ -86,7 +86,7 @@ lep_bridge.register_job(reports.JOB_CREATE_ACCOUNTS, function(payload)
 end)
 
 lep_bridge.register_job(reports.JOB_SET_PASSWORD, function(payload)
-	local name, password, staff_by, version = accounts.parse_password(payload)
+	local name, password, staff_by = accounts.parse_password(payload)
 	if not name then
 		return false, "the order cannot be read"
 	end
@@ -97,7 +97,6 @@ lep_bridge.register_job(reports.JOB_SET_PASSWORD, function(payload)
 	end
 	if staff_by then
 		record(staff_by, "web:reset_teacher_password", name)
-		lep_bridge._note_staff_password(name, version)
 	end
 	return true, "set"
 end)

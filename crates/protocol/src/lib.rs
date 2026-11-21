@@ -375,9 +375,9 @@ pub mod world {
         /// if `entry` is given.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub password: Option<String>,
-        /// What another world stores of the password, for a teacher who
-        /// exists there already. The password cannot be worked out from
-        /// it.
+        /// What a world stores of the password, for a teacher: a salt
+        /// and a verifier. The password cannot be worked out from it,
+        /// and all worlds get the same.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub entry: Option<String>,
     }
@@ -419,6 +419,11 @@ pub mod world {
         pub entry: String,
         /// The version of the password. The world remembers it.
         pub version: u32,
+        /// Account name of the member of the school administration who
+        /// ordered a new start password. Missing if the teacher chose
+        /// the password in another world.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub by: Option<String>,
     }
 
     /// Payload of the job "create_accounts".
@@ -454,9 +459,6 @@ pub mod world {
         /// Account name of who ordered it, for accounts of teachers.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub by: Option<String>,
-        /// The version of the password, for accounts of teachers.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub version: Option<u32>,
     }
 
     /// Payload of the event "display_name": what an account is shown

@@ -146,8 +146,9 @@ end
 
 --- Returns true if a text is an entry of a password that may be passed
 -- on to another world: the password cannot be worked out from it, and
--- nobody can log in with it. Until an account was used once, the engine
--- stores an older form that is as good as the password itself.
+-- nobody can log in with it. A password that was set in the world as
+-- plain text, by a command or by an order with a start password, is
+-- stored in an older form that is as good as the password itself.
 function lep_accounts.is_password_entry(text)
 	return accounts.is_entry(text)
 end

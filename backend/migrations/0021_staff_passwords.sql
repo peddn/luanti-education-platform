@@ -2,8 +2,9 @@
 
 -- What the worlds store of the password of a teacher: a salt and a
 -- verifier, as the engine writes them. The password cannot be worked out
--- from it. NULL until a world has reported one, and after a new start
--- password was ordered.
+-- from it. The backend works it out for a start password; after that it
+-- is whatever the teacher chose in a world. NULL for accounts from
+-- before this was kept, until their owner chooses a password.
 ALTER TABLE staff_accounts ADD COLUMN password_entry TEXT;
 -- Counts the passwords of the teacher. Every new one is a new version,
 -- so a report about an older one changes nothing.

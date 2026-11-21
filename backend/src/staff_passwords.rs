@@ -4,7 +4,8 @@
 //! The password cannot be worked out from it. The worlds report the
 //! entries of their teachers, and the backend passes a new one on to
 //! the other worlds. That is also how a teacher arrives in a world that
-//! was created later.
+//! was created later. For a start password the backend works out the
+//! entry itself (see `srp`), so it is the same everywhere from the start.
 //!
 //! Reports and orders cross each other, so the passwords of a teacher
 //! are counted. A world says which version its entry is built on and
@@ -17,7 +18,7 @@ use std::collections::BTreeSet;
 use anyhow::Result;
 use lep_protocol::world::{
     CreateAccounts, NewAccount, SetPasswordEntry, StaffPassword, StaffPasswords,
-    JOB_CREATE_ACCOUNTS, JOB_REMOVE_ACCOUNT, JOB_SET_PASSWORD, JOB_SET_PASSWORD_ENTRY,
+    JOB_CREATE_ACCOUNTS, JOB_REMOVE_ACCOUNT, JOB_SET_PASSWORD_ENTRY,
 };
 use sqlx::{Row, SqlitePool};
 
@@ -53,25 +54,40 @@ struct Kept {
     created_by: String,
 }
 
-/// Forgets the entry of a teacher, because every world is about to get
-/// a new start password. Returns the new version, or `None` if the
-/// account was not created here: then its password is not kept in step.
-pub async fn start_over(pool: &SqlitePool, account: &str) -> Result<Option<u32>> {
+/// Gives a teacher a new password, as the school administration ordered
+/// it: stores its entry as a new version and orders the given worlds to
+/// write it. Returns false if the account was not created here: then its
+/// password is not kept in step, and nothing was done.
+/// @param by Account name of the member of the school administration.
+pub async fn replace(
+    pool: &SqlitePool,
+    account: &str,
+    entry: &str,
+    by: &str,
+    worlds: &[String],
+) -> Result<bool> {
     let version: Option<u32> = sqlx::query_scalar(
-        "UPDATE staff_accounts SET password_entry = NULL, password_version = password_version + 1
+        "UPDATE staff_accounts SET password_entry = ?, password_version = password_version + 1
          WHERE account = ? RETURNING password_version",
     )
+    .bind(entry)
     .bind(account)
     .fetch_optional(pool)
     .await?;
-    if version.is_some() {
-        drop_waiting(pool, account).await?;
-        sqlx::query("UPDATE staff_worlds SET in_step = 0 WHERE account = ?")
-            .bind(account)
-            .execute(pool)
-            .await?;
+    let Some(version) = version else {
+        return Ok(false);
+    };
+    drop_waiting(pool, account).await?;
+    sqlx::query("UPDATE staff_worlds SET in_step = 0 WHERE account = ?")
+        .bind(account)
+        .execute(pool)
+        .await?;
+    // Every world is asked, also one that never reported the account:
+    // its answer shows the school administration where it is missing.
+    for world in worlds {
+        order_entry(pool, world, account, entry, version, Some(by)).await?;
     }
-    Ok(version)
+    Ok(true)
 }
 
 /// Deletes the orders to write an entry that no world has fetched yet.
@@ -103,35 +119,19 @@ async fn is_waiting(pool: &SqlitePool, world_id: &str, kind: &str, account: &str
     Ok(waiting.is_some())
 }
 
-/// Returns true if a world may say what the password of a teacher is
-/// while the backend knows none: it has done what it was last told
-/// about the account. A world that refused to create the account has
-/// one of somebody else under that name.
-async fn may_name_entry(pool: &SqlitePool, world_id: &str, account: &str) -> Result<bool> {
-    let newest: Option<Option<bool>> = sqlx::query_scalar(
-        "SELECT ok FROM jobs WHERE world_id = ?1 AND subject = ?2 AND kind IN (?3, ?4)
-         ORDER BY created_at DESC, rowid DESC LIMIT 1",
-    )
-    .bind(world_id)
-    .bind(account)
-    .bind(JOB_CREATE_ACCOUNTS)
-    .bind(JOB_SET_PASSWORD)
-    .fetch_optional(pool)
-    .await?;
-    Ok(matches!(newest, None | Some(Some(true))))
-}
-
 async fn order_entry(
     pool: &SqlitePool,
     world_id: &str,
     account: &str,
     entry: &str,
     version: u32,
+    by: Option<&str>,
 ) -> Result<()> {
     let payload = serde_json::to_value(SetPasswordEntry {
         name: account.to_owned(),
         entry: entry.to_owned(),
         version,
+        by: by.map(str::to_owned),
     })?;
     jobs::add_about(
         pool,
@@ -145,16 +145,14 @@ async fn order_entry(
 }
 
 /// Stores a new entry for a teacher and orders every world that has the
-/// account to write it. Returns the worlds to wake.
-/// @param tell_origin True if the world it comes from is told as well,
-///   so it learns the new version.
+/// account to write it. The world it comes from is told as well, so it
+/// learns the new version. Returns the worlds to wake.
 async fn pass_on(
     pool: &SqlitePool,
     from: &str,
     account: &str,
     entry: &str,
     version: u32,
-    tell_origin: bool,
 ) -> Result<Vec<String>> {
     sqlx::query(
         "UPDATE staff_accounts SET password_entry = ?, password_version = ? WHERE account = ?",
@@ -170,16 +168,13 @@ async fn pass_on(
         .bind(account)
         .execute(pool)
         .await?;
-    let worlds: Vec<String> = sqlx::query_scalar(
-        "SELECT world_id FROM staff_worlds WHERE account = ?1 AND (?2 OR world_id != ?3)",
-    )
-    .bind(account)
-    .bind(tell_origin)
-    .bind(from)
-    .fetch_all(pool)
-    .await?;
+    let worlds: Vec<String> =
+        sqlx::query_scalar("SELECT world_id FROM staff_worlds WHERE account = ?")
+            .bind(account)
+            .fetch_all(pool)
+            .await?;
     for world in &worlds {
-        order_entry(pool, world, account, entry, version).await?;
+        order_entry(pool, world, account, entry, version, None).await?;
     }
     Ok(worlds)
 }
@@ -250,8 +245,8 @@ async fn note_present(
             .await?;
     }
     let newest = reported.version == kept.version;
-    // A world that names no entry has one that never leaves it: nobody
-    // has logged in there with the account yet.
+    // A world that names no entry has one in an older form, which never
+    // leaves it.
     let named = reported.entry.as_deref().filter(|entry| is_entry(entry));
     let same = named.is_some() && kept.entry.as_deref() == named;
     sqlx::query(
@@ -271,32 +266,32 @@ async fn note_present(
             && !is_waiting(pool, world_id, JOB_SET_PASSWORD_ENTRY, &kept.account).await?
         {
             if let Some(entry) = &kept.entry {
-                order_entry(pool, world_id, &kept.account, entry, kept.version).await?;
+                order_entry(pool, world_id, &kept.account, entry, kept.version, None).await?;
                 return Ok(vec![world_id.to_owned()]);
             }
         }
         return Ok(Vec::new());
     }
     if let (Some(entry), true, true) = (named, newest, reported.changed) {
-        // Somebody chose a new password in this world, or logged in for
-        // the first time.
-        return pass_on(pool, world_id, &kept.account, entry, kept.version + 1, true).await;
+        // Somebody chose a new password in this world.
+        return pass_on(pool, world_id, &kept.account, entry, kept.version + 1).await;
+    }
+    if named.is_none() && newest && reported.changed {
+        // The admin set a password by command in this world. The engine
+        // stores that in the older form, so it cannot be passed on, and
+        // it is not undone either: it counts in this world only.
+        return Ok(Vec::new());
     }
     let Some(entry) = &kept.entry else {
-        // Every world got a start password and hashed it for itself.
-        // The first one that has done so names the entry for all.
-        if let (Some(named), true) = (named, newest) {
-            if may_name_entry(pool, world_id, &kept.account).await? {
-                return pass_on(pool, world_id, &kept.account, named, kept.version, false).await;
-            }
-        }
+        // An account from before the passwords were kept in step, whose
+        // owner never chose one: there is nothing to pass on.
         return Ok(Vec::new());
     };
     // The world is behind.
     if is_waiting(pool, world_id, JOB_SET_PASSWORD_ENTRY, &kept.account).await? {
         return Ok(Vec::new());
     }
-    order_entry(pool, world_id, &kept.account, entry, kept.version).await?;
+    order_entry(pool, world_id, &kept.account, entry, kept.version, None).await?;
     Ok(vec![world_id.to_owned()])
 }
 

@@ -15,7 +15,7 @@ use lep_protocol::world::{
 };
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use crate::{clock, jobs, names, removals, staff_passwords, students};
+use crate::{clock, jobs, names, removals, srp, staff_passwords, students};
 
 /// Shortest and longest name of a teacher. The engine takes 20
 /// characters; the backend stays one below.
@@ -82,7 +82,8 @@ fn roll_password() -> String {
 
 /// Has every world create the account of a teacher, with a start
 /// password and the privileges of the bundle for teachers. The password
-/// is in the returned slip and in the jobs for the worlds, nowhere else.
+/// is in the returned slip and nowhere else: the worlds get what the
+/// engine stores of it, the same in every world.
 /// Returns the slip and the worlds to wake.
 /// @param by Account name of the member of the school administration.
 pub async fn create(
@@ -101,26 +102,30 @@ pub async fn create(
     if worlds.is_empty() {
         return Ok(Err(StaffError::NoWorld));
     }
-    // The first password of the account: version 1.
-    let version = 1;
-    sqlx::query(
-        "INSERT INTO staff_accounts (account, state, created_at, created_by, password_version)
-         VALUES (?, 'creating', ?, ?, 1)",
-    )
-    .bind(name)
-    .bind(clock::now())
-    .bind(by)
-    .execute(pool)
-    .await?;
     let slip = AccessSlip {
         account: name.to_owned(),
         password: roll_password(),
     };
+    let entry = srp::entry(&slip.account, &slip.password);
+    // The first password of the account: version 1.
+    let version = 1;
+    sqlx::query(
+        "INSERT INTO staff_accounts
+            (account, state, created_at, created_by, password_entry, password_version)
+         VALUES (?, 'creating', ?, ?, ?, ?)",
+    )
+    .bind(name)
+    .bind(clock::now())
+    .bind(by)
+    .bind(&entry)
+    .bind(version)
+    .execute(pool)
+    .await?;
     let payload = serde_json::to_value(CreateAccounts {
         accounts: vec![NewAccount {
             name: slip.account.clone(),
-            password: Some(slip.password.clone()),
-            entry: None,
+            password: None,
+            entry: Some(entry),
         }],
         teacher: true,
         by: Some(by.to_owned()),
@@ -206,17 +211,20 @@ pub async fn reset_password(
         account: account.clone(),
         password: roll_password(),
     };
-    // The worlds hash the new password each for itself. Whichever
-    // reports first gives the entry all of them get.
-    let version = staff_passwords::start_over(pool, &account).await?;
+    let worlds = world_ids(pool).await?;
+    // A teacher who was created here gets the same entry in every world.
+    let entry = srp::entry(&slip.account, &slip.password);
+    if staff_passwords::replace(pool, &account, &entry, by, &worlds).await? {
+        return Ok(Ok((slip, worlds)));
+    }
+    // One the admin made in the game is not kept in step: every world
+    // hashes the password for itself.
     let payload = serde_json::to_value(SetPassword {
         name: slip.account.clone(),
         password: slip.password.clone(),
         staff: true,
         by: Some(by.to_owned()),
-        version,
     })?;
-    let worlds = world_ids(pool).await?;
     for world in &worlds {
         jobs::add_about(pool, world, JOB_SET_PASSWORD, &payload, Some(&account)).await?;
     }
@@ -360,7 +368,14 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<StaffAccount>> {
         .bind(&account)
         .fetch_all(pool)
         .await?;
-        let (password, _) = order_state(pool, JOB_SET_PASSWORD, &account).await?;
+        // Teachers who were created here get their password as an entry.
+        let listed = row.get::<Option<String>, _>("state").is_some();
+        let kind = if listed {
+            lep_protocol::world::JOB_SET_PASSWORD_ENTRY
+        } else {
+            JOB_SET_PASSWORD
+        };
+        let (password, _) = order_state(pool, kind, &account).await?;
         let (removal, message) = order_state(pool, JOB_REMOVE_ACCOUNT, &account).await?;
         list.push(StaffAccount {
             state: match row.get::<Option<String>, _>("state").as_deref() {

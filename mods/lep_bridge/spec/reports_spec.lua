@@ -135,7 +135,7 @@ describe("lep_bridge reports", function()
 			{ name = "lehrer2", entry = other },
 			-- Made in the game: the backend never wrote anything.
 			{ name = "lehrer3", entry = other },
-			-- Never logged in: what is stored stays in the world.
+			-- Set by a command in the world: what is stored stays there.
 			{ name = "lehrer4", entry = "legacy" },
 		}, record_of, mark_of, may_leave)
 		assert.is_true(fits("StaffPasswords", payload))

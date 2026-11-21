@@ -21,6 +21,7 @@ pub mod progress;
 pub mod protocols;
 pub mod removals;
 pub mod rewards;
+pub mod srp;
 pub mod staff;
 pub mod staff_passwords;
 pub mod state;

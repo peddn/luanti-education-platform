@@ -363,7 +363,6 @@ pub async fn reset_password(
         password: slip.password.clone(),
         staff: false,
         by: None,
-        version: None,
     };
     jobs::add_about(
         pool,

@@ -4081,7 +4081,7 @@
               "string",
               "null"
             ],
-            "description": "What another world stores of the password, for a teacher who\nexists there already. The password cannot be worked out from\nit."
+            "description": "What a world stores of the password, for a teacher: a salt\nand a verifier. The password cannot be worked out from it,\nand all worlds get the same."
           },
           "name": {
             "type": "string"
@@ -4681,15 +4681,6 @@
           "staff": {
             "type": "boolean",
             "description": "True if the order is meant for a teacher. The world still\nrefuses the admin and the school administration."
-          },
-          "version": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "The version of the password, for accounts of teachers.",
-            "minimum": 0
           }
         }
       },
@@ -4702,6 +4693,13 @@
           "version"
         ],
         "properties": {
+          "by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Account name of the member of the school administration who\nordered a new start password. Missing if the teacher chose\nthe password in another world."
+          },
           "entry": {
             "type": "string"
           },

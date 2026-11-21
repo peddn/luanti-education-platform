@@ -55,7 +55,6 @@ end
 -- @return name and password, or nil if the payload cannot be read. The
 --   third value is nil for students; for a teacher it is the account
 --   name of the member of the school administration who ordered it.
---   The fourth is the version of the password, for a teacher, or nil.
 function accounts.parse_password(payload)
 	if type(payload) ~= "table" or type(payload.name) ~= "string" or payload.name == ""
 			or type(payload.password) ~= "string" or payload.password == "" then
@@ -68,18 +67,22 @@ function accounts.parse_password(payload)
 		end
 		by = payload.by
 	end
-	return payload.name, payload.password, by, by and version_of(payload.version) or nil
+	return payload.name, payload.password, by
 end
 
 --- Reads the payload of the job "set_password_entry".
 -- @return name, entry and version, or nil if the payload cannot be read.
+--   The fourth value is the account name of the member of the school
+--   administration who ordered a new start password, or nil if the
+--   password comes from another world.
 function accounts.parse_entry(payload)
 	if type(payload) ~= "table" or not is_name(payload.name)
 			or type(payload.entry) ~= "string" or payload.entry == ""
-			or not version_of(payload.version) then
+			or not version_of(payload.version)
+			or payload.by ~= nil and not is_name(payload.by) then
 		return nil
 	end
-	return payload.name, payload.entry, payload.version
+	return payload.name, payload.entry, payload.version, payload.by
 end
 
 --- Runs jobs one after the other. A job is a function(done) that calls

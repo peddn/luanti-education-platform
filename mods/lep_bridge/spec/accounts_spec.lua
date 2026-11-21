@@ -100,23 +100,24 @@ describe("lep_bridge accounts", function()
 		assert.is_nil(by)
 		assert.is_nil(version)
 
-		local name, password, staff_by
-		name, password, staff_by, version = accounts.parse_password({ name = "lehrer2",
-			password = "x", staff = true, by = "leitung", version = 4 })
-		assert.are.same({ "lehrer2", "x", "leitung", 4 }, { name, password, staff_by, version })
-		name, password, staff_by, version = accounts.parse_password({ name = "lehrer2",
-			password = "x", staff = true, by = "leitung", version = -1 })
-		assert.are.same({ "lehrer2", "x", "leitung" }, { name, password, staff_by })
+		list, by, version = accounts.parse({ accounts = {}, teacher = true, by = "leitung",
+			version = -1 })
+		assert.are.same({}, list)
+		assert.are.equal("leitung", by)
 		assert.is_nil(version)
 
 		assert.are.same({ "lehrer2", entry, 2 }, { accounts.parse_entry({ name = "lehrer2",
 			entry = entry, version = 2 }) })
+		-- A new start password names who ordered it.
+		assert.are.same({ "lehrer2", entry, 2, "leitung" }, { accounts.parse_entry({
+			name = "lehrer2", entry = entry, version = 2, by = "leitung" }) })
 		for _, wrong in ipairs({
 			{ name = "lehrer2", entry = entry },
 			{ name = "lehrer2", entry = entry, version = 1.5 },
 			{ name = "lehrer2", entry = entry, version = "2" },
 			{ name = "lehrer 2", entry = entry, version = 2 },
 			{ name = "lehrer2", entry = "", version = 2 },
+			{ name = "lehrer2", entry = entry, version = 2, by = "nobody here" },
 			{ entry = entry, version = 2 },
 		}) do
 			assert.is_nil(accounts.parse_entry(wrong))
