@@ -322,15 +322,15 @@ mod tests {
     #[test]
     fn writes_the_template_from_the_settings() {
         let text = template(
-            Path::new("/var/lib/lep"),
+            Path::new("/var/lib/lep-agent"),
             Path::new("/usr/local/bin/luantiserver"),
         )
         .unwrap();
         assert!(text.contains(
             "ExecStart=/usr/local/bin/luantiserver --quiet \
-             --config /var/lib/lep/worlds/%i/minetest.conf --world /var/lib/lep/worlds/%i/world\n"
+             --config /var/lib/lep-agent/worlds/%i/minetest.conf --world /var/lib/lep-agent/worlds/%i/world\n"
         ));
-        assert!(text.contains("Environment=LUANTI_USER_PATH=/var/lib/lep/worlds/%i "));
+        assert!(text.contains("Environment=LUANTI_USER_PATH=/var/lib/lep-agent/worlds/%i "));
         assert!(text.contains("Restart=on-failure\n"));
         assert!(text.contains("WantedBy=default.target\n"));
     }
@@ -341,14 +341,18 @@ mod tests {
         for folder in [
             "/var/lib/my lep",
             "relative/lep",
-            "/var/lib/lep%i",
-            "/var/lib/lep\nExecStartPre=/bin/x",
-            "/var/lib/lep;x",
+            "/var/lib/lep-agent%i",
+            "/var/lib/lep-agent\nExecStartPre=/bin/x",
+            "/var/lib/lep-agent;x",
             "/var/lib/$HOME",
         ] {
             assert!(template(Path::new(folder), luanti).is_err(), "{folder}");
         }
-        assert!(template(Path::new("/var/lib/lep"), Path::new("luantiserver --x")).is_err());
+        assert!(template(
+            Path::new("/var/lib/lep-agent"),
+            Path::new("luantiserver --x")
+        )
+        .is_err());
     }
 
     #[test]

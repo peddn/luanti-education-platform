@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 76 · 21. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 77 · 21. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -915,14 +915,14 @@ Gebaut wird der Agent am Anfang von Schritt 7. Dieser Abschnitt legt fest, wie e
 
 Angenommen wird ein Linux mit systemd, in der Regel Debian.
 
-- **Benutzer:** ein Systembenutzer ohne Anmeldung, `lep-agent`. Unter ihm laufen der Agent und alle Welten, und ihm gehört alles, was der Agent anfasst. Das Backend hat seinen eigenen Benutzer, `lep-backend`. Keiner der beiden kommt an die Dateien des anderen. Der Server-Admin legt ihn einmal an:
+- **Benutzer:** ein Systembenutzer ohne Anmeldung, `lep-agent`. Unter ihm laufen der Agent und alle Welten, und ihm gehört alles, was der Agent anfasst. Sein Ordner heißt wie er, `/var/lib/lep-agent`, so wie der des Backends `/var/lib/lep-backend` heißt. Das Backend hat seinen eigenen Benutzer, `lep-backend`. Keiner der beiden kommt an die Dateien des anderen. Der Server-Admin legt ihn einmal an:
 
   ```sh
-  sudo useradd --system --shell /usr/bin/nologin --user-group --create-home --home-dir /var/lib/lep lep
+  sudo useradd --system --shell /usr/bin/nologin --user-group --create-home --home-dir /var/lib/lep-agent lep-agent
   ```
 
 - **Luanti** wird auf dem Spielserver aus dem Quelltext gebaut, nur der Server ohne Grafik und Ton, in der festen Version aus `third_party/luanti.toml`. Die Pakete der Distributionen hinken hinterher: Debian 13 liefert 5.10. So läuft auf jedem Spielserver dieselbe Version, mit der entwickelt und getestet wird. Den Bau stößt der Server-Admin an. Der Agent installiert keine Software.
-- **Ordner** unter `/var/lib/lep`:
+- **Ordner** unter `/var/lib/lep-agent`:
 
   | Ordner | Inhalt |
   |---|---|
@@ -939,7 +939,7 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
 **Dienste**
 
 - Die Welten sind Dienste des Benutzers `lep-agent`, nicht des Systems. Sie laufen in dessen eigener Dienstverwaltung (`systemctl --user`). Der Agent läuft als derselbe Benutzer und darf damit genau diese Dienste steuern. Es braucht keine zusätzliche Regel, die ihm Rechte am System gibt.
-- Der Agent selbst ist ein Dienst des Systems, `lep-agent.service`, wie das Backend. Er läuft als `lep-agent`, nicht als root. So lässt er sich mit denselben Befehlen bedienen wie das Backend, seine Dienstdatei gehört root und nicht ihm selbst, und systemd schottet ihn ab: Schreiben darf er nur in `/var/lib/lep`.
+- Der Agent selbst ist ein Dienst des Systems, `lep-agent.service`, wie das Backend. Er läuft als `lep-agent`, nicht als root. So lässt er sich mit denselben Befehlen bedienen wie das Backend, seine Dienstdatei gehört root und nicht ihm selbst, und systemd schottet ihn ab: Schreiben darf er nur in `/var/lib/lep-agent`.
 - Damit diese Dienste ohne Anmeldung laufen und beim Hochfahren der Maschine starten, schaltet der Server-Admin einmal das Weiterlaufen ein (Linger): `sudo loginctl enable-linger lep-agent`.
 - Jede Welt ist ein Dienst aus einer Vorlage: `lep-world@<Kennung>.service`. systemd startet eine abgestürzte Welt neu, und die Welten laufen weiter, wenn der Agent selbst neu startet.
 - Die Dienstvorlage der Welten schreibt der Agent selbst in den Ordner seines Benutzers. Sie enthält Pfade aus seinen Einstellungen und kann so nicht von ihnen abweichen. Ist die Dienstverwaltung des Benutzers beim Start des Agenten noch nicht bereit, versucht er es mit jeder Meldung erneut.
@@ -981,7 +981,7 @@ Regeln für alle Aufträge:
 
 - Ein Auftrag nennt die Kennung einer Welt und feste Werte, sonst nichts. Die Kennung muss die Form haben, die das Backend vergibt.
 - „Welt anlegen“ für eine Welt, die es schon gibt, legt nichts neu an: Port, Karte und Spielerdaten bleiben, nur der Schlüssel der Brücke wird neu eingetragen.
-- Pfade entstehen nur aus dieser Kennung unter `/var/lib/lep`. Der Agent baut nie eine Befehlszeile aus Werten eines Auftrags und ruft keine Shell auf. Das einzige Programm, das er startet, ist `systemctl --user` mit festen Argumenten und dem Namen des Dienstes aus der geprüften Kennung.
+- Pfade entstehen nur aus dieser Kennung unter `/var/lib/lep-agent`. Der Agent baut nie eine Befehlszeile aus Werten eines Auftrags und ruft keine Shell auf. Das einzige Programm, das er startet, ist `systemctl --user` mit festen Argumenten und dem Namen des Dienstes aus der geprüften Kennung.
 - Ein Auftrag, den der Agent nicht kennt, wird abgelehnt und gemeldet.
 
 **Archivieren und Jahresabschluss**

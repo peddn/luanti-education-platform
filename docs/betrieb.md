@@ -18,9 +18,9 @@ Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten 
 | Oberfläche | `/usr/local/share/lep/frontend/` |
 | Einstellungen | `/etc/lep/backend.env`, `/etc/lep/agent.toml` |
 | Datenbank des Backends | `/var/lib/lep-backend/lep.sqlite` |
-| Ordner des Agenten, später mit den Welten | `/var/lib/lep/` |
-| Vorlage für Welten, vom Agenten ausgepackt | `/var/lib/lep/templates/<Version>/` |
-| Welten, vom Agenten angelegt | `/var/lib/lep/worlds/<Kennung>/` |
+| Ordner des Agenten, später mit den Welten | `/var/lib/lep-agent/` |
+| Vorlage für Welten, vom Agenten ausgepackt | `/var/lib/lep-agent/templates/<Version>/` |
+| Welten, vom Agenten angelegt | `/var/lib/lep-agent/worlds/<Kennung>/` |
 | Dienst des Backends | `lep-backend.service`, ein Dienst des Systems, Benutzer `lep-backend` |
 | Dienst des Agenten | `lep-agent.service`, ein Dienst des Systems, Benutzer `lep-agent` |
 | Dienst einer Welt | `lep-world@<Kennung>.service`, ein Dienst des Benutzers `lep-agent`. Die Vorlage dafür schreibt der Agent selbst |
@@ -110,7 +110,7 @@ Erwartet: `Luanti 5.18.0 (Linux)`, darunter `Using LuaJIT`.
 
 ```sh
 sudo adduser --system --group --home /var/lib/lep-backend --no-create-home lep-backend
-sudo adduser --system --group --home /var/lib/lep lep-agent
+sudo adduser --system --group --home /var/lib/lep-agent lep-agent
 sudo mkdir -p /etc/lep
 ```
 
@@ -195,7 +195,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now lep-agent
 ```
 
-Die Dienstdatei erlaubt dem Agenten, nur in `/var/lib/lep` zu schreiben. Steht in der `agent.toml` ein anderes `data_dir`, gehört dieser Ordner auch in die Zeile `ReadWritePaths` der Dienstdatei.
+Die Dienstdatei erlaubt dem Agenten, nur in `/var/lib/lep-agent` zu schreiben. Steht in der `agent.toml` ein anderes `data_dir`, gehört dieser Ordner auch in die Zeile `ReadWritePaths` der Dienstdatei.
 
 ## 7. Prüfen
 
@@ -204,10 +204,10 @@ systemctl is-active lep-agent
 lep-admin agent show
 ```
 
-Erwartet: `active` und `Game server: connected` mit Version, freiem Speicherplatz und der Version der Vorlage in der Zeile `template for worlds`. Die Vorlage liegt ausgepackt unter `/var/lib/lep/templates/`:
+Erwartet: `active` und `Game server: connected` mit Version, freiem Speicherplatz und der Version der Vorlage in der Zeile `template for worlds`. Die Vorlage liegt ausgepackt unter `/var/lib/lep-agent/templates/`:
 
 ```sh
-sudo ls /var/lib/lep/templates/
+sudo ls /var/lib/lep-agent/templates/
 ```
 
 Steht in der Zeile `none`, wurde der Agent ohne Vorlage gebaut, also mit `cargo build` statt mit `scripts/agent-build.sh`.
@@ -230,7 +230,7 @@ Wie es ging:
 
 ```sh
 lep-admin world list
-sudo ls -la /var/lib/lep/worlds/
+sudo ls -la /var/lib/lep-agent/worlds/
 ```
 
 Erwartet: erst `waiting for the agent`, kurz darauf `running, port 30000, template …`, und ein Ordner mit der Kennung der Welt. Wenig später steht statt `never seen` ein `last seen … s ago` mit der Luanti-Version: Die Welt hat sich selbst beim Backend gemeldet. Lehnt der Agent ab, steht der Grund in der Liste, etwa `the agent refused: the settings of the agent name no admin for the worlds`.
@@ -292,7 +292,7 @@ Eine im Browser angelegte Welt kennt zunächst nur den Server-Admin. Dass die Le
 | Agent neu starten | `sudo systemctl restart lep-agent` |
 | Zustand einer Welt | `sudo systemctl --user -M lep-agent@ status 'lep-world@<Kennung>'` |
 | Fehler einer Welt beim Start | `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service` |
-| Logdatei einer Welt | `/var/lib/lep/worlds/<Kennung>/debug.txt` |
+| Logdatei einer Welt | `/var/lib/lep-agent/worlds/<Kennung>/debug.txt` |
 | Befehle des Backends | `lep-admin <befehl>` |
 
 Die Kennung einer Welt zeigt `world list` in der zweiten Spalte. Im Journal einer Welt stehen nur Fehler. Was im Spiel geschieht, auch Chatnachrichten, steht allein in ihrer Logdatei.
@@ -319,9 +319,13 @@ Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die 
 
 ## Umzug von einer älteren Einrichtung
 
-Bis Fassung 75 des Konzepts hieß der Benutzer des Agenten `lep`, und der Agent war ein Dienst dieses Benutzers. Eine Maschine, die so eingerichtet wurde, zieht einmal um. Welten, Vorlagen, Einstellungen und Passwörter bleiben dabei, wie sie sind. Die Welten stehen für die Dauer des Umzugs still.
+Zwei Dinge hießen früher anders. Eine Maschine, die damals eingerichtet wurde, zieht einmal um. Welten, Vorlagen, Einstellungen und Passwörter bleiben dabei, wie sie sind, es wird nichts kopiert. Die Welten stehen für die Dauer des Umzugs still.
 
-Zuerst wie unter „Aktualisieren“ bauen und die Programme ablegen, dann:
+Zuerst wie unter „Aktualisieren“ bauen und die Programme ablegen, die Dienste aber noch nicht neu starten. Dann die Teile, die zutreffen, in dieser Reihenfolge.
+
+### Teil 1: Der Benutzer heißt noch `lep`
+
+Bis Fassung 75 des Konzepts hieß der Benutzer des Agenten `lep`, und der Agent war ein Dienst dieses Benutzers. `id lep` zeigt, ob das noch so ist.
 
 ```sh
 sudo systemctl --user -M lep@ disable --now lep-agent
@@ -330,13 +334,34 @@ sudo loginctl disable-linger lep
 sudo systemctl stop "user@$(id -u lep).service"
 sudo usermod -l lep-agent lep
 sudo groupmod -n lep-agent lep
-sudo loginctl enable-linger lep-agent
+```
+
+Die ersten vier Zeilen halten den alten Agenten und alle Welten an, denn ein Benutzer lässt sich nur umbenennen, wenn nichts mehr unter ihm läuft. Die beiden letzten benennen Benutzer und Gruppe um. Weiter mit Teil 2.
+
+### Teil 2: Der Ordner heißt noch `/var/lib/lep`
+
+Bis Fassung 76 hieß der Ordner des Agenten `/var/lib/lep`. `ls -d /var/lib/lep` zeigt, ob es ihn noch gibt.
+
+```sh
+sudo systemctl disable --now lep-agent
+sudo loginctl disable-linger lep-agent
+sudo systemctl stop "user@$(id -u lep-agent).service"
+sudo usermod -d /var/lib/lep-agent -m lep-agent
+sudo sed -i 's|^data_dir = "/var/lib/lep"|data_dir = "/var/lib/lep-agent"|' /etc/lep/agent.toml
+sudo -u lep-agent sh -c 'cd /var/lib/lep-agent/.config/systemd/user && sed -i "s|/var/lib/lep/|/var/lib/lep-agent/|g" lep-world@.service && for link in default.target.wants/lep-world@*.service; do [ -L "$link" ] && ln -sfn /var/lib/lep-agent/.config/systemd/user/lep-world@.service "$link"; done; true'
 sudo install -m 644 deploy/lep-agent.service /etc/systemd/system/
 sudo systemctl daemon-reload
+sudo loginctl enable-linger lep-agent
 sudo systemctl enable --now lep-agent
 ```
 
-Die ersten vier Zeilen halten den alten Agenten und alle Welten an, denn ein Benutzer lässt sich nur umbenennen, wenn nichts mehr unter ihm läuft. Die beiden Zeilen danach benennen Benutzer und Gruppe um. Dateien werden dabei nicht bewegt. Mit `enable-linger` starten die Welten wieder, die vorher eingeschaltet waren, und die letzten drei Zeilen richten den Agenten als Dienst des Systems ein.
+Was die Zeilen tun:
+
+- Die ersten drei halten den Agenten und alle Welten an. Wer aus Teil 1 kommt, sieht bei der ersten nur den Hinweis, dass es den Dienst noch nicht gibt.
+- `usermod -d … -m` benennt den Ordner um und trägt ihn beim Benutzer ein.
+- Die Zeile mit `sed` berichtigt den Ordner in den Einstellungen des Agenten. Steht dort keine Zeile `data_dir`, ändert sie nichts, und das ist richtig so.
+- Die lange Zeile berichtigt die Dienstvorlage der Welten und die Vermerke von systemd, welche Welten laufen sollen. Beide enthielten den alten Pfad.
+- Die letzten vier richten den Agenten als Dienst des Systems ein und starten alles. Die Welten, die vorher eingeschaltet waren, laufen wieder.
 
 Prüfen wie in Abschnitt 7. `lep-admin world list` zeigt nach einer halben Minute wieder, welche Welten laufen.
 

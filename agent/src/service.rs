@@ -363,7 +363,7 @@ mod tests {
     fn puts_the_service_of_the_worlds_in_place() {
         use crate::units::testing::FakeUnits;
         let config = Config::parse(
-            "backend = \"http://127.0.0.1:1\"\nkey = \"lepa_0123\"\ndata_dir = \"/var/lib/lep\"\n",
+            "backend = \"http://127.0.0.1:1\"\nkey = \"lepa_0123\"\ndata_dir = \"/var/lib/lep-agent\"\n",
         )
         .unwrap();
         let units = FakeUnits::default();
@@ -371,7 +371,7 @@ mod tests {
         assert!(prepare_units(&config, &units).unwrap().contains("in place"));
         let text = units.template.lock().unwrap().clone().unwrap();
         assert!(text.contains("ExecStart=/usr/local/bin/luantiserver --quiet"));
-        assert!(text.contains("/var/lib/lep/worlds/%i/world"));
+        assert!(text.contains("/var/lib/lep-agent/worlds/%i/world"));
 
         let refused = prepare_units(&config, &FakeUnits::broken()).unwrap_err();
         assert!(refused.contains("worlds cannot be started"));
@@ -387,7 +387,7 @@ mod tests {
     fn tries_the_service_of_the_worlds_until_it_is_in_place() {
         use crate::units::testing::FakeUnits;
         let config = Config::parse(
-            "backend = \"http://127.0.0.1:1\"\nkey = \"lepa_0123\"\ndata_dir = \"/var/lib/lep\"\n",
+            "backend = \"http://127.0.0.1:1\"\nkey = \"lepa_0123\"\ndata_dir = \"/var/lib/lep-agent\"\n",
         )
         .unwrap();
         let units = Arc::new(FakeUnits::default());

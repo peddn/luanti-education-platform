@@ -24,7 +24,7 @@ RestartSec=10
 # The agent writes into its folder and nowhere else. If the settings
 # name another data_dir, it belongs here as well.
 ProtectSystem=strict
-ReadWritePaths=/var/lib/lep
+ReadWritePaths=/var/lib/lep-agent
 # The folders of people are none of its business. ProtectHome= would
 # also hide /run/user, where the agent reaches the services of the
 # worlds, so they are named one by one. /run/user/<uid> may be mounted
