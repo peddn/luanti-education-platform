@@ -141,7 +141,7 @@ impl Systemctl {
 
 /// Where systemd keeps the way to the services of this user, if the
 /// agent was not told. As a service the agent is told. Started by hand
-/// for another user, as with `sudo -u lep lep-agent check`, it is not,
+/// for another user, as with `sudo -u lep-agent lep-agent check`, it is not,
 /// and `systemctl --user` would not find the services.
 fn missing_runtime_dir() -> Option<PathBuf> {
     if std::env::var_os("XDG_RUNTIME_DIR").is_some_and(|folder| !folder.is_empty()) {
@@ -230,6 +230,9 @@ pub mod testing {
         pub template: Mutex<Option<String>>,
         pub calls: Mutex<Vec<String>>,
         pub broken: bool,
+        /// How many times `install` fails before it works, like right
+        /// after a boot.
+        pub install_failures: Mutex<u32>,
     }
 
     impl FakeUnits {
@@ -255,6 +258,13 @@ pub mod testing {
 
     impl Units for FakeUnits {
         fn install(&self, template: &str) -> Result<bool> {
+            {
+                let mut failures = self.install_failures.lock().unwrap();
+                if *failures > 0 {
+                    *failures -= 1;
+                    bail!("systemctl daemon-reload failed: not ready yet");
+                }
+            }
             self.note("install".to_owned())?;
             let mut there = self.template.lock().unwrap();
             let changed = there.as_deref() != Some(template);

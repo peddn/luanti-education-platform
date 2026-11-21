@@ -83,10 +83,6 @@ async fn run(path: &std::path::Path) -> Result<()> {
         );
     }
     let units = Arc::new(Systemctl::for_this_user()?);
-    match service::prepare_units(&config, &*units) {
-        Ok(said) => tracing::info!("{said}"),
-        Err(said) => tracing::warn!("{said}"),
-    }
     let agent = Agent {
         config,
         template,

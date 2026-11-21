@@ -96,6 +96,36 @@ pub fn prepare_units(config: &Config, units: &dyn Units) -> Result<String, Strin
     }
 }
 
+/// Puts the template for the services of the worlds in place, and
+/// tries again until it worked: right after a boot the services of the
+/// user may not be ready yet when the agent starts.
+#[derive(Debug, Default)]
+pub struct UnitsSetup {
+    done: bool,
+    said: Option<String>,
+}
+
+impl UnitsSetup {
+    /// Tries once, unless it worked before. Returns what is worth a line
+    /// in the log: success once, and every new reason for a failure.
+    pub fn try_once(&mut self, agent: &Agent) -> Option<Result<String, String>> {
+        if self.done {
+            return None;
+        }
+        match prepare_units(&agent.config, &*agent.units) {
+            Ok(said) => {
+                self.done = true;
+                Some(Ok(said))
+            }
+            Err(said) if self.said.as_deref() == Some(said.as_str()) => None,
+            Err(said) => {
+                self.said = Some(said.clone());
+                Some(Err(said))
+            }
+        }
+    }
+}
+
 /// Remembers how the last report went, so that the log says when
 /// something changes and not the same thing every half minute.
 #[derive(Debug, Default)]
@@ -205,7 +235,13 @@ async fn report_loop(
     mut stopped: watch::Receiver<bool>,
 ) {
     let mut contact = Contact::default();
+    let mut units = UnitsSetup::default();
     loop {
+        match units.try_once(agent) {
+            Some(Ok(said)) => tracing::info!("{said}"),
+            Some(Err(said)) => tracing::warn!("{said}. Trying again with every report"),
+            None => {}
+        }
         match contact.note(report_once(agent, backend).await) {
             Some(News::Connected) => tracing::info!("connected to the backend"),
             Some(News::Back) => tracing::info!("the backend is back"),
@@ -345,6 +381,33 @@ mod tests {
         )
         .unwrap();
         assert!(prepare_units(&odd, &units).is_err());
+    }
+
+    #[test]
+    fn tries_the_service_of_the_worlds_until_it_is_in_place() {
+        use crate::units::testing::FakeUnits;
+        let config = Config::parse(
+            "backend = \"http://127.0.0.1:1\"\nkey = \"lepa_0123\"\ndata_dir = \"/var/lib/lep\"\n",
+        )
+        .unwrap();
+        let units = Arc::new(FakeUnits::default());
+        *units.install_failures.lock().unwrap() = 2;
+        let agent = Agent {
+            config,
+            template: None,
+            units: units.clone(),
+        };
+
+        let mut setup = UnitsSetup::default();
+        // The reason is said once, not with every attempt.
+        assert!(matches!(setup.try_once(&agent), Some(Err(_))));
+        assert_eq!(setup.try_once(&agent), None);
+        // Then systemd is ready.
+        assert!(matches!(setup.try_once(&agent), Some(Ok(_))));
+        assert!(units.template.lock().unwrap().is_some());
+        // Once it is in place, nothing is tried any more.
+        assert_eq!(setup.try_once(&agent), None);
+        assert_eq!(units.calls(), ["install"]);
     }
 
     #[test]
