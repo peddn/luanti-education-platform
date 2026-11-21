@@ -429,12 +429,12 @@ Die Einstellungen sind eine kleine Datei:
 ```toml
 backend = "https://lep.schule.example"
 key = "lepa_…"
-data_dir = "/var/lib/lep"
+data_dir = "/var/lib/lep-agent"
 ```
 
 - `backend`: Adresse des Backends. Sie muss mit `https://` beginnen, weil der Schlüssel mit jeder Anfrage mitreist. Nur ein Backend auf derselben Maschine darf mit `http://` erreicht werden.
 - `key`: der Schlüssel aus `agent key`.
-- `data_dir`: Ordner für alles, was der Agent anfasst. Ohne Angabe `/var/lib/lep`.
+- `data_dir`: Ordner für alles, was der Agent anfasst. Ohne Angabe `/var/lib/lep-agent`.
 - `admin`: Kontoname des Server-Admins, den der Agent in jede neue Welt einträgt. Ohne Angabe legt er keine Welten an. `scripts/agent-run.sh` übernimmt beim ersten Start den Namen aus `.dev/minetest.conf`.
 - `ports`: Bereich der Ports für die Welten, ohne Angabe `30000-30099`.
 - `luanti`: Pfad des Luanti-Servers für die Welten, ohne Angabe `/usr/local/bin/luantiserver`.
