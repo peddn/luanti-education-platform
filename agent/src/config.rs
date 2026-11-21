@@ -17,7 +17,7 @@ use serde::Deserialize;
 pub const DEFAULT_PATH: &str = "/etc/lep/agent.toml";
 /// Folder that holds everything the agent touches, if nothing else is
 /// said.
-pub const DEFAULT_DATA_DIR: &str = "/var/lib/lep";
+pub const DEFAULT_DATA_DIR: &str = "/var/lib/lep-agent";
 /// The Luanti server the worlds run with, if nothing else is said. It
 /// is where scripts/luanti-build.sh installs it.
 pub const DEFAULT_LUANTI: &str = "/usr/local/bin/luantiserver";
