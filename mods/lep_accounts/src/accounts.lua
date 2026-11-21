@@ -154,12 +154,11 @@ function accounts.may_set_password(name, password, exists, privileges, ordinary,
 end
 
 --- Decides whether somebody may enter the world with a name. The world
--- is closed: only names with an account get in. The admin is the one
--- exception, or nobody could ever enter a new world.
+-- is closed: only names with an account get in. There is no exception,
+-- not even for the admin, whose account the world creates by itself.
 -- @param exists True if there is an account with this name.
--- @param admin Name of the admin from the settings, or nil.
-function accounts.may_join(name, exists, admin)
-	return exists == true or (type(admin) == "string" and admin ~= "" and name == admin)
+function accounts.may_join(exists)
+	return exists == true
 end
 
 return accounts

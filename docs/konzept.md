@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 77 · 21. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 78 · 21. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -199,7 +199,8 @@ Der Kontoname bleibt für immer der Anmeldename. Konto, Besitz und Grundstücke 
 **Geschlossene Welt**
 
 - Eine Welt lässt nur Namen hinein, für die es ein Konto gibt. Wer mit einem unbekannten Namen kommt, wird abgewiesen. Konten entstehen auf Auftrag, nicht durch Hereinkommen.
-- Die Ausnahme ist der Admin aus der Einstellung `name`: Er darf sein Konto durch das erste Anmelden anlegen, sonst käme in eine neue Welt niemand hinein.
+- Das gilt auch für den Admin aus der Einstellung `name`. Sein Konto legt die Welt beim ersten Start selbst an, mit einem gewürfelten Startpasswort. Niemand kann es durch bloßes Hereinkommen übernehmen, auch nicht in einer Welt, von der der Server-Admin noch gar nicht weiß.
+- Das Startpasswort des Admins steht in der Datei `lep_admin_password.txt` im Ordner der Welt, den nur der Benutzer der Welten lesen kann. Der Server-Admin liest sie auf dem Server. Sie läuft nie über das Backend und wird nicht verschickt. Sobald das Konto ein anderes Passwort hat, löscht die Welt die Datei.
 - Das gilt für jede Welt, auch für die Testumgebung. Eine Einstellung zum Offenhalten gibt es nicht.
 - Was ein Konto im Spiel darf, sagen allein seine Privilegien. Für die Web-Anwendung zählt zusätzlich die Herkunft: Ein Konto, das als Schülerkonto einer Gruppe angelegt wurde, erkennt das Backend nie als Lehrkraft oder Schulverwaltung an, was auch immer eine Welt meldet. Schüler und Lehrkräfte sind damit getrennt, und ein falsch vergebenes Privileg öffnet keinem Kind die Web-Anwendung.
 - Lehrkräfte legt die Schulverwaltung in der Web-Anwendung an. Sie vergibt den Namen selbst. Das Konto entsteht in jeder Welt, mit einem Startpasswort auf einem Zugangszettel und mit den Privilegien des Bündels „Lehrkraft“ (Abschnitt 10.5). Eine Welt, die später dazukommt, bekommt die bestehenden Lehrkräfte mit Schritt 7.
@@ -933,7 +934,7 @@ Angenommen wird ein Linux mit systemd, in der Regel Debian.
 
   Ordner heißen nach der festen Kennung der Welt, nie nach dem Namen der Gruppe. Der Name kann sich ändern, und er käme sonst aus einer Eingabe im Browser in einen Pfad.
 - **Einstellungen des Agenten** in `/etc/lep/agent.toml`: Adresse des Backends, Schlüssel des Agenten, Bereich der Ports (ohne Angabe 30000 bis 30099), der Kontoname des Server-Admins, der Pfad des Luanti-Servers (ohne Angabe `/usr/local/bin/luantiserver`) und der Name, unter dem Spieler den Spielserver erreichen. Die Datei ist nur für `lep` lesbar.
-- **Server-Admin der Welten:** Der Agent trägt den Kontonamen aus seinen Einstellungen in jede neue Welt ein. So hat eine frische Welt einen ersten Zugang, bevor Lehrkräfte verteilt sind. Ohne diesen Namen legt der Agent keine Welt an.
+- **Server-Admin der Welten:** Der Agent trägt den Kontonamen aus seinen Einstellungen in jede neue Welt ein. Die Welt legt das Konto beim ersten Start mit einem Startpasswort an (Abschnitt 5). So hat eine frische Welt einen ersten Zugang, bevor Lehrkräfte verteilt sind. Ohne diesen Namen legt der Agent keine Welt an. Den Ordner einer Welt kann nur der Benutzer `lep-agent` betreten.
 - **Ports:** Der Agent vergibt jeder Welt einen Port aus einem festen Bereich und meldet ihn dem Backend. Die Firewall öffnet der Server-Admin einmal für den ganzen Bereich.
 
 **Dienste**

@@ -235,7 +235,19 @@ sudo ls -la /var/lib/lep-agent/worlds/
 
 Erwartet: erst `waiting for the agent`, kurz darauf `running, port 30000, template …`, und ein Ordner mit der Kennung der Welt. Wenig später steht statt `never seen` ein `last seen … s ago` mit der Luanti-Version: Die Welt hat sich selbst beim Backend gemeldet. Lehnt der Agent ab, steht der Grund in der Liste, etwa `the agent refused: the settings of the agent name no admin for the worlds`.
 
-Mit einem Luanti-Client erreichst du die Welt unter der Adresse des Servers und dem Port aus der Liste. Der erste, der sich mit dem Namen aus `admin` anmeldet, legt dabei das Passwort dieses Kontos fest. Das solltest du selbst sein, gleich nach dem Anlegen.
+Mit einem Luanti-Client erreichst du die Welt unter der Adresse des Servers und dem Port aus der Liste.
+
+### Als Server-Admin in eine Welt
+
+Jede neue Welt legt beim ersten Start das Konto des Server-Admins an, mit dem Namen aus `admin` und einem gewürfelten Startpasswort. Niemand kann das Konto übernehmen, indem er sich als Erster anmeldet. Das Startpasswort steht in einer Datei im Ordner der Welt, die nur der Benutzer `lep-agent` lesen kann:
+
+```sh
+sudo cat /var/lib/lep-agent/worlds/<Kennung>/world/lep_admin_password.txt
+```
+
+Die Kennung zeigt `lep-admin world list` in der zweiten Spalte. Mit diesem Passwort meldest du dich an und änderst es im Client (Menü, „Passwort ändern“). Spätestens eine halbe Minute danach löscht die Welt die Datei.
+
+Das Passwort verlässt die Maschine nicht: Es steht in keinem Log, geht nicht ans Backend und wird nicht verschickt. In die meisten Welten muss der Server-Admin gar nicht hinein. Er braucht die erste, um die Schulverwaltung zu ernennen (Abschnitt 10).
 
 ## 9. Welten starten und stoppen
 

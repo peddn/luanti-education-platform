@@ -17,7 +17,7 @@ use std::fmt;
 use std::fs;
 use std::io::Write;
 use std::ops::RangeInclusive;
-use std::os::unix::fs::{symlink, OpenOptionsExt};
+use std::os::unix::fs::{symlink, DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
@@ -231,7 +231,9 @@ pub fn create(id: &WorldId, plan: &Plan<'_>) -> Result<Created> {
 }
 
 fn build(folder: &Path, note: &Note, plan: &Plan<'_>) -> Result<()> {
-    fs::create_dir(folder)?;
+    // Only the user of the worlds gets in: the folder holds the key of
+    // the bridge and the start password of the admin.
+    fs::DirBuilder::new().mode(0o700).create(folder)?;
     fs::create_dir(folder.join("world"))?;
     fs::write(folder.join("world/world.mt"), world_mt(plan.manifest))?;
     // Relative, so the folder of the agent can be moved as a whole.
@@ -386,6 +388,9 @@ mod tests {
             assert!(settings.contains(line), "{line}");
         }
         assert!(!settings.contains("ipv6"));
+        // Nobody else gets into the folder of the world.
+        let mode = fs::metadata(&world).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o700);
         // The settings hold a key.
         let mode = fs::metadata(world.join(SETTINGS))
             .unwrap()

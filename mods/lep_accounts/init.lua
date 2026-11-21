@@ -8,6 +8,7 @@ lep_accounts = {}
 
 load("game/api")
 load("game/door")
+load("game/admin")
 load("game/names")
 load("game/show")
 load("game/name_window")
