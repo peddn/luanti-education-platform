@@ -22,10 +22,10 @@ Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten 
 | Vorlage für Welten, vom Agenten ausgepackt | `/var/lib/lep/templates/<Version>/` |
 | Welten, vom Agenten angelegt | `/var/lib/lep/worlds/<Kennung>/` |
 | Dienst des Backends | `lep-backend.service`, ein Dienst des Systems, Benutzer `lep-backend` |
-| Dienst des Agenten | `lep-agent.service`, ein Dienst des Benutzers `lep` |
-| Dienst einer Welt | `lep-world@<Kennung>.service`, ein Dienst des Benutzers `lep`. Die Vorlage dafür schreibt der Agent selbst |
+| Dienst des Agenten | `lep-agent.service`, ein Dienst des Systems, Benutzer `lep-agent` |
+| Dienst einer Welt | `lep-world@<Kennung>.service`, ein Dienst des Benutzers `lep-agent`. Die Vorlage dafür schreibt der Agent selbst |
 
-Backend und Agent haben getrennte Benutzer ohne Admin-Rechte. Keiner kann die Dateien des anderen lesen.
+Backend und Agent haben getrennte Benutzer ohne Admin-Rechte: `lep-backend` und `lep-agent`. Keiner kann die Dateien des anderen lesen. Unter `lep-agent` laufen auch die Welten. Nur deshalb darf der Agent sie starten und stoppen, ohne Rechte am System zu haben.
 
 ## 1. Werkzeuge zum Bauen
 
@@ -110,7 +110,7 @@ Erwartet: `Luanti 5.18.0 (Linux)`, darunter `Using LuaJIT`.
 
 ```sh
 sudo adduser --system --group --home /var/lib/lep-backend --no-create-home lep-backend
-sudo adduser --system --group --home /var/lib/lep lep
+sudo adduser --system --group --home /var/lib/lep lep-agent
 sudo mkdir -p /etc/lep
 ```
 
@@ -162,7 +162,7 @@ lep-admin agent key
 Einstellungen anlegen und den Schlüssel bei `key` eintragen:
 
 ```sh
-sudo install -m 600 -o lep -g lep deploy/agent.toml.example /etc/lep/agent.toml
+sudo install -m 600 -o lep-agent -g lep-agent deploy/agent.toml.example /etc/lep/agent.toml
 sudo nano /etc/lep/agent.toml
 ```
 
@@ -173,35 +173,34 @@ In derselben Datei stehen zwei Angaben für die Welten:
 - `host`: der Name oder die Adresse, unter der Spieler den Server erreichen, ohne Port, zum Beispiel `spiel.schule.example` oder die IP der Maschine. Zusammen mit dem Port einer Welt wird daraus ihre Adresse auf den Zugangszetteln, etwa „spiel.schule.example, Port 30000“. Ohne diese Angabe trägt die Schulverwaltung die Adresse jeder Welt von Hand ein.
 - `luanti`: der Pfad des Luanti-Servers, voreingestellt `/usr/local/bin/luantiserver`. Dorthin legt ihn Abschnitt 3.
 
-Die Datei gehört dem Benutzer `lep` und ist für niemanden sonst lesbar. Probe, ob der Agent das Backend erreicht:
+Die Datei gehört dem Benutzer `lep-agent` und ist für niemanden sonst lesbar. Probe, ob der Agent das Backend erreicht:
 
 ```sh
-sudo -u lep lep-agent check
+sudo -u lep-agent lep-agent check
 ```
 
 Erwartet: `The backend took the report.` Darüber stehen die Vorlage, der Admin, der Bereich der Ports, der Name des Servers und der Pfad von Luanti.
 
-Die Dienste des Benutzers `lep` sollen ohne Anmeldung laufen und beim Hochfahren starten (Linger). Das wird einmal eingeschaltet:
+Die Welten sind Dienste des Benutzers `lep-agent`. Sie sollen ohne Anmeldung laufen und beim Hochfahren starten (Linger). Das wird einmal eingeschaltet:
 
 ```sh
-sudo loginctl enable-linger lep
+sudo loginctl enable-linger lep-agent
 ```
 
-Dienst einrichten und starten:
+Der Agent selbst ist ein Dienst des Systems, wie das Backend. Einrichten und starten:
 
 ```sh
-sudo install -d -o lep -g lep /var/lib/lep/.config /var/lib/lep/.config/systemd /var/lib/lep/.config/systemd/user
-sudo install -m 644 -o lep -g lep deploy/lep-agent.service /var/lib/lep/.config/systemd/user/
-sudo systemctl --user -M lep@ daemon-reload
-sudo systemctl --user -M lep@ enable --now lep-agent
+sudo install -m 644 deploy/lep-agent.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now lep-agent
 ```
 
-`--user -M lep@` heißt: die Dienstverwaltung des Benutzers `lep`, nicht die des Systems.
+Die Dienstdatei erlaubt dem Agenten, nur in `/var/lib/lep` zu schreiben. Steht in der `agent.toml` ein anderes `data_dir`, gehört dieser Ordner auch in die Zeile `ReadWritePaths` der Dienstdatei.
 
 ## 7. Prüfen
 
 ```sh
-sudo systemctl --user -M lep@ is-active lep-agent
+systemctl is-active lep-agent
 lep-admin agent show
 ```
 
@@ -288,10 +287,10 @@ Eine im Browser angelegte Welt kennt zunächst nur den Server-Admin. Dass die Le
 | Zustand des Backends | `systemctl status lep-backend` |
 | Log des Backends | `sudo journalctl -u lep-backend` |
 | Backend neu starten | `sudo systemctl restart lep-backend` |
-| Zustand des Agenten | `sudo systemctl --user -M lep@ status lep-agent` |
-| Log des Agenten | `sudo journalctl _SYSTEMD_USER_UNIT=lep-agent.service` |
-| Agent neu starten | `sudo systemctl --user -M lep@ restart lep-agent` |
-| Zustand einer Welt | `sudo systemctl --user -M lep@ status 'lep-world@<Kennung>'` |
+| Zustand des Agenten | `systemctl status lep-agent` |
+| Log des Agenten | `sudo journalctl -u lep-agent` |
+| Agent neu starten | `sudo systemctl restart lep-agent` |
+| Zustand einer Welt | `sudo systemctl --user -M lep-agent@ status 'lep-world@<Kennung>'` |
 | Fehler einer Welt beim Start | `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service` |
 | Logdatei einer Welt | `/var/lib/lep/worlds/<Kennung>/debug.txt` |
 | Befehle des Backends | `lep-admin <befehl>` |
@@ -311,13 +310,35 @@ scripts/frontend-run.sh build
 sudo install -m 755 target/release/lep-backend target/release/lep-agent deploy/lep-admin /usr/local/bin/
 sudo rm -rf /usr/local/share/lep/frontend
 sudo cp -r frontend/dist /usr/local/share/lep/frontend
-sudo systemctl restart lep-backend
-sudo systemctl --user -M lep@ restart lep-agent
+sudo systemctl restart lep-backend lep-agent
 ```
 
 Nennt `third_party/luanti.toml` nach dem `git pull` eine neue Version, kommen `scripts/luanti-build.sh` und `sudo cmake --install target/luanti/build` dazu. Laufende Welten nutzen das neue Luanti nach ihrem nächsten Neustart.
 
 Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die Vorlage eine neue Version, und der Agent packt sie beim Start neben die alte. Haben sich die Dienstdateien in `deploy/` geändert, werden sie wie in Abschnitt 5 und 6 neu abgelegt, gefolgt von `daemon-reload`.
+
+## Umzug von einer älteren Einrichtung
+
+Bis Fassung 75 des Konzepts hieß der Benutzer des Agenten `lep`, und der Agent war ein Dienst dieses Benutzers. Eine Maschine, die so eingerichtet wurde, zieht einmal um. Welten, Vorlagen, Einstellungen und Passwörter bleiben dabei, wie sie sind. Die Welten stehen für die Dauer des Umzugs still.
+
+Zuerst wie unter „Aktualisieren“ bauen und die Programme ablegen, dann:
+
+```sh
+sudo systemctl --user -M lep@ disable --now lep-agent
+sudo rm -f /var/lib/lep/.config/systemd/user/lep-agent.service
+sudo loginctl disable-linger lep
+sudo systemctl stop "user@$(id -u lep).service"
+sudo usermod -l lep-agent lep
+sudo groupmod -n lep-agent lep
+sudo loginctl enable-linger lep-agent
+sudo install -m 644 deploy/lep-agent.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now lep-agent
+```
+
+Die ersten vier Zeilen halten den alten Agenten und alle Welten an, denn ein Benutzer lässt sich nur umbenennen, wenn nichts mehr unter ihm läuft. Die beiden Zeilen danach benennen Benutzer und Gruppe um. Dateien werden dabei nicht bewegt. Mit `enable-linger` starten die Welten wieder, die vorher eingeschaltet waren, und die letzten drei Zeilen richten den Agenten als Dienst des Systems ein.
+
+Prüfen wie in Abschnitt 7. `lep-admin world list` zeigt nach einer halben Minute wieder, welche Welten laufen.
 
 ## Was noch fehlt
 
