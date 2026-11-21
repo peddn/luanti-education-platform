@@ -1,12 +1,19 @@
-# Service of the user lep for the LEP agent.
-# Goes to /var/lib/lep/.config/systemd/user/lep-agent.service, see
-# docs/betrieb.md. It runs without a login because the services of the
-# user lep keep running (loginctl enable-linger lep).
+# Service of the system for the LEP agent.
+# Goes to /etc/systemd/system/lep-agent.service, see docs/betrieb.md.
+#
+# The agent runs as the user lep-agent, not as root. The worlds are
+# services of that same user, which is why the agent may start and stop
+# them. They need "loginctl enable-linger lep-agent" to run without a
+# login.
 
 [Unit]
 Description=Luanti Education Platform: agent
+After=network-online.target systemd-user-sessions.service
+Wants=network-online.target
 
 [Service]
+User=lep-agent
+Group=lep-agent
 Environment=RUST_LOG=info NO_COLOR=1
 ExecStart=/usr/local/bin/lep-agent --config /etc/lep/agent.toml
 # The agent only ends when it is told to, or when its settings are
@@ -14,5 +21,25 @@ ExecStart=/usr/local/bin/lep-agent --config /etc/lep/agent.toml
 Restart=on-failure
 RestartSec=10
 
+# The agent writes into its folder and nowhere else. If the settings
+# name another data_dir, it belongs here as well.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/lep
+# The folders of people are none of its business. ProtectHome= would
+# also hide /run/user, where the agent reaches the services of the
+# worlds, so they are named one by one. /run/user/<uid> may be mounted
+# after the agent started. systemd passes such mounts on to services.
+InaccessiblePaths=-/home -/root
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

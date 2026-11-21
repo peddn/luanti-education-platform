@@ -6,7 +6,7 @@ Dateien für den Betrieb auf einem Server: Dienste für systemd, Vorlagen für d
 |---|---|
 | `lep-backend.service` | `/etc/systemd/system/lep-backend.service` |
 | `backend.env.example` | `/etc/lep/backend.env` |
-| `lep-agent.service` | `/var/lib/lep/.config/systemd/user/lep-agent.service` |
+| `lep-agent.service` | `/etc/systemd/system/lep-agent.service` |
 | `agent.toml.example` | `/etc/lep/agent.toml` |
 | `lep-admin` | `/usr/local/bin/lep-admin` |
 

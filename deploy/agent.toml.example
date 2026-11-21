@@ -1,5 +1,5 @@
 # Settings of the LEP agent. Goes to /etc/lep/agent.toml, owned by the
-# user lep and readable for nobody else (mode 600): it holds the key.
+# user lep-agent and readable for nobody else (mode 600): it holds the key.
 
 # Address of the backend. It must start with https://, because the key
 # travels with every request. Only a backend on the same machine may be
