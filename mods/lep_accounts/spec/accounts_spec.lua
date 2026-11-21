@@ -148,16 +148,12 @@ describe("lep_accounts", function()
 		end
 	end)
 
-	it("lets in only names with an account, and the admin", function()
-		assert.is_true(accounts.may_join("klugeEule", true, "tester"))
-		assert.is_false(accounts.may_join("fremder", false, "tester"))
-		-- The admin may create their own account by entering.
-		assert.is_true(accounts.may_join("tester", false, "tester"))
-		assert.is_true(accounts.may_join("tester", true, "tester"))
-		assert.is_false(accounts.may_join("Tester", false, "tester"))
-		-- Without an admin in the settings nobody new gets in.
-		assert.is_false(accounts.may_join("fremder", false, nil))
-		assert.is_false(accounts.may_join("", false, ""))
+	it("lets in only names with an account", function()
+		assert.is_true(accounts.may_join(true))
+		assert.is_false(accounts.may_join(false))
+		-- Nothing but a plain yes opens the door.
+		assert.is_false(accounts.may_join(nil))
+		assert.is_false(accounts.may_join("tester"))
 	end)
 	it("sets the password of a teacher only when the order says so", function()
 		local ordinary = { interact = true, shout = true }

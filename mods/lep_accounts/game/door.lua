@@ -1,7 +1,7 @@
 -- The world is closed. Who comes with a name that has no account is
--- turned away: accounts are created on order, not by walking in. The
--- admin from the settings is the exception, or nobody could ever enter
--- a new world.
+-- turned away: accounts are created on order, not by walking in. That
+-- goes for the admin as well: the world creates that account by itself,
+-- with a start password (game/admin.lua).
 
 local load = lep_core.loader("lep_accounts")
 local accounts = load("src/accounts")
@@ -17,7 +17,7 @@ core.register_on_prejoinplayer(function(name)
 		-- Nobody comes in under a name while its account is taken apart.
 		return core.get_translated_string("de", MESSAGE)
 	end
-	if accounts.may_join(name, lep_accounts.exists(name), core.settings:get("name")) then
+	if accounts.may_join(lep_accounts.exists(name)) then
 		return nil
 	end
 	core.log("action", "[lep_accounts] turned away '" .. tostring(name)

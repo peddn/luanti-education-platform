@@ -16,6 +16,8 @@ read_globals = {
 	"vector",
 	"VoxelArea",
 	"ItemStack",
+	-- Secure random numbers of the engine, for start passwords.
+	"SecureRandom",
 	-- Global of the beds mod from Minetest Game.
 	beds = {
 		other_fields = true,
