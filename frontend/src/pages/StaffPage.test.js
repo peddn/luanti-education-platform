@@ -17,6 +17,7 @@ function staff(list) {
       school_admin: false,
       web_access: 'none',
       groups: [],
+      worlds: [],
       ...entry,
     })),
   }
@@ -214,6 +215,53 @@ describe('page of the teachers', () => {
     expect(rows[1].get('[data-test=state]').text()).toContain('Den Namen gibt es dort schon')
     // A name the worlds refused can only be taken off the list.
     expect(rows[1].findAll('button').map((button) => button.text())).toEqual(['Konto löschen'])
+  })
+
+  it('tells in which worlds a teacher has arrived', async () => {
+    backend({
+      [`GET ${PATH}`]: [
+        200,
+        staff([
+          {
+            account: 'frau_meier',
+            state: 'active',
+            worlds: [
+              { group: '7b', state: 'arrived' },
+              { group: '8a', state: 'password_waiting' },
+              { group: '9c', state: 'waiting' },
+              { group: '9d', state: 'refused' },
+              { group: '9e', state: 'missing' },
+            ],
+          },
+          { account: 'herr_k', state: 'active', worlds: [{ group: '7b', state: 'arrived' }] },
+          { account: 'lehrer1' },
+        ]),
+      ],
+    })
+    const page = await show()
+    const rows = page.findAll('[data-test="teacher"]')
+
+    // The account is there in two worlds, in one of them with the
+    // password from before.
+    const worlds = rows[0].get('[data-test="worlds"]')
+    expect(worlds.get('summary').text()).toBe('Gruppen: 2 von 5 angelegt')
+    expect(worlds.get('summary').classes()).toContain('text-amber-700')
+    expect(
+      worlds.findAll('[data-test="world"]').map((world) => world.findAll('span').map((part) => part.text())),
+    ).toEqual([
+      ['7b', 'angelegt'],
+      ['8a', 'angelegt, das neue Passwort wartet auf die Welt'],
+      ['9c', 'wartet, bis die Welt den Auftrag abholt'],
+      ['9d', 'von der Welt abgelehnt'],
+      ['9e', 'nicht angelegt'],
+    ])
+
+    const everywhere = rows[1].get('[data-test="worlds"] summary')
+    expect(everywhere.text()).toBe('Gruppen: 1 von 1 angelegt')
+    expect(everywhere.classes()).not.toContain('text-amber-700')
+
+    // Nothing is known about an account from the game.
+    expect(rows[2].find('[data-test="worlds"]').exists()).toBe(false)
   })
 
   it('asks again while a world has not answered', async () => {

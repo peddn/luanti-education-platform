@@ -382,6 +382,14 @@
     "fromGame": "im Spiel angelegt",
     "schoolAdmin": "Schulverwaltung",
     "noHolder": "hat in keiner Welt das Privileg für den Web-Zugang",
+    "arrivedIn": "Gruppen: {n} von {total} angelegt",
+    "arrival": {
+      "arrived": "angelegt",
+      "waiting": "wartet, bis die Welt den Auftrag abholt",
+      "refused": "von der Welt abgelehnt",
+      "password_waiting": "angelegt, das neue Passwort wartet auf die Welt",
+      "missing": "nicht angelegt"
+    },
     "webAccessStates": {
       "none": "nicht eingerichtet",
       "pending": "Adresse wartet auf Bestätigung",
