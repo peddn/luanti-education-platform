@@ -161,6 +161,8 @@ impl AppState {
         lep_protocol::world::NewAccount,
         lep_protocol::world::CreateAccounts,
         lep_protocol::world::SetPasswordEntry,
+        lep_protocol::web::ArrivalState,
+        lep_protocol::web::StaffWorld,
         lep_protocol::world::AccountsCreated,
         lep_protocol::web::DisplayLock,
         lep_protocol::web::DisplayNameHistory,

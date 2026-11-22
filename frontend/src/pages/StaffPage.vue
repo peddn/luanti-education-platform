@@ -44,6 +44,16 @@ function changeable(entry) {
   return !entry.school_admin && entry.account !== auth.me?.account
 }
 
+/**
+ * The number of worlds that have the account, whatever password counts
+ * there right now.
+ *
+ * @param {StaffAccount} entry
+ */
+function arrivedIn(entry) {
+  return entry.worlds.filter((world) => world.state === 'arrived' || world.state === 'password_waiting').length
+}
+
 /** @param {StaffAccount} entry */
 function waits(entry) {
   return entry.state === 'creating' || entry.password === 'pending' || entry.removal === 'pending'
@@ -187,6 +197,27 @@ function closeSlips() {
                 >
                   {{ $t(`students.password.${entry.password}`) }}
                 </span>
+                <details v-if="entry.worlds.length" data-test="worlds" class="text-sm">
+                  <summary
+                    class="cursor-pointer"
+                    :class="{ 'text-amber-700': arrivedIn(entry) < entry.worlds.length }"
+                  >
+                    {{ $t('staff.arrivedIn', { n: arrivedIn(entry), total: entry.worlds.length }) }}
+                  </summary>
+                  <ul class="mt-1 space-y-0.5">
+                    <li v-for="world in entry.worlds" :key="world.group" data-test="world" class="flex gap-2">
+                      <span class="shrink-0 font-semibold">{{ world.group }}</span>
+                      <span
+                        :class="{
+                          'text-red-800': world.state === 'refused' || world.state === 'missing',
+                          'text-amber-700': world.state === 'waiting' || world.state === 'password_waiting',
+                        }"
+                      >
+                        {{ $t(`staff.arrival.${world.state}`) }}
+                      </span>
+                    </li>
+                  </ul>
+                </details>
                 <span v-if="entry.removal === 'pending'" data-test="removal-state" class="block text-sm text-amber-700">
                   {{ $t('students.removalPending') }}
                 </span>

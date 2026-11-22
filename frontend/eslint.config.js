@@ -27,7 +27,7 @@ export default [
       '@intlify/vue-i18n/no-unused-keys': [
         'error',
         // Keys the code builds at run time, from codes of the backend.
-        { extensions: ['.js', '.vue'], ignores: ['/^errors\\./', '/^health\\.status\\./', '/^health\\.mail\\./', '/^students\\.states\\./', '/^students\\.password\\./', '/^progress\\.change\\./', '/^yearEnd\\.worldStates\\./', '/^protocols\\.(tabs|periods|columns|values)\\./', '/^students\\.displayChange\\./', '/^students\\.removalRefusals\\./', '/^staff\\.(states|webAccessStates)\\./', '/^rewards\\.(occasions|hints)\\./', '/^students\\.historyActions\\./', '/^progress\\.materials\\./', '/^languages\\./', '/^nav\\./'] },
+        { extensions: ['.js', '.vue'], ignores: ['/^errors\\./', '/^health\\.status\\./', '/^health\\.mail\\./', '/^students\\.states\\./', '/^students\\.password\\./', '/^progress\\.change\\./', '/^yearEnd\\.worldStates\\./', '/^protocols\\.(tabs|periods|columns|values)\\./', '/^students\\.displayChange\\./', '/^students\\.removalRefusals\\./', '/^staff\\.(states|webAccessStates|arrival)\\./', '/^rewards\\.(occasions|hints)\\./', '/^students\\.historyActions\\./', '/^progress\\.materials\\./', '/^languages\\./', '/^nav\\./'] },
       ],
       // The formatting of the templates is not a matter of the linter.
       'vue/max-attributes-per-line': 'off',

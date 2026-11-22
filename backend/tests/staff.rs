@@ -650,3 +650,87 @@ async fn who_is_a_teacher_nowhere_any_more_loses_the_groups() {
         .await;
     assert_eq!(status, StatusCode::OK);
 }
+
+/// Answers every job that waits for a world.
+async fn answer(setup: &Setup, world: &str, ok: bool, message: &str) {
+    for job in jobs::take_waiting(&setup.state.db, world).await.unwrap() {
+        let result = lep_protocol::world::JobResult {
+            ok,
+            message: message.to_owned(),
+        };
+        assert!(jobs::finish(&setup.state.db, world, &job.id, &result)
+            .await
+            .unwrap());
+    }
+}
+
+#[tokio::test]
+async fn the_list_tells_in_which_worlds_a_teacher_has_arrived() {
+    let setup = Setup::new().await;
+    let worlds_of = |list: &Value, name: &str| entry(list, name).unwrap()["worlds"].clone();
+    setup
+        .web(
+            Method::POST,
+            STAFF,
+            &setup.leitung,
+            Some(json!({ "name": "frau_meier" })),
+        )
+        .await;
+    // Nothing is known about accounts the admin made in the game.
+    let list = setup.staff().await;
+    assert_eq!(worlds_of(&list, "lehrer1"), json!([]));
+    assert_eq!(
+        worlds_of(&list, "frau_meier"),
+        json!([{ "group": "7b", "state": "waiting" }, { "group": "8a", "state": "waiting" }])
+    );
+
+    // One world creates the account, the other has one of that name.
+    answer(&setup, &setup.first, true, "1 created, 0 refused").await;
+    answer(&setup, &setup.second, true, "0 created, 1 refused").await;
+    assert_eq!(
+        worlds_of(&setup.staff().await, "frau_meier"),
+        json!([{ "group": "7b", "state": "arrived" }, { "group": "8a", "state": "refused" }])
+    );
+
+    // A new password is on its way, and a world comes later.
+    setup
+        .web(
+            Method::POST,
+            &format!("{STAFF}/frau_meier/password"),
+            &setup.leitung,
+            None,
+        )
+        .await;
+    lep_backend::worlds::add(&setup.state.db, "9c")
+        .await
+        .unwrap();
+    assert_eq!(
+        worlds_of(&setup.staff().await, "frau_meier"),
+        json!([
+            { "group": "7b", "state": "password_waiting" },
+            { "group": "8a", "state": "refused" },
+            { "group": "9c", "state": "waiting" }
+        ])
+    );
+    answer(&setup, &setup.first, true, "set").await;
+    answer(&setup, &setup.second, false, "unmanaged").await;
+    assert_eq!(
+        worlds_of(&setup.staff().await, "frau_meier"),
+        json!([
+            { "group": "7b", "state": "arrived" },
+            { "group": "8a", "state": "refused" },
+            { "group": "9c", "state": "waiting" }
+        ])
+    );
+
+    // A world that was never asked.
+    sqlx::query("DELETE FROM jobs WHERE subject = 'frau_meier' AND world_id = ?")
+        .bind(&setup.second)
+        .execute(&setup.state.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        worlds_of(&setup.staff().await, "frau_meier")[1],
+        json!({ "group": "8a", "state": "missing" })
+    );
+}

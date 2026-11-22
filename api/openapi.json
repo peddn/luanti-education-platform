@@ -3209,6 +3209,17 @@
           }
         }
       },
+      "ArrivalState": {
+        "type": "string",
+        "description": "How far the account of a teacher is in one world, as the world\nanswered the orders of the backend.",
+        "enum": [
+          "arrived",
+          "waiting",
+          "refused",
+          "password_waiting",
+          "missing"
+        ]
+      },
       "ChangeState": {
         "type": "string",
         "description": "How far a change a teacher ordered is.",
@@ -4752,7 +4763,8 @@
           "holder",
           "school_admin",
           "web_access",
-          "groups"
+          "groups",
+          "worlds"
         ],
         "properties": {
           "account": {
@@ -4818,6 +4830,13 @@
           },
           "web_access": {
             "$ref": "#/components/schemas/WebAccessState"
+          },
+          "worlds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffWorld"
+            },
+            "description": "How far the account is in every world, sorted by the name of\nthe group. Empty for an account that was not created here:\nthe backend never gave an order about it."
           }
         }
       },
@@ -4857,6 +4876,23 @@
           "active",
           "refused"
         ]
+      },
+      "StaffWorld": {
+        "type": "object",
+        "description": "The account of a teacher in one world.",
+        "required": [
+          "group",
+          "state"
+        ],
+        "properties": {
+          "group": {
+            "type": "string",
+            "description": "Name of the group."
+          },
+          "state": {
+            "$ref": "#/components/schemas/ArrivalState"
+          }
+        }
       },
       "StartLevelChange": {
         "type": "object",

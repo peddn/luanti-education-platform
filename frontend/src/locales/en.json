@@ -382,6 +382,14 @@
     "fromGame": "created in the game",
     "schoolAdmin": "School administration",
     "noHolder": "holds the privilege for web access in no world",
+    "arrivedIn": "Groups: {n} of {total} created",
+    "arrival": {
+      "arrived": "created",
+      "waiting": "waits until the world fetches the order",
+      "refused": "refused by the world",
+      "password_waiting": "created, the new password waits for the world",
+      "missing": "not created"
+    },
     "webAccessStates": {
       "none": "not set up",
       "pending": "address waits for confirmation",

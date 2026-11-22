@@ -915,6 +915,12 @@ export interface components {
             message: string;
         };
         /**
+         * @description How far the account of a teacher is in one world, as the world
+         *     answered the orders of the backend.
+         * @enum {string}
+         */
+        ArrivalState: "arrived" | "waiting" | "refused" | "password_waiting" | "missing";
+        /**
          * @description How far a change a teacher ordered is.
          * @enum {string}
          */
@@ -1701,6 +1707,12 @@ export interface components {
             school_admin: boolean;
             state?: components["schemas"]["StaffState"] | null;
             web_access: components["schemas"]["WebAccessState"];
+            /**
+             * @description How far the account is in every world, sorted by the name of
+             *     the group. Empty for an account that was not created here:
+             *     the backend never gave an order about it.
+             */
+            worlds: components["schemas"]["StaffWorld"][];
         };
         /** @description Request to create the account of a teacher. */
         StaffCreate: {
@@ -1717,6 +1729,12 @@ export interface components {
          * @enum {string}
          */
         StaffState: "creating" | "active" | "refused";
+        /** @description The account of a teacher in one world. */
+        StaffWorld: {
+            /** @description Name of the group. */
+            group: string;
+            state: components["schemas"]["ArrivalState"];
+        };
         /** @description Request to set the level new students start a module on. */
         StartLevelChange: {
             /** Format: int32 */

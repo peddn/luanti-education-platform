@@ -875,6 +875,36 @@ pub mod web {
         Refused,
     }
 
+    /// How far the account of a teacher is in one world, as the world
+    /// answered the orders of the backend.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    #[serde(rename_all = "snake_case")]
+    pub enum ArrivalState {
+        /// The world created the account and has the password that
+        /// counts.
+        Arrived,
+        /// The world has not answered the order to create it yet, for
+        /// example because it is stopped.
+        Waiting,
+        /// The world did not create the account, for example because
+        /// there is one of that name already, or it refused the newest
+        /// password.
+        Refused,
+        /// The world has the account but has not answered the order for
+        /// the newest password yet. The one before counts there.
+        PasswordWaiting,
+        /// The world was never asked to create the account.
+        Missing,
+    }
+
+    /// The account of a teacher in one world.
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct StaffWorld {
+        /// Name of the group.
+        pub group: String,
+        pub state: ArrivalState,
+    }
+
     /// The account of a student.
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct Student {
@@ -1341,6 +1371,10 @@ pub mod web {
         pub web_access: WebAccessState,
         /// Names of the groups the teacher is assigned to, sorted.
         pub groups: Vec<String>,
+        /// How far the account is in every world, sorted by the name of
+        /// the group. Empty for an account that was not created here:
+        /// the backend never gave an order about it.
+        pub worlds: Vec<StaffWorld>,
         /// Missing in the usual case, see `Student::password`.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub password: Option<PasswordState>,

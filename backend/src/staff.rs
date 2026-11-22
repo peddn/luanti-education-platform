@@ -11,7 +11,8 @@
 
 use anyhow::Result;
 use lep_protocol::web::{
-    AccessSlip, ChangeState, PasswordState, StaffAccount, StaffState, WebAccessState,
+    AccessSlip, ArrivalState, ChangeState, PasswordState, StaffAccount, StaffState, StaffWorld,
+    WebAccessState,
 };
 use lep_protocol::world::{
     AccountsCreated, CreateAccounts, NewAccount, RemoveAccount, SetPassword, SetPasswordEntry,
@@ -401,6 +402,85 @@ const ORDER_STATE: &str = "SELECT CASE WHEN SUM(newest.finished_at IS NULL) > 0 
                               WHERE other.kind = newest.kind AND other.subject = newest.subject
                                 AND other.world_id = newest.world_id)";
 
+/// What a world answered to the newest order of one kind.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Answer {
+    /// The world has not answered yet.
+    Open,
+    /// It answered, with whether it did it and what it said.
+    Given(bool, String),
+}
+
+/// Works out how far the account of a teacher is in one world.
+/// @param creation The answer to the newest order to create it.
+/// @param password The answer to the newest order for a new password.
+fn arrival(creation: Option<&Answer>, password: Option<&Answer>) -> ArrivalState {
+    match creation {
+        None => ArrivalState::Missing,
+        Some(Answer::Open) => ArrivalState::Waiting,
+        // The world answers such an order with how many accounts it
+        // created and how many it refused, here one or the other
+        // (`mods/lep_bridge/game/accounts.lua`).
+        Some(Answer::Given(ok, said)) if !ok || !said.starts_with("1 created") => {
+            ArrivalState::Refused
+        }
+        Some(Answer::Given(..)) => match password {
+            None | Some(Answer::Given(true, _)) => ArrivalState::Arrived,
+            Some(Answer::Open) => ArrivalState::PasswordWaiting,
+            Some(Answer::Given(false, _)) => ArrivalState::Refused,
+        },
+    }
+}
+
+/// Lists how far the account of a teacher is in every world, sorted by
+/// the name of the group.
+async fn arrivals(pool: &SqlitePool, account: &str) -> Result<Vec<StaffWorld>> {
+    let rows = sqlx::query(
+        "SELECT worlds.name,
+                created.rowid IS NOT NULL AS created_any,
+                created.finished_at IS NOT NULL AS created_done,
+                created.ok AS created_ok, created.message AS created_said,
+                password.rowid IS NOT NULL AS password_any,
+                password.finished_at IS NOT NULL AS password_done,
+                password.ok AS password_ok
+         FROM worlds
+         LEFT JOIN jobs AS created ON created.rowid =
+             (SELECT MAX(rowid) FROM jobs
+              WHERE world_id = worlds.id AND kind = ?2 AND subject = ?1)
+         LEFT JOIN jobs AS password ON password.rowid =
+             (SELECT MAX(rowid) FROM jobs
+              WHERE world_id = worlds.id AND kind = ?3 AND subject = ?1)
+         ORDER BY worlds.name COLLATE NOCASE",
+    )
+    .bind(account)
+    .bind(JOB_CREATE_ACCOUNTS)
+    .bind(JOB_SET_PASSWORD_ENTRY)
+    .fetch_all(pool)
+    .await?;
+    let answer = |row: &sqlx::sqlite::SqliteRow, kind: &str, said: Option<String>| {
+        if !row.get::<bool, _>(format!("{kind}_any").as_str()) {
+            None
+        } else if !row.get::<bool, _>(format!("{kind}_done").as_str()) {
+            Some(Answer::Open)
+        } else {
+            Some(Answer::Given(
+                row.get::<Option<bool>, _>(format!("{kind}_ok").as_str()) == Some(true),
+                said.unwrap_or_default(),
+            ))
+        }
+    };
+    Ok(rows
+        .iter()
+        .map(|row| StaffWorld {
+            group: row.get("name"),
+            state: arrival(
+                answer(row, "created", row.get("created_said")).as_ref(),
+                answer(row, "password", None).as_ref(),
+            ),
+        })
+        .collect())
+}
+
 async fn order_state(
     pool: &SqlitePool,
     kind: &str,
@@ -448,8 +528,15 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<StaffAccount>> {
         .bind(&account)
         .fetch_all(pool)
         .await?;
-        // Teachers who were created here get their password as an entry.
-        let kind = if row.get::<bool, _>("managed") {
+        // Teachers who were created here get their password as an entry,
+        // and only about them the worlds were ever asked.
+        let managed: bool = row.get("managed");
+        let worlds = if managed {
+            arrivals(pool, &account).await?
+        } else {
+            Vec::new()
+        };
+        let kind = if managed {
             JOB_SET_PASSWORD_ENTRY
         } else {
             JOB_SET_PASSWORD
@@ -473,6 +560,7 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<StaffAccount>> {
                 WebAccessState::None
             },
             groups,
+            worlds,
             password: match password.as_deref() {
                 Some("pending") => Some(PasswordState::Pending),
                 Some("refused") => Some(PasswordState::Refused),
@@ -489,4 +577,55 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<StaffAccount>> {
         });
     }
     Ok(list)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn given(ok: bool, said: &str) -> Answer {
+        Answer::Given(ok, said.to_owned())
+    }
+
+    #[test]
+    fn tells_how_far_an_account_is_in_a_world() {
+        let created = given(true, "1 created, 0 refused");
+        assert_eq!(arrival(None, None), ArrivalState::Missing);
+        assert_eq!(arrival(Some(&Answer::Open), None), ArrivalState::Waiting);
+        assert_eq!(arrival(Some(&created), None), ArrivalState::Arrived);
+
+        // The world took the order but not the account, or not even the
+        // order.
+        for refused in [
+            given(true, "0 created, 1 refused"),
+            given(false, "the order cannot be read"),
+            given(false, ""),
+            given(true, ""),
+        ] {
+            assert_eq!(arrival(Some(&refused), None), ArrivalState::Refused);
+            // Whatever it said about a password after that.
+            assert_eq!(
+                arrival(Some(&refused), Some(&given(true, "set"))),
+                ArrivalState::Refused
+            );
+        }
+
+        assert_eq!(
+            arrival(Some(&created), Some(&Answer::Open)),
+            ArrivalState::PasswordWaiting
+        );
+        assert_eq!(
+            arrival(Some(&created), Some(&given(true, "set"))),
+            ArrivalState::Arrived
+        );
+        assert_eq!(
+            arrival(Some(&created), Some(&given(false, "unmanaged"))),
+            ArrivalState::Refused
+        );
+        // The account is not there yet: the password waits behind it.
+        assert_eq!(
+            arrival(Some(&Answer::Open), Some(&Answer::Open)),
+            ArrivalState::Waiting
+        );
+    }
 }
