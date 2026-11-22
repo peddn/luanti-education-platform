@@ -1,6 +1,6 @@
 # Luanti Education Platform (LEP): Konzept
 
-Fassung 79 · 21. November 2026 · Status: Schritte 1 bis 6 umgesetzt
+Fassung 80 · 22. November 2026 · Status: Schritte 1 bis 6 umgesetzt
 
 ## 1. Ziel
 
@@ -898,7 +898,11 @@ Die Brücke braucht einen Eintrag in `secure.http_mods`. Sie ist kein vertrauens
 
 **HTTPS**
 
-- Das Backend selbst spricht HTTP. Auf dem Server steht ein Webserver wie Caddy oder nginx davor, der HTTPS und das Zertifikat übernimmt.
+- Das Backend selbst spricht HTTP und lauscht nur auf der eigenen Maschine. Davor steht nginx, das HTTPS und das Zertifikat übernimmt. Das Zertifikat kommt von einer öffentlichen Stelle oder von einer eigenen der Schule.
+- Nach außen reicht nginx nur die Web-Anwendung durch. Die Schnittstellen für Welten und Agent sind von außen nicht erreichbar: Beide laufen auf derselben Maschine und sprechen das Backend direkt an.
+- nginx schreibt in sein Log keine Adressen mit dem, was hinter dem Fragezeichen steht. Die Links aus den Mails tragen dort ihr Geheimnis.
+- nginx gibt den Browsern mit, dass sie nur über HTTPS wiederkommen, die Seiten in keinem fremden Rahmen zeigen, nichts von anderen Servern nachladen und anderen Seiten nicht verraten, woher jemand kommt.
+- Eine Firewall lässt von außen nur SSH, die Web-Anwendung und die Ports der Welten zu.
 
 **Schema**
 

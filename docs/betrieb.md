@@ -2,9 +2,9 @@
 
 Diese Anleitung richtet Backend und Agent als Dienste auf einem Server mit **Debian 13** ein. Beide laufen auf derselben Maschine. Die Regeln dahinter stehen im [Konzept](konzept.md), Abschnitt 11.3.
 
-**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie. Die Schulverwaltung legt Gruppen im Browser an, und Welten lassen sich dort starten und stoppen. Lehrkräfte in neuen Welten folgen mit den nächsten Teilen von Schritt 7. Diese Anleitung wächst mit.
+**Stand:** Backend und Agent laufen als Dienste, der Agent meldet dem Backend seinen Zustand, trägt die Vorlage für Welten in sich, legt Welten auf Auftrag an und startet und stoppt sie. Die Schulverwaltung legt Gruppen im Browser an, und Welten lassen sich dort starten und stoppen. Neue Welten bekommen die bestehenden Lehrkräfte. nginx stellt die Web-Anwendung über HTTPS bereit, eine Firewall schließt den Rest. Diese Anleitung wächst mit.
 
-**Noch nicht für den echten Betrieb mit Schülerdaten:** Die Anleitung endet ohne HTTPS. Ohne HTTPS reisen Anmeldung und Startpasswörter ungeschützt durch das Netz. Für einen Versuch auf einer eigenen VM reicht das, für eine Schule nicht.
+**Noch nicht für den echten Betrieb mit Schülerdaten:** Es fehlen die Sicherungen, siehe „Was noch fehlt“. Bis Abschnitt 10 läuft die Web-Anwendung außerdem ohne HTTPS: Anmeldung und Startpasswörter reisen dann ungeschützt durch das Netz. Für einen ersten Versuch auf einer eigenen VM reicht das, danach folgen Abschnitt 11 und 12.
 
 Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten Debian fehlt `sudo` manchmal: dann als root `apt install sudo` und den eigenen Benutzer mit `adduser <name> sudo` in die Gruppe aufnehmen, danach neu anmelden.
 
@@ -17,6 +17,7 @@ Alle Befehle laufen als ein Benutzer mit `sudo`. Auf einem frisch installierten 
 | Luanti-Server | `/usr/local/bin/luantiserver`, dazu `/usr/local/share/luanti/` |
 | Oberfläche | `/usr/local/share/lep/frontend/` |
 | Einstellungen | `/etc/lep/backend.env`, `/etc/lep/agent.toml` |
+| nginx für die Web-Anwendung | `/etc/nginx/sites-available/lep`, Zertifikat `/etc/ssl/certs/lep.pem`, Schlüssel `/etc/ssl/private/lep.key` |
 | Datenbank des Backends | `/var/lib/lep-backend/lep.sqlite` |
 | Ordner des Agenten, später mit den Welten | `/var/lib/lep-agent/` |
 | Vorlage für Welten, vom Agenten ausgepackt | `/var/lib/lep-agent/templates/<Version>/` |
@@ -123,7 +124,7 @@ sudo install -m 640 -o root -g lep-backend deploy/backend.env.example /etc/lep/b
 sudo nano /etc/lep/backend.env
 ```
 
-Die Datei enthält schon alle Zeilen. Für einen Versuch im eigenen Netz ohne Zertifikat änderst du nur diese beiden, mit der Adresse des Servers statt `192.0.2.10`:
+Die Datei enthält schon alle Zeilen. Für den ersten Versuch im eigenen Netz, noch ohne Zertifikat, änderst du nur diese beiden, mit der Adresse des Servers statt `192.0.2.10`. Abschnitt 11 stellt sie auf HTTPS um:
 
 ```
 LEP_BIND=0.0.0.0:8080
@@ -288,9 +289,105 @@ Lehnt der Agent ab, steht bei der Gruppe „abgelehnt“. Auf ihrer Seite steht 
 
 Auf der Seite einer Gruppe lässt sich ihre Welt auch starten, stoppen und neu starten, mit derselben Wirkung wie die Befehle aus Abschnitt 9. Das dürfen die Lehrkräfte der Gruppe und die Schulverwaltung. Stoppen fragt nach, weil es trennt, wer gerade spielt. Führt der Agent etwas nicht aus, steht sein Grund auf der Seite.
 
-Eine im Browser angelegte Welt kennt zunächst nur den Server-Admin. Dass die Lehrkräfte dort ankommen, folgt mit dem nächsten Teil.
+Eine neue Welt bekommt die Lehrkräfte, die die Schulverwaltung auf der Seite „Lehrkräfte“ angelegt hat, mit dem Passwort, das sie überall haben. Die Seite zeigt für jede, in welchen Gruppen ihr Konto angekommen ist.
 
 `world add` gibt es weiter. Es legt eine Welt nur im Backend an und zeigt ihren Schlüssel, für eine Welt, die von Hand eingerichtet wird.
+
+## 11. HTTPS mit nginx
+
+nginx nimmt die Verbindungen der Browser an, hält das Zertifikat und reicht alles an das Backend weiter. Das Backend lauscht danach nur noch auf der eigenen Maschine.
+
+**Zertifikat.** Es muss auf den Namen ausgestellt sein, unter dem die Browser den Server erreichen, hier `lep.schule.example`. Woher es kommt, ist nginx gleich:
+
+- Von einer eigenen Zertifizierungsstelle, etwa der einer Firewall im Schulnetz. Dann müssen alle Geräte, die die Web-Anwendung öffnen, dieser Stelle vertrauen.
+- Von einer öffentlichen Stelle wie Let's Encrypt, wenn der Server unter einem öffentlichen Namen erreichbar ist. Das Werkzeug dafür heißt `certbot`. Dieser Weg ist hier nicht geprüft.
+
+Zertifikat und Schlüssel ablegen. In `lep.pem` steht zuerst das Zertifikat des Servers, danach die Kette bis zur Stelle, die es ausgestellt hat:
+
+```sh
+sudo install -m 644 -o root -g root lep.pem /etc/ssl/certs/lep.pem
+sudo install -m 600 -o root -g root lep.key /etc/ssl/private/lep.key
+```
+
+Der Schlüssel gehört nicht ins Repository und in keine Sicherung, die den Server verlässt.
+
+**nginx einrichten:**
+
+```sh
+sudo apt install nginx
+sudo install -m 644 deploy/nginx-lep.conf.example /etc/nginx/sites-available/lep
+sudo nano /etc/nginx/sites-available/lep
+```
+
+In der Datei steht an zwei Stellen `lep.schule.example`. Beide bekommen den Namen aus dem Zertifikat. Hat der Server kein IPv6, entfallen die beiden Zeilen mit `[::]`.
+
+```sh
+sudo ln -s /etc/nginx/sites-available/lep /etc/nginx/sites-enabled/lep
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Erwartet: `nginx -t` meldet `syntax is ok` und `test is successful`.
+
+**Backend umstellen.** In `/etc/lep/backend.env`, mit dem Namen aus dem Zertifikat:
+
+```
+LEP_BIND=127.0.0.1:8080
+LEP_PUBLIC_URL=https://lep.schule.example
+```
+
+```sh
+sudo systemctl restart lep-backend
+```
+
+Der Agent und die Welten bleiben, wie sie sind: Sie sprechen das Backend weiter unter `http://127.0.0.1:8080` an.
+
+**Prüfen**, auf dem Server:
+
+```sh
+curl https://lep.schule.example/api/health
+curl -s -o /dev/null -w '%{http_code}\n' https://lep.schule.example/api/agent/v1/jobs
+```
+
+Erwartet: `{"status":"ok"}` und `404`. Meldet `curl` ein Problem mit dem Zertifikat, vertraut der Server selbst der ausstellenden Stelle nicht. Für die Prüfung reicht dann `--cacert <Datei der Stelle>`.
+
+Von einem anderen Rechner aus:
+
+- `https://lep.schule.example` zeigt die Anmeldung, ohne Warnung des Browsers.
+- `http://lep.schule.example` leitet auf HTTPS um.
+- `http://<Adresse des Servers>:8080` antwortet nicht mehr.
+
+Wer vorher über HTTP angemeldet war, meldet sich neu an. Links aus älteren Mails gelten nicht mehr.
+
+Was nginx dabei außerdem tut, steht in der Datei: Die Schnittstellen für Welten und Agent sind von außen gesperrt, weil beide auf dieser Maschine laufen. Das Log unter `/var/log/nginx/lep.access.log` nennt Adressen ohne das, was hinter dem Fragezeichen steht, denn dort tragen die Links aus den Mails ihr Geheimnis. Und die Browser bekommen mit, dass sie nur über HTTPS wiederkommen und nichts von anderen Servern nachladen.
+
+## 12. Firewall
+
+Von außen bleiben drei Dinge erreichbar: SSH, die Web-Anwendung und die Ports der Welten. Alles andere ist zu.
+
+```sh
+sudo apt install ufw
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 30000:30099/udp
+sudo ufw enable
+```
+
+- **Erst SSH erlauben, dann einschalten.** Wer `ufw enable` ohne die Zeile für Port 22 ausführt, sperrt sich aus. Läuft SSH auf einem anderen Port, steht dieser dort statt 22.
+- Der Bereich `30000:30099` ist der aus der Zeile `ports` in `/etc/lep/agent.toml`. Wer ihn dort ändert, ändert ihn auch hier. Luanti braucht nur UDP.
+- Port 8080 bleibt zu. Das Backend lauscht nach Abschnitt 11 ohnehin nur auf der eigenen Maschine.
+
+Prüfen:
+
+```sh
+sudo ufw status
+```
+
+Erwartet: `Status: active` und die vier Regeln, jeweils auch für IPv6. Danach von einem anderen Rechner: Die Web-Anwendung öffnet sich, ein Luanti-Client kommt in eine laufende Welt, und eine neue SSH-Verbindung klappt. Die Firewall bleibt nach einem Neustart der Maschine an.
 
 ## Im Alltag
 
@@ -306,6 +403,8 @@ Eine im Browser angelegte Welt kennt zunächst nur den Server-Admin. Dass die Le
 | Fehler einer Welt beim Start | `sudo journalctl _SYSTEMD_USER_UNIT=lep-world@<Kennung>.service` |
 | Logdatei einer Welt | `/var/lib/lep-agent/worlds/<Kennung>/debug.txt` |
 | Befehle des Backends | `lep-admin <befehl>` |
+| Log von nginx | `/var/log/nginx/lep.access.log`, `/var/log/nginx/error.log` |
+| Regeln der Firewall | `sudo ufw status` |
 
 Die Kennung einer Welt zeigt `world list` in der zweiten Spalte. Im Journal einer Welt stehen nur Fehler. Was im Spiel geschieht, auch Chatnachrichten, steht allein in ihrer Logdatei.
 
@@ -327,10 +426,10 @@ sudo systemctl restart lep-backend lep-agent
 
 Nennt `third_party/luanti.toml` nach dem `git pull` eine neue Version, kommen `scripts/luanti-build.sh` und `sudo cmake --install target/luanti/build` dazu. Laufende Welten nutzen das neue Luanti nach ihrem nächsten Neustart.
 
-Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die Vorlage eine neue Version, und der Agent packt sie beim Start neben die alte. Haben sich die Dienstdateien in `deploy/` geändert, werden sie wie in Abschnitt 5 und 6 neu abgelegt, gefolgt von `daemon-reload`.
+Erst das Backend, dann der Agent. Haben sich Spiel oder Mods geändert, hat die Vorlage eine neue Version, und der Agent packt sie beim Start neben die alte. Haben sich die Dienstdateien in `deploy/` geändert, werden sie wie in Abschnitt 5 und 6 neu abgelegt, gefolgt von `daemon-reload`. Hat sich `deploy/nginx-lep.conf.example` geändert, werden die Änderungen in `/etc/nginx/sites-available/lep` nachgezogen, gefolgt von `sudo nginx -t` und `sudo systemctl reload nginx`.
 
 ## Was noch fehlt
 
-- **HTTPS:** ein Webserver mit Zertifikat vor dem Backend. Dann lauscht das Backend nur auf `127.0.0.1`.
-- **Lehrkräfte in neuen Welten:** Eine frische Welt kennt nur den Server-Admin.
 - **Sicherung** der Datenbank des Backends.
+- **Sicherungen der Welten**, Archivieren und Löschen.
+- **Welten auf eine neue Vorlage heben.**

@@ -9,6 +9,7 @@ Dateien für den Betrieb auf einem Server: Dienste für systemd, Vorlagen für d
 | `lep-agent.service` | `/etc/systemd/system/lep-agent.service` |
 | `agent.toml.example` | `/etc/lep/agent.toml` |
 | `lep-admin` | `/usr/local/bin/lep-admin` |
+| `nginx-lep.conf.example` | `/etc/nginx/sites-available/lep` |
 
 In den Vorlagen stehen keine echten Zugangsdaten. Die ausgefüllten Dateien gehören nicht ins Repository.
 
