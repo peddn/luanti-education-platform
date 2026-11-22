@@ -1,0 +1,52 @@
+# nginx in front of the LEP backend. Goes to
+# /etc/nginx/sites-available/lep and is linked into sites-enabled.
+#
+# nginx holds the certificate and speaks HTTPS with the browsers. The
+# backend listens on 127.0.0.1 only and speaks plain HTTP with nginx.
+# Replace lep.schule.example by the name the certificate is made out to.
+
+# The log names no query strings: the links in mails carry their secret
+# there.
+log_format lep '$remote_addr [$time_local] "$request_method $uri" $status $body_bytes_sent';
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name lep.schule.example;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name lep.schule.example;
+
+    # The certificate with its chain, and its key.
+    ssl_certificate     /etc/ssl/certs/lep.pem;
+    ssl_certificate_key /etc/ssl/private/lep.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    access_log /var/log/nginx/lep.access.log lep;
+
+    # Browsers come back with HTTPS only, show the pages in no frame of
+    # another site, pass no address on to other sites and load nothing
+    # from elsewhere.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Content-Security-Policy "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    client_max_body_size 1m;
+
+    # Worlds and the agent run on this machine and reach the backend
+    # directly. From outside there is nothing to get for them.
+    location /api/world/ { return 404; }
+    location /api/agent/ { return 404; }
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
