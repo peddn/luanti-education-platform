@@ -93,6 +93,10 @@ pub mod world {
     /// account.
     pub const JOB_SET_PASSWORD: &str = "set_password";
 
+    /// Kind of the job that gives a teacher a new password, as what the
+    /// engine stores of it.
+    pub const JOB_SET_PASSWORD_ENTRY: &str = "set_password_entry";
+
     /// Kind of the job that makes a world take the display name of a
     /// student away.
     pub const JOB_REMOVE_DISPLAY_NAME: &str = "remove_display_name";
@@ -364,8 +368,30 @@ pub mod world {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
     pub struct NewAccount {
         pub name: String,
-        /// The start password. The world stores only its hash.
-        pub password: String,
+        /// The start password. The world stores only its hash. Missing
+        /// if `entry` is given.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub password: Option<String>,
+        /// For a teacher, instead of the password: what the engine
+        /// stores of it, a salt and a verifier. The password cannot be
+        /// worked out from it, and every world gets the same. The world
+        /// marks such an account: its password is managed in the web
+        /// application and cannot be changed in the game.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub entry: Option<String>,
+    }
+
+    /// Payload of the job "set_password_entry": a new password for a
+    /// teacher, as a salt and a verifier. A world takes it only for
+    /// accounts it created with such an entry, and never for its admin.
+    #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+    pub struct SetPasswordEntry {
+        pub name: String,
+        pub entry: String,
+        /// Account name of who ordered it: a member of the school
+        /// administration, or the teacher. The world writes it into the
+        /// protocol of the desk.
+        pub by: String,
     }
 
     /// Payload of the job "create_accounts".

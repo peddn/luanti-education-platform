@@ -1326,9 +1326,20 @@ export interface components {
         };
         /** @description An account a world shall create. */
         NewAccount: {
+            /**
+             * @description For a teacher, instead of the password: what the engine
+             *     stores of it, a salt and a verifier. The password cannot be
+             *     worked out from it, and every world gets the same. The world
+             *     marks such an account: its password is managed in the web
+             *     application and cannot be changed in the game.
+             */
+            entry?: string | null;
             name: string;
-            /** @description The start password. The world stores only its hash. */
-            password: string;
+            /**
+             * @description The start password. The world stores only its hash. Missing
+             *     if `entry` is given.
+             */
+            password?: string | null;
         };
         /** @description Request to create a group. Its world is set up by the agent. */
         NewGroup: {
@@ -1629,6 +1640,21 @@ export interface components {
              *     refuses the admin and the school administration.
              */
             staff?: boolean;
+        };
+        /**
+         * @description Payload of the job "set_password_entry": a new password for a
+         *     teacher, as a salt and a verifier. A world takes it only for
+         *     accounts it created with such an entry, and never for its admin.
+         */
+        SetPasswordEntry: {
+            /**
+             * @description Account name of who ordered it: a member of the school
+             *     administration, or the teacher. The world writes it into the
+             *     protocol of the desk.
+             */
+            by: string;
+            entry: string;
+            name: string;
         };
         /**
          * @description Payload of the job "set_rewards". The world checks the table,

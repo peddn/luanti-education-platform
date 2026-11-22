@@ -29,10 +29,29 @@ function accounts.parse(payload)
 	local list = {}
 	for _, entry in ipairs(payload.accounts) do
 		if type(entry) == "table" then
-			list[#list + 1] = { name = entry.name, password = entry.password }
+			-- What the engine stores of a password, instead of the
+			-- password: only taken for teachers.
+			if entry.entry ~= nil and not by then
+				return nil
+			end
+			list[#list + 1] = { name = entry.name, password = entry.password,
+				entry = entry.entry }
 		end
 	end
 	return list, by
+end
+
+--- Reads the payload of the job "set_password_entry": a new password
+-- for a teacher, as what the engine stores of it.
+-- @return name, entry and the account name of who ordered it, or nil if
+--   the payload cannot be read.
+function accounts.parse_entry(payload)
+	if type(payload) ~= "table" or not is_name(payload.name)
+			or type(payload.entry) ~= "string" or payload.entry == ""
+			or not is_name(payload.by) then
+		return nil
+	end
+	return payload.name, payload.entry, payload.by
 end
 
 --- Reads the payload of the job "set_password".

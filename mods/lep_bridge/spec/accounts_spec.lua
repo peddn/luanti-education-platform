@@ -85,4 +85,28 @@ describe("lep_bridge accounts", function()
 		assert.is_nil(staff_by)
 		assert.is_nil(accounts.parse_password({ name = "lehrer2", password = "x", staff = true }))
 	end)
+
+	it("reads passwords that come as what the engine stores of them", function()
+		local entry = "#1#c2FsdDE#dmVyaWZpZXIx"
+		local list, by = accounts.parse({ accounts = { { name = "lehrer2", entry = entry } },
+			teacher = true, by = "leitung" })
+		assert.are.same({ { name = "lehrer2", entry = entry } }, list)
+		assert.are.equal("leitung", by)
+		-- Only for teachers.
+		assert.is_nil(accounts.parse({ accounts = { { name = "klugeEule", entry = entry } } }))
+
+		assert.are.same({ "lehrer2", entry, "leitung" }, { accounts.parse_entry({
+			name = "lehrer2", entry = entry, by = "leitung" }) })
+		for _, wrong in ipairs({
+			{ name = "lehrer2", entry = entry },
+			{ name = "lehrer2", entry = entry, by = "nobody here" },
+			{ name = "lehrer 2", entry = entry, by = "leitung" },
+			{ name = "lehrer2", entry = "", by = "leitung" },
+			{ name = "lehrer2", entry = 5, by = "leitung" },
+			{ entry = entry, by = "leitung" },
+		}) do
+			assert.is_nil(accounts.parse_entry(wrong))
+		end
+		assert.is_nil(accounts.parse_entry(nil))
+	end)
 end)

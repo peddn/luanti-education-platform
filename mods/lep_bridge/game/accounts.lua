@@ -99,3 +99,21 @@ lep_bridge.register_job(reports.JOB_SET_PASSWORD, function(payload)
 	end
 	return true, "set"
 end)
+
+-- A new password for a teacher the school administration created. The
+-- backend sends what the engine stores of it, the same to every world,
+-- so the password itself is never seen here.
+lep_bridge.register_job(reports.JOB_SET_PASSWORD_ENTRY, function(payload)
+	local name, entry, by = accounts.parse_entry(payload)
+	if not name then
+		return false, "the order cannot be read"
+	end
+	local ok, why = lep_accounts.set_password_entry(name, entry)
+	if not ok then
+		-- A fixed word the backend passes on: unknown, unmanaged, staff
+		-- or invalid.
+		return false, why
+	end
+	record(by, by == name and "web:change_password" or "web:reset_teacher_password", name)
+	return true, "set"
+end)

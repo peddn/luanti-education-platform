@@ -1,6 +1,10 @@
 //! Accounts of teachers, looked after by the school administration.
 //!
 //! A teacher exists in every world, so every order goes to all of them.
+//! The backend is the one place that gives out their passwords. It
+//! works out what the engine stores of a password (see `srp`) and sends
+//! every world the same, so a teacher has one password everywhere. The
+//! worlds refuse to change such a password inside the game.
 //! Students and teachers are kept apart: an account that was created as
 //! the account of a student never counts as a teacher here, whatever a
 //! world reports about its privileges.
@@ -10,12 +14,12 @@ use lep_protocol::web::{
     AccessSlip, ChangeState, PasswordState, StaffAccount, StaffState, WebAccessState,
 };
 use lep_protocol::world::{
-    AccountsCreated, CreateAccounts, NewAccount, RemoveAccount, SetPassword, JOB_CREATE_ACCOUNTS,
-    JOB_REMOVE_ACCOUNT, JOB_SET_PASSWORD,
+    AccountsCreated, CreateAccounts, NewAccount, RemoveAccount, SetPassword, SetPasswordEntry,
+    JOB_CREATE_ACCOUNTS, JOB_REMOVE_ACCOUNT, JOB_SET_PASSWORD, JOB_SET_PASSWORD_ENTRY,
 };
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use crate::{clock, jobs, names, removals, students};
+use crate::{clock, jobs, names, removals, srp, students};
 
 /// Shortest and longest name of a teacher. The engine takes 20
 /// characters; the backend stays one below.
@@ -74,15 +78,69 @@ async fn world_ids(pool: &SqlitePool) -> Result<Vec<String>> {
         .await?)
 }
 
-/// A start password for a teacher: twice as long as the one of a
-/// student, because this account can do more.
+/// A start password for a teacher: three times as long as the one of a
+/// student, because this account can do more and many keep it. Whoever
+/// reads what the worlds store of it shall not find it by trying.
 fn roll_password() -> String {
-    format!("{}-{}", names::roll_password(), names::roll_password())
+    format!(
+        "{}-{}-{}",
+        names::roll_password(),
+        names::roll_password(),
+        names::roll_password()
+    )
+}
+
+/// The order to create the account of a teacher in a world.
+fn creation(name: &str, entry: &str, by: &str) -> Result<serde_json::Value> {
+    Ok(serde_json::to_value(CreateAccounts {
+        accounts: vec![NewAccount {
+            name: name.to_owned(),
+            password: None,
+            entry: Some(entry.to_owned()),
+        }],
+        teacher: true,
+        by: Some(by.to_owned()),
+    })?)
+}
+
+/// Orders a new world to create the teachers there are, each with the
+/// password they have everywhere. Teachers who are being deleted and
+/// ones the admin made in the game are left out.
+pub async fn bring_into(pool: &SqlitePool, world_id: &str) -> Result<()> {
+    let rows = sqlx::query(
+        "SELECT account, password_entry, created_by FROM staff_accounts
+         WHERE state != 'refused' AND password_entry IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM jobs
+                           WHERE jobs.subject = staff_accounts.account AND jobs.kind = ?
+                             AND jobs.finished_at IS NULL)
+         ORDER BY account",
+    )
+    .bind(JOB_REMOVE_ACCOUNT)
+    .fetch_all(pool)
+    .await?;
+    for row in &rows {
+        let account: String = row.get("account");
+        let payload = creation(
+            &account,
+            &row.get::<String, _>("password_entry"),
+            &row.get::<String, _>("created_by"),
+        )?;
+        jobs::add_about(
+            pool,
+            world_id,
+            JOB_CREATE_ACCOUNTS,
+            &payload,
+            Some(&account),
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 /// Has every world create the account of a teacher, with a start
 /// password and the privileges of the bundle for teachers. The password
-/// is in the returned slip and in the jobs for the worlds, nowhere else.
+/// is in the returned slip and nowhere else: the worlds get what the
+/// engine stores of it, the same in every world.
 /// Returns the slip and the worlds to wake.
 /// @param by Account name of the member of the school administration.
 pub async fn create(
@@ -101,27 +159,22 @@ pub async fn create(
     if worlds.is_empty() {
         return Ok(Err(StaffError::NoWorld));
     }
-    sqlx::query(
-        "INSERT INTO staff_accounts (account, state, created_at, created_by)
-         VALUES (?, 'creating', ?, ?)",
-    )
-    .bind(name)
-    .bind(clock::now())
-    .bind(by)
-    .execute(pool)
-    .await?;
     let slip = AccessSlip {
         account: name.to_owned(),
         password: roll_password(),
     };
-    let payload = serde_json::to_value(CreateAccounts {
-        accounts: vec![NewAccount {
-            name: slip.account.clone(),
-            password: slip.password.clone(),
-        }],
-        teacher: true,
-        by: Some(by.to_owned()),
-    })?;
+    let entry = srp::entry(&slip.account, &slip.password);
+    sqlx::query(
+        "INSERT INTO staff_accounts (account, state, created_at, created_by, password_entry)
+         VALUES (?, 'creating', ?, ?, ?)",
+    )
+    .bind(name)
+    .bind(clock::now())
+    .bind(by)
+    .bind(&entry)
+    .execute(pool)
+    .await?;
+    let payload = creation(name, &entry, by)?;
     for world in &worlds {
         jobs::add_about(pool, world, JOB_CREATE_ACCOUNTS, &payload, Some(name)).await?;
     }
@@ -202,13 +255,56 @@ pub async fn reset_password(
         account: account.clone(),
         password: roll_password(),
     };
+    let worlds = world_ids(pool).await?;
+    // A teacher who was created here gets the same entry in every world,
+    // and new worlds get it later.
+    let entry = srp::entry(&slip.account, &slip.password);
+    let managed = sqlx::query(
+        "UPDATE staff_accounts SET password_entry = ?
+         WHERE account = ? AND password_entry IS NOT NULL",
+    )
+    .bind(&entry)
+    .bind(&account)
+    .execute(pool)
+    .await?
+    .rows_affected()
+        > 0;
+    if managed {
+        // An older order that no world has fetched yet would only be
+        // overwritten by this one.
+        sqlx::query(
+            "DELETE FROM jobs WHERE kind = ? AND subject = ?
+               AND finished_at IS NULL AND delivered_at IS NULL",
+        )
+        .bind(JOB_SET_PASSWORD_ENTRY)
+        .bind(&account)
+        .execute(pool)
+        .await?;
+        let payload = serde_json::to_value(SetPasswordEntry {
+            name: account.clone(),
+            entry,
+            by: by.to_owned(),
+        })?;
+        for world in &worlds {
+            jobs::add_about(
+                pool,
+                world,
+                JOB_SET_PASSWORD_ENTRY,
+                &payload,
+                Some(&account),
+            )
+            .await?;
+        }
+        return Ok(Ok((slip, worlds)));
+    }
+    // One the admin made in the game has a password of its own in every
+    // world: each world hashes the new one for itself.
     let payload = serde_json::to_value(SetPassword {
         name: slip.account.clone(),
         password: slip.password.clone(),
         staff: true,
         by: Some(by.to_owned()),
     })?;
-    let worlds = world_ids(pool).await?;
     for world in &worlds {
         jobs::add_about(pool, world, JOB_SET_PASSWORD, &payload, Some(&account)).await?;
     }
@@ -272,6 +368,7 @@ pub async fn forget(pool: &SqlitePool, account: &str) -> Result<()> {
         "DELETE FROM teachers WHERE account = ?",
         "DELETE FROM group_teachers WHERE account = ?",
         "DELETE FROM jobs WHERE subject = ? AND kind = 'create_accounts'",
+        "DELETE FROM jobs WHERE subject = ? AND kind = 'set_password_entry'",
     ] {
         sqlx::query(delete).bind(account).execute(&mut *tx).await?;
     }
@@ -324,6 +421,7 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<StaffAccount>> {
     let rows = sqlx::query(
         "SELECT names.account,
                 staff_accounts.state AS state,
+                staff_accounts.password_entry IS NOT NULL AS managed,
                 EXISTS (SELECT 1 FROM teacher_worlds
                         WHERE teacher_worlds.account = names.account) AS holder,
                 EXISTS (SELECT 1 FROM school_admin_worlds
@@ -350,7 +448,13 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<StaffAccount>> {
         .bind(&account)
         .fetch_all(pool)
         .await?;
-        let (password, _) = order_state(pool, JOB_SET_PASSWORD, &account).await?;
+        // Teachers who were created here get their password as an entry.
+        let kind = if row.get::<bool, _>("managed") {
+            JOB_SET_PASSWORD_ENTRY
+        } else {
+            JOB_SET_PASSWORD
+        };
+        let (password, _) = order_state(pool, kind, &account).await?;
         let (removal, message) = order_state(pool, JOB_REMOVE_ACCOUNT, &account).await?;
         list.push(StaffAccount {
             state: match row.get::<Option<String>, _>("state").as_deref() {
